@@ -27,7 +27,7 @@ export default function RootLayout({
   return (
     <html lang="vi">
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased bg-white text-zinc-900`}>
-        <header className="sticky top-0 z-50 w-full border-b bg-white/90 backdrop-blur">
+        <header data-global="true" className="sticky top-0 z-50 w-full border-b bg-white/90 backdrop-blur">
           <div className="mx-auto flex w-full max-w-7xl items-center justify-between gap-6 px-6 py-3 md:px-8">
             <Link href="/" className="shrink-0 text-xl font-extrabold tracking-tight text-[#E33AEC]">QuizzZone</Link>
             <nav className="flex flex-1 items-center justify-center text-sm text-zinc-600">
