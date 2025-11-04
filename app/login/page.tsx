@@ -6,14 +6,14 @@ export default function LoginPage() {
           Đăng nhập tài khoản của bạn
         </h1>
 
-        <form className="mx-auto max-w-2xl space-y-6">
+        <form className="mx-auto max-w-2xl space-y-6" method="post" action="/api/perform_login">
           <div className="space-y-2">
             <label className="block text-sm font-medium text-zinc-800">
-              Email <span className="text-rose-500">*</span>
+              Tên đăng nhập <span className="text-rose-500">*</span>
             </label>
             <input
-              type="email"
-              placeholder=""
+              type="text"
+              name="username"
               className="w-full rounded-md border border-zinc-300 bg-white px-4 py-3 text-zinc-900 placeholder:text-zinc-400 focus:border-[#E33AEC] focus:outline-none focus:ring-2 focus:ring-[#E33AEC]/30"
               required
             />
@@ -25,7 +25,7 @@ export default function LoginPage() {
             </label>
             <input
               type="password"
-              placeholder=""
+              name="password"
               className="w-full rounded-md border border-zinc-300 bg-white px-4 py-3 text-zinc-900 placeholder:text-zinc-400 focus:border-[#E33AEC] focus:outline-none focus:ring-2 focus:ring-[#E33AEC]/30"
               required
             />
