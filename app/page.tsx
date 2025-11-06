@@ -1,115 +1,182 @@
-// app/page.tsx
-import Link from "next/link"; 
+'use client';
 
-// Component Card Môn học
+import React from "react";
+// Đã loại bỏ import Link từ 'next/link' và sử dụng thẻ <a> thuần
+// Đã loại bỏ import DefaultLayout để tránh lỗi phân giải
+
+// Component Môn học - Giả định đã có đầy đủ logic
 const SubjectCard = ({ title, color, image }: { title: string, color: string, image: string }) => (
     <div 
-        className="w-full h-60 rounded-xl overflow-hidden shadow-xl hover:shadow-2xl transition duration-300 transform hover:-translate-y-1 relative cursor-pointer"
-        style={{ backgroundColor: color }} // Màu nền chính của thẻ
+        className="w-full flex flex-col rounded-xl overflow-hidden shadow-2xl transition duration-300 transform hover:scale-[1.02] cursor-pointer"
+        style={{ 
+            backgroundColor: color, 
+            height: '350px',
+            borderColor: color, // Thêm border color cho rõ ràng
+            borderWidth: '2px',
+        }}
     >
-        {/* Hình ảnh môn học (chiếm phần lớn diện tích thẻ) */}
-        <div className="w-full h-4/5 relative">
-            <img 
-                // Sử dụng thuộc tính loading="lazy" để tối ưu hiệu suất
-                loading="lazy"
-                src={image} 
-                alt={title} 
-                className="w-full h-full object-cover" // object-cover để hình ảnh không bị méo
-            />
+        {/* Phần ảnh Môn học */}
+        <div 
+            className="h-2/3 flex items-center justify-center bg-white p-4"
+            style={{ 
+                backgroundImage: `url(${image})`, 
+                backgroundSize: 'cover', 
+                backgroundPosition: 'center' 
+            }}
+        >
+            {/* Nội dung ảnh (hoặc placeholder nếu ảnh không load) */}
+            <div className="text-gray-800 text-3xl font-bold bg-white/70 p-2 rounded-lg backdrop-blur-sm">
+                {/* [Hình ảnh placeholder cho Môn học] */}
+            </div>
         </div>
         
-        {/* Tiêu đề môn học (đặt ở dưới cùng) */}
-        <div className="absolute bottom-0 left-0 w-full h-1/5 flex items-center justify-center p-2 text-center" style={{ backgroundColor: '#00000080' }}> {/* Nền đen trong suốt để chữ nổi bật */}
-            <h3 className="text-xl font-bold text-white tracking-tight">{title}</h3>
+        {/* Phần tên Môn học */}
+        <div 
+            className="h-1/3 flex items-center justify-center text-3xl font-bold text-white p-4"
+            style={{ backgroundColor: color }} // Dùng màu chủ đạo cho nền
+        >
+            {title}
         </div>
-        
-        {/* Góc trên phải (Giống Quizizz) */}
-        <span className="absolute top-2 right-2 text-white opacity-80">
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-            </svg>
-        </span>
     </div>
+);
+
+// Component Header (Navbar) - Lấy từ DefaultLayout
+const PublicHeader = () => {
+    return (
+        <header data-global="true" className="sticky top-0 z-50 w-full border-b border-zinc-100 bg-white/95 backdrop-blur">
+            <div className="mx-auto flex w-full max-w-full items-center justify-between gap-2 px-4 py-3 md:px-6"> 
+                
+                {/* 1. Logo/Tên dự án */}
+                <a 
+                    href="/" 
+                    className="shrink-0 text-4xl font-black tracking-tighter" 
+                    style={{ color: '#E33AEC' }} 
+                >
+                    QuizzZone
+                </a>
+                
+                {/* 2. Mục Điều hướng Chính */}
+                <nav className="flex flex-1 items-center justify-center text-lg font-medium text-zinc-600"> 
+                    <a href="/" className="hover:text-zinc-900 transition duration-150">Trang chủ</a>
+                </nav>
+                
+                {/* 3. Nút Hành động */}
+                <div className="flex shrink-0 items-center gap-2">
+                    <a 
+                        href="/login" 
+                        className="rounded-lg px-4 py-2 font-medium shadow-md hover:shadow-lg transition duration-200 text-lg" 
+                        style={{ backgroundColor: '#0000002E', color: 'black' }} 
+                    >
+                        Đăng nhập
+                    </a>
+                    
+                    <a 
+                        href="/register" 
+                        className="rounded-lg px-4 py-2 font-bold shadow-md hover:shadow-lg transition duration-200 text-lg border-2"
+                        style={{ 
+                            backgroundColor: 'white', 
+                            color: '#E33AEC', 
+                            borderColor: '#E33AEC', 
+                        }} 
+                    >
+                        Đăng ký
+                    </a>
+                </div>
+            </div>
+        </header>
+    );
+};
+
+// Component Footer - Lấy từ DefaultLayout
+const Footer = () => (
+    <footer className="w-full bg-white border-t border-zinc-100 text-center py-6">
+        <p className="text-sm text-zinc-600">
+            &copy; 2025 QuizzZone. Mọi quyền được bảo lưu.
+        </p>
+    </footer>
 );
 
 
 export default function Home() {
     
-    // Dữ liệu 3 môn học SỬ DỤNG ĐƯỜNG DẪN NỘI BỘ
+    // Dữ liệu 3 môn học
     const subjects = [
-        // Đường dẫn: /public/roles/Math.jpg
-        { title: "Toán học", color: "#FBC02D", image: "/roles/Math.jpg" }, 
-        
-        // Đường dẫn: /public/roles/English.jpg
-        { title: "Tiếng Anh", color: "#689F38", image: "/roles/English.jpg" }, 
-        
-        // Đường dẫn: /public/roles/Physics.jpg
-        { title: "Vật lý", color: "#7B1FA2", image: "/roles/Physics.jpg" }, 
+        { title: "Toán học", color: "#FBC02D", image: "/roles/Math.jpg" }, // Vàng/Đỏ cam
+        { title: "Tiếng Anh", color: "#689F38", image: "/roles/English.jpg" }, // Xanh lá cây
+        { title: "Vật lý", color: "#7B1FA2", image: "/roles/Physics.jpg" }, // Tím đậm
     ];
     
   return (
-    // Màu nền toàn trang: #6D0446
-    <div className="min-h-[calc(100vh-140px)] flex flex-col items-center justify-start pt-28 pb-10 px-4">
-      
-      {/* Khối chính giữa màn hình */}
-      <div className="w-full max-w-6xl"> 
+    <>
+        {/* NHÚNG TRỰC TIẾP HEADER VÀO ĐÂY */}
+        <PublicHeader />
         
-        {/* Phần Title và Slogan */}
-        <section className="text-center mb-16">
-            <h1 
-                className="text-5xl md:text-6xl font-extrabold tracking-tighter text-white" 
-            > 
-                QuizzZone
+        {/* Màu nền toàn trang: #6D0446 (Màu tím/đỏ chủ đạo) */}
+        <main className="min-h-[calc(100vh-140px)] flex flex-col items-center justify-start py-10 px-4" style={{ backgroundColor: '#6D0446' }}>
+            
+            {/* Khối chính giữa màn hình */}
+            <div className="w-full max-w-6xl flex flex-col items-center"> 
+            
+            {/* Phần Title và Slogan */}
+            <h1 className="text-6xl font-extrabold mb-4 text-center" style={{ color: '#E33AEC' }}>
+                Quizz ngay bây giờ với QuizzZone
             </h1>
-            <p className="mt-4 text-xl font-medium text-white opacity-90"> 
+            <p className="text-2xl mb-12 text-center text-white/90">
                 Hãy thử thách trí tuệ, khám phá kiến thức và học tập thú vị cùng mọi người.
             </p>
-        </section>
 
-        {/* Thanh Nhập Mã Phòng - Nổi bật */}
-        <div className="mx-auto max-w-2xl bg-white p-6 rounded-2xl shadow-2xl border-t-4 mb-20" style={{ borderColor: 'var(--quiz-action-neon)' }}>
-            <p className="text-lg font-semibold text-zinc-700 mb-4">Tham gia một phòng học / trò chơi</p>
-            <div className="flex w-full items-center gap-4">
-                <input
-                    type="text"
-                    inputMode="numeric"
-                    placeholder="Nhập mã phòng (Ví dụ: 123 456)"
-                    className="flex-1 px-5 py-3 text-lg border-2 rounded-lg focus:outline-none focus:ring-4 transition duration-200"
-                    style={{ 
-                        '--tw-ring-color': 'var(--quiz-primary-dark)', 
-                        borderColor: 'var(--quiz-primary-light)', 
-                    }}
-                />
-                <button 
-                    className="flex items-center justify-center rounded-lg px-6 py-3 text-lg font-bold text-white shadow-lg hover:shadow-xl transition duration-200" 
-                    aria-label="Tìm phòng"
-                    style={{ backgroundColor: '#A53AEC', color: 'white' }}
-                >
-                    Tham gia
-                </button>
+            {/* Thanh Nhập Mã Phòng - Nổi bật */}
+            <div className="w-full max-w-xl bg-white p-6 rounded-2xl shadow-2xl mb-16 border-4" style={{ borderColor: '#E33AEC' }}>
+                <h3 className="text-xl font-semibold mb-3 text-gray-700">Tham gia một phòng học / trò chơi</h3>
+                <div className="flex gap-3">
+                    <input 
+                        type="text" 
+                        placeholder="Nhập mã phòng (Ví dụ: 123 456)" 
+                        className="flex-1 p-3 rounded-lg border-2 focus:ring-2 focus:ring-purple-400 outline-none text-lg"
+                    />
+                    <button 
+                        className="px-6 py-3 rounded-lg text-white font-bold transition duration-200 shadow-md hover:shadow-lg text-lg"
+                        style={{ backgroundColor: '#58CC02' }} // Màu xanh lá nổi bật
+                    >
+                        Tham gia
+                    </button>
+                </div>
             </div>
-        </div>
-        
-        {/* PHẦN THƯ VIỆN/MÔN HỌC */}
-        <div className="w-full text-center">
-            <h2 className="text-3xl font-bold text-white mb-8">Khám phá Thư viện Môn học</h2>
+
+            {/* Nút Tạo trò chơi */}
+            <div className="flex flex-col items-center mb-20">
+                <p className="text-3xl font-medium text-white/90 mb-4">
+                    Tạo trò chơi đố vui của riêng bạn, miễn phí!
+                </p>
+                <a 
+                    href="/create-quiz" 
+                    className="px-10 py-4 rounded-full text-white font-extrabold transition duration-200 shadow-xl hover:shadow-2xl text-2xl"
+                    style={{ backgroundColor: '#6A1B9A' }} // Tím đậm
+                >
+                    Bắt đầu ngay
+                </a>
+            </div>
             
-            {/* Grid hiển thị 3 môn học, dùng grid-cols-3 trên màn hình lớn */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 max-w-4xl mx-auto">
-                {subjects.map((subject, index) => (
+            {/* PHẦN THƯ VIỆN/MÔN HỌC */}
+            <h2 className="text-5xl font-extrabold mb-10 text-center text-white">
+                Khám phá Thư viện
+            </h2>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8 w-full">
+                {subjects.map((subject) => (
                     <SubjectCard 
-                        key={index}
+                        key={subject.title} 
                         title={subject.title} 
-                        color={subject.color}
+                        color={subject.color} 
                         image={subject.image} 
                     />
                 ))}
             </div>
-        </div>
+            
+            </div>
+        </main>
         
-
-      </div>
-      
-    </div>
+        {/* NHÚNG TRỰC TIẾP FOOTER VÀO ĐÂY */}
+        <Footer />
+    </>
   );
 }
