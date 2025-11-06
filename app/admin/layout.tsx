@@ -1,11 +1,10 @@
+"use client";
 import Link from "next/link";
 import ProfileDropdown from "../../components/ProfileDropdown";
+import { useEffect } from "react";
 
 // Giữ nguyên logic ban đầu của bạn để ẩn Global Header
-"use client";
-import { useEffect } from "react";
 // ... (các import khác)
-
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   // Logic cũ của bạn: Ẩn Global Header bằng DOM manipulation
   useEffect(() => {

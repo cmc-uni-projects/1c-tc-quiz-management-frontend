@@ -6,7 +6,7 @@ export default function LoginPage() {
           Đăng nhập tài khoản của bạn
         </h1>
 
-        <form className="mx-auto max-w-2xl space-y-6" method="post" action="/api/perform_login">
+        <form className="mx-auto max-w-2xl space-y-6" method="post" action="http://localhost:8082/perform_login">
           <div className="space-y-2">
             <label className="block text-sm font-medium text-zinc-800">
               Tên đăng nhập <span className="text-rose-500">*</span>
