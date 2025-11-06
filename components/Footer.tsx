@@ -1,7 +1,18 @@
-export default function Footer() {
+// components/Footer.tsx
+import React from 'react';
+
+const Footer = () => {
   return (
-    <footer className="w-full py-8 text-center text-sm text-zinc-500">
-      © 2025 QuizzZone. Mọi quyền được bảo lưu.
+    // Footer màu trắng, cố định ở dưới cùng
+    <footer className="w-full bg-white py-4 border-t border-zinc-200">
+      <div className="max-w-7xl mx-auto px-4 text-center">
+        {/* Chữ bản quyền */}
+        <p className="text-sm font-medium text-zinc-600">
+          © 2025 QuizzZone. Mọi quyền được bảo lưu.
+        </p>
+      </div>
     </footer>
   );
-}
+};
+
+export default Footer;
