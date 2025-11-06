@@ -1,4 +1,64 @@
+'use client';
+
+import { useState } from 'react';
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+
 export default function LoginPage() {
+  const router = useRouter();
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    setError(null);
+    setLoading(true);
+
+    try {
+      const form = new URLSearchParams();
+      form.append('username', username);
+      form.append('password', password);
+
+      const res = await fetch('/api/perform_login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: form.toString(),
+        credentials: 'include',
+        redirect: 'follow',
+      });
+
+      // Spring returns 302 to role-based page (e.g. /student/studenthome).
+      // If fetch followed the redirect, res.url will be the final URL.
+      if (res.ok || res.redirected || res.type === 'opaqueredirect') {
+        try {
+          const finalUrl = res.url || '';
+          if (finalUrl.includes('/student/')) {
+            router.push('/student/studenthome');
+          } else if (finalUrl.includes('/teacher/')) {
+            router.push('/teacher/teacherhome');
+          } else if (finalUrl.includes('/admin')) {
+            router.push('/admin');
+          } else {
+            // Fallback: student home (your request)
+            router.push('/student/studenthome');
+          }
+        } catch (_) {
+          router.push('/student/studenthome');
+        }
+        return;
+      }
+
+      const text = await res.text();
+      throw new Error(text || 'Đăng nhập thất bại');
+    } catch (err: any) {
+      setError(err.message || 'Đăng nhập thất bại');
+    } finally {
+      setLoading(false);
+    }
+  }
+
   return (
     <div className="mx-auto max-w-4xl px-4 py-10">
       <div className="mx-auto w-full rounded-lg border border-zinc-200 bg-white p-8 shadow-sm">
@@ -6,14 +66,15 @@ export default function LoginPage() {
           Đăng nhập tài khoản của bạn
         </h1>
 
-        <form className="mx-auto max-w-2xl space-y-6" method="post" action="http://localhost:8082/perform_login">
+        <form className="mx-auto max-w-2xl space-y-6" onSubmit={onSubmit}>
           <div className="space-y-2">
             <label className="block text-sm font-medium text-zinc-800">
-              Tên đăng nhập <span className="text-rose-500">*</span>
+              Tên đăng nhập hoặc Email <span className="text-rose-500">*</span>
             </label>
             <input
               type="text"
-              name="username"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
               className="w-full rounded-md border border-zinc-300 bg-white px-4 py-3 text-zinc-900 placeholder:text-zinc-400 focus:border-[#E33AEC] focus:outline-none focus:ring-2 focus:ring-[#E33AEC]/30"
               required
             />
@@ -25,11 +86,16 @@ export default function LoginPage() {
             </label>
             <input
               type="password"
-              name="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
               className="w-full rounded-md border border-zinc-300 bg-white px-4 py-3 text-zinc-900 placeholder:text-zinc-400 focus:border-[#E33AEC] focus:outline-none focus:ring-2 focus:ring-[#E33AEC]/30"
               required
             />
           </div>
+
+          {error && (
+            <div className="rounded-md border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">{error}</div>
+          )}
 
           <div className="flex items-center justify-between text-sm">
             <a href="#" className="font-medium text-[#E33AEC] hover:underline">
@@ -37,18 +103,19 @@ export default function LoginPage() {
             </a>
             <p className="text-zinc-600">
               Bạn chưa có tài khoản?{' '}
-              <a href="/register" className="font-medium text-[#E33AEC] hover:underline">
+              <Link href="/register" className="font-medium text-[#E33AEC] hover:underline">
                 Đăng ký
-              </a>
+              </Link>
             </p>
           </div>
 
           <div className="pt-2 text-center">
             <button
               type="submit"
-              className="mx-auto w-56 rounded-full bg-[#E33AEC] px-6 py-3 font-semibold text-white shadow-sm hover:bg-[#d22adc]"
+              disabled={loading}
+              className="mx-auto w-56 rounded-full bg-[#E33AEC] px-6 py-3 font-semibold text-white shadow-sm hover:bg-[#d22adc] disabled:opacity-60"
             >
-              Đăng nhập
+              {loading ? 'Đang đăng nhập...' : 'Đăng nhập'}
             </button>
           </div>
         </form>
