@@ -26,9 +26,9 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="vi">
-      <body>
+      <body className="min-h-screen flex flex-col overflow-hidden">
         {/* Header toàn cục: Chữ rất lớn, sát lề */}
-        <header data-global="true" className="sticky top-0 z-50 w-full border-b border-zinc-100 bg-white/95 backdrop-blur">
+        <header data-global="true" className="sticky top-0 z-50 w-full border-b border-zinc-100 bg-white/95 backdrop-blur flex-none">
           {/* Căn sát lề với px-4 và max-w-full */}
           <div className="mx-auto flex w-full max-w-full items-center justify-between gap-2 px-4 py-6 md:px-6"> 
             
@@ -72,8 +72,10 @@ export default function RootLayout({
             </div>
           </div>
         </header>
-        <main className="min-h-[calc(100vh-140px)]">{children}</main>
-        <Footer />
+        <main className="flex-1 overflow-auto">{children}</main>
+        <div className="mt-auto w-full">
+          <Footer />
+        </div>
       </body>
     </html>
   );

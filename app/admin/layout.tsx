@@ -20,19 +20,17 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   return (
     <div className="min-h-screen">
       {/* Header riêng cho Admin */}
-      <header className="sticky top-0 z-40 w-full border-b bg-white/90 backdrop-blur">
-        <div className="mx-auto flex w-full max-w-7xl items-center justify-between gap-6 px-6 py-3 md:px-8">
+      <header className="sticky top-0 z-40 w-full border-b bg-[#F5F5F5]">
+        <div className="flex w-full items-center justify-between gap-6 px-0 py-3">
           {/* Tên dự án: sử dụng màu tím đậm */}
           <Link 
               href="/" 
-              className="shrink-0 text-2xl font-black tracking-tighter" 
-              style={{ color: 'var(--quiz-primary-dark)' }}
+              className="shrink-0 text-2xl font-black tracking-tighter"
+              style={{ color: '#E33AEC' }}
           >
               QuizzZone
           </Link>
-          <nav className="flex flex-1 items-center justify-center text-sm text-zinc-600">
-            <span className="select-none">Trang chủ Admin</span>
-          </nav>
+          <nav className="flex flex-1 items-center justify-center text-sm text-zinc-600" />
           <ProfileDropdown />
         </div>
       </header>

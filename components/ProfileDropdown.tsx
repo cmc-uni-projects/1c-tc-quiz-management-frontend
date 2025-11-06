@@ -37,10 +37,7 @@ export default function ProfileDropdown() {
           <Link href="#" className="block px-3 py-2 text-sm hover:bg-zinc-50">
             Cập nhật thông tin
           </Link>
-          <Link href="#" className="block px-3 py-2 text-sm hover:bg-zinc-50">
-            Quản lý tài khoản
-          </Link>
-          <Link href="/forgot-password" className="block px-3 py-2 text-sm hover:bg-zinc-50">
+          <Link href="/admin/change-password" className="block px-3 py-2 text-sm hover:bg-zinc-50">
             Đổi mật khẩu
           </Link>
           <div className="border-t" />
