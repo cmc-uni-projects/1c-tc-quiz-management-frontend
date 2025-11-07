@@ -18,7 +18,7 @@ export default function LoginPage() {
 
     try {
       const form = new URLSearchParams();
-      form.append('username', username);
+      form.append('email', username);
       form.append('password', password);
 
       const res = await fetch('/api/perform_login', {
@@ -69,12 +69,13 @@ export default function LoginPage() {
         <form className="mx-auto max-w-2xl space-y-6" onSubmit={onSubmit}>
           <div className="space-y-2">
             <label className="block text-sm font-medium text-zinc-800">
-              Tên đăng nhập hoặc Email <span className="text-rose-500">*</span>
+              Email <span className="text-rose-500">*</span>
             </label>
             <input
-              type="text"
+              type="email"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
+              placeholder="Enter your email"
               className="w-full rounded-md border border-zinc-300 bg-white px-4 py-3 text-zinc-900 placeholder:text-zinc-400 focus:border-[#E33AEC] focus:outline-none focus:ring-2 focus:ring-[#E33AEC]/30"
               required
             />
