@@ -1,10 +1,32 @@
 'use client';
 
 import React, { useState } from 'react';
+import { useRouter } from 'next/navigation';
 
 const TeacherHome = () => {
+  const router = useRouter();
   const [roomCode, setRoomCode] = useState('');
   const [showDropdown, setShowDropdown] = useState(false);
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+
+  const handleLogoutClick = () => {
+    setShowLogoutConfirm(true);
+    setShowDropdown(false);
+  };
+
+  const handleLogoutConfirm = async () => {
+    try {
+      await fetch('/logout', { method: 'POST', credentials: 'include' });
+      router.push('/');
+    } catch (error) {
+      console.error('Logout error:', error);
+      router.push('/');
+    }
+  };
+
+  const handleLogoutCancel = () => {
+    setShowLogoutConfirm(false);
+  };
 
   const handleJoinRoom = () => {
     if (roomCode.trim()) {
@@ -80,7 +102,10 @@ const TeacherHome = () => {
                 <button className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 border-b border-gray-100">
                   Đổi mật khẩu
                 </button>
-                <button className="w-full text-left px-3 py-2 text-sm text-purple-600 hover:bg-purple-50 flex items-center gap-2">
+                <button
+                  onClick={handleLogoutClick}
+                  className="w-full text-left px-3 py-2 text-sm text-purple-600 hover:bg-purple-50 flex items-center gap-2"
+                >
                   <span>←</span>
                   Đăng xuất
                 </button>
@@ -151,6 +176,30 @@ const TeacherHome = () => {
           &copy; 2025 QuizzZone. Mọi quyền được bảo lưu.
         </p>
       </footer>
+
+      {/* Logout Confirmation Modal */}
+      {showLogoutConfirm && (
+        <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 max-w-sm w-full mx-4 shadow-xl">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">Xác nhận đăng xuất</h3>
+            <p className="text-gray-600 mb-6">Bạn có chắc chắn muốn đăng xuất khỏi hệ thống?</p>
+            <div className="flex gap-3 justify-end">
+              <button
+                onClick={handleLogoutCancel}
+                className="px-4 py-2 text-gray-600 hover:text-gray-800 transition"
+              >
+                Hủy
+              </button>
+              <button
+                onClick={handleLogoutConfirm}
+                className="px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700 transition"
+              >
+                Đăng xuất
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
