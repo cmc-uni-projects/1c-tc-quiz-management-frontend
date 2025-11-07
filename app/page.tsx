@@ -127,16 +127,16 @@ export default function Home() {
 
             {/* Thanh Nhập Mã Phòng - Nổi bật */}
             <div className="w-full max-w-xl bg-white p-6 rounded-2xl shadow-2xl mb-16 border-4" style={{ borderColor: '#E33AEC' }}>
-                <h3 className="text-xl font-semibold mb-3 text-gray-700">Tham gia một phòng học / trò chơi</h3>
+                <h3 className="text-xl font-semibold mb-3 text-gray-700"></h3>
                 <div className="flex gap-3">
                     <input 
                         type="text" 
-                        placeholder="Nhập mã phòng (Ví dụ: 123 456)" 
+                        placeholder="Nhập mã phòng" 
                         className="flex-1 p-3 rounded-lg border-2 focus:ring-2 focus:ring-purple-400 outline-none text-lg"
                     />
                     <button 
                         className="px-6 py-3 rounded-lg text-white font-bold transition duration-200 shadow-md hover:shadow-lg text-lg"
-                        style={{ backgroundColor: '#58CC02' }} // Màu xanh lá nổi bật
+                        style={{ backgroundColor: ' #A53AEC' }} // Màu xanh lá nổi bật
                     >
                         Tham gia
                     </button>
