@@ -1,30 +1,101 @@
-export default function AdminHomePage() {
-  return (
-    <div className="mx-auto max-w-6xl px-4">
-      <section className="mt-4 w-full rounded-md bg-[#E33AEC]/50 px-4 py-4">
-        <div className="flex flex-col items-center gap-4 sm:flex-row sm:justify-between">
-          <p className="text-base font-medium text-zinc-900">Vào phòng? Nhập mã phòng</p>
-          <div className="flex w-full max-w-md items-center gap-2 rounded-full bg-white/80 px-4 py-2 shadow-sm">
-            <input
-              type="text"
-              inputMode="numeric"
-              placeholder="123 456"
-              className="w-full bg-transparent text-zinc-900 placeholder:text-zinc-400 focus:outline-none"
-            />
-            <button className="flex h-8 w-8 items-center justify-center rounded-full bg-zinc-100 text-zinc-700 hover:bg-zinc-200" aria-label="Tìm phòng">
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="h-4 w-4">
-                <path fillRule="evenodd" d="M10 2a8 8 0 105.293 14.293l3.707 3.707a1 1 0 001.414-1.414l-3.707-3.707A8 8 0 0010 2zm-6 8a6 6 0 1110.392 4.242A6 6 0 014 10z" clipRule="evenodd" />
-              </svg>
-            </button>
-          </div>
-        </div>
-      </section>
+// app/admin/page.jsx
+'use client'; 
 
-      <div className="py-16 text-center">
-        <h1 className="text-xl font-medium text-zinc-900 sm:text-2xl">
-          Hãy thử thách trí tuệ cùng QuizzZone.
-        </h1>
-      </div>
-    </div>
-  );
+import React, { useState } from 'react';
+import { Search as SearchIcon } from 'lucide-react';
+
+// Định nghĩa màu sắc theo cấu trúc layout
+const MAIN_BANNER_BG = '#6D0446'; // Màu tím sẫm (PRIMARY_COLOR từ layout)
+const BUTTON_BG = '#9453C9'; // Màu tím cho nút Tìm
+const INPUT_BG = 'white'; // Màu trắng cho ô nhập liệu
+
+export default function AdminHomePage() {
+    const [roomCode, setRoomCode] = useState('');
+    const [isSearching, setIsSearching] = useState(false);
+
+    const handleSearch = () => {
+        const cleanedCode = roomCode.trim().replace(/\s/g, ''); 
+        
+        if (cleanedCode.length >= 6) {
+            setIsSearching(true);
+            console.log(`Bắt đầu tìm kiếm phòng với mã: ${cleanedCode}`);
+            
+            // Giả lập thời gian tìm kiếm
+            setTimeout(() => {
+                setIsSearching(false);
+                // Xử lý logic tìm kiếm
+                console.log('Đã hoàn thành tìm kiếm.');
+            }, 1500);
+        } else {
+            console.error('Mã phòng phải có ít nhất 6 ký tự.');
+        }
+    };
+    
+    const handleKeyDown = (e) => {
+        if (e.key === 'Enter') {
+            handleSearch();
+        }
+    };
+
+    return (
+        <div className="flex-grow flex flex-col" style={{ backgroundColor: MAIN_BANNER_BG }}>
+            
+            {/* Banner Lớn - Chứa Form Tìm Kiếm */}
+            <div 
+                className="w-full flex-grow flex flex-col items-center justify-center p-8" 
+            >
+                {/* 1. Tiêu đề Lớn QuizzZone */}
+                <h1 
+                    className="text-6xl md:text-8xl font-black tracking-tighter mb-4 text-white text-center" 
+                >
+                    QuizzZone
+                </h1>
+                
+                {/* 2. Slogan (Màu trắng, căn giữa) */}
+                <p className="text-xl font-medium text-white sm:text-3xl mt-2 mb-8 text-center max-w-2xl">
+                    Hãy thử thách trí tuệ cùng QuizzZone.
+                </p>
+
+                {/* 3. Thanh Tìm Kiếm Phòng (Dưới Slogan, căn giữa) */}
+                <div className="flex w-full max-w-lg items-center rounded-full shadow-xl">
+                    
+                    <input
+                        type="text"
+                        placeholder="Nhập mã phòng"
+                        value={roomCode}
+                        onChange={(e) => setRoomCode(e.target.value)}
+                        onKeyDown={handleKeyDown}
+                        disabled={isSearching}
+                        className="flex-1 bg-white text-zinc-900 px-6 py-4 placeholder:text-zinc-500 focus:outline-none text-xl font-medium rounded-l-full shadow-inner h-16 border-r-0"
+                        style={{ backgroundColor: INPUT_BG }}
+                    />
+
+                    <button 
+                        onClick={handleSearch} 
+                        disabled={isSearching}
+                        className={`flex h-16 w-32 items-center justify-center rounded-r-full text-white text-xl font-bold transition duration-200 
+                            ${isSearching 
+                                ? 'bg-zinc-400 cursor-not-allowed' 
+                                : 'hover:brightness-110'}`
+                        }
+                        style={{ backgroundColor: BUTTON_BG }}
+                        aria-label="Tìm phòng"
+                    >
+                        {isSearching ? (
+                            <svg className="animate-spin h-6 w-6 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                        ) : (
+                            <span className='tracking-wide'>Tìm</span>
+                        )}
+                    </button>
+                </div>
+            </div>
+            
+            {/* Footer Admin (Dòng này đã được xóa khỏi file này và chỉ được xử lý trong app/admin/layout.jsx)
+                Tuy nhiên, nếu bạn muốn đảm bảo năm 2025, nó sẽ nằm trong layout.jsx
+            */}
+        </div>
+    );
 }
