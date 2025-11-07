@@ -2,6 +2,7 @@
 'use client'; 
 
 import React, { useState } from "react";
+import { useRouter } from "next/navigation";
 
 // Màu tím chính và màu sắc theo yêu cầu
 const PRIMARY_COLOR = '#6A1B9A';
@@ -29,7 +30,38 @@ const MenuIcon = ({ color = 'currentColor', isRotated = false }) => (
 
 // Component ProfileDropdown được nhúng trực tiếp
 const ProfileDropdown = () => {
+    const router = useRouter();
     const [isOpen, setIsOpen] = useState(false);
+    const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+
+    const handleLogoutClick = () => {
+        setShowLogoutConfirm(true);
+        setIsOpen(false);
+    };
+
+    const handleLogoutConfirm = async () => {
+        try {
+            await fetch('/logout', { method: 'POST', credentials: 'include' });
+            router.push('/');
+        } catch (error) {
+            console.error('Logout error:', error);
+            router.push('/');
+        }
+    };
+
+    const handleLogoutCancel = () => {
+        setShowLogoutConfirm(false);
+    };
+
+    const handleLogout = async () => {
+        try {
+            await fetch('/logout', { method: 'POST', credentials: 'include' });
+            router.push('/');
+        } catch (error) {
+            console.error('Logout error:', error);
+            router.push('/');
+        }
+    };
 
     // Style cho khối "Xin chào, Admin" màu tím nhạt
     const profileStyle = {
@@ -63,11 +95,66 @@ const ProfileDropdown = () => {
                         Đổi mật khẩu
                     </a>
                     <div className="border-t border-zinc-100 my-1"></div>
-                    <a href="/logout" className="block px-4 py-2 text-sm text-red-600 hover:bg-red-50">
+                    <button
+                        onClick={handleLogoutClick}
+                        className="w-full text-left block px-4 py-2 text-sm text-red-600 hover:bg-red-50"
+                    >
                         ← Đăng xuất
-                    </a>
+                    </button>
                 </div>
             )}
+            
+            {/* Logout Confirmation Modal */}
+            {showLogoutConfirm && (
+                <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50">
+                    <div className="bg-white rounded-lg p-6 max-w-sm w-full mx-4 shadow-xl">
+                        <h3 className="text-lg font-semibold text-gray-900 mb-4">Xác nhận đăng xuất</h3>
+                        <p className="text-gray-600 mb-6">Bạn có chắc chắn muốn đăng xuất khỏi hệ thống?</p>
+                        <div className="flex gap-3 justify-end">
+                            <button
+                                onClick={handleLogoutCancel}
+                                className="px-4 py-2 text-gray-600 hover:text-gray-800 transition"
+                            >
+                                Hủy
+                            </button>
+                            <button
+                                onClick={handleLogoutConfirm}
+                                className="px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700 transition"
+                            >
+                                Đăng xuất
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+        </div>
+    );
+};
+
+// Render the modal outside the ProfileDropdown component
+const LogoutConfirmationModal = ({ isOpen, onConfirm, onCancel }) => {
+    if (!isOpen) return null;
+    
+    return (
+        <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50">
+            <div className="bg-white rounded-lg p-6 max-w-sm w-full mx-4 shadow-xl">
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">Xác nhận đăng xuất</h3>
+                <p className="text-gray-600 mb-6">Bạn có chắc chắn muốn đăng xuất khỏi hệ thống?</p>
+                <div className="flex gap-3 justify-end">
+                    <button
+                        onClick={onCancel}
+                        className="px-4 py-2 text-gray-600 hover:text-gray-800 transition"
+                    >
+                        Hủy
+                    </button>
+                    <button
+                        onClick={onConfirm}
+                        className="px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700 transition"
+                    >
+                        Đăng xuất
+                    </button>
+                </div>
+            </div>
         </div>
     );
 };

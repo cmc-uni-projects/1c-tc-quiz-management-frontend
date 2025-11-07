@@ -2,6 +2,7 @@
 'use client'; 
 
 import React, { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { Search as SearchIcon } from 'lucide-react';
 
 // Định nghĩa màu sắc theo cấu trúc layout
@@ -10,8 +11,20 @@ const BUTTON_BG = '#9453C9'; // Màu tím cho nút Tìm
 const INPUT_BG = 'white'; // Màu trắng cho ô nhập liệu
 
 export default function AdminHomePage() {
+    const router = useRouter();
     const [roomCode, setRoomCode] = useState('');
     const [isSearching, setIsSearching] = useState(false);
+    const [showDropdown, setShowDropdown] = useState(false);
+
+    const handleLogout = async () => {
+        try {
+            await fetch('/logout', { method: 'POST', credentials: 'include' });
+            router.push('/');
+        } catch (error) {
+            console.error('Logout error:', error);
+            router.push('/');
+        }
+    };
 
     const handleSearch = () => {
         const cleanedCode = roomCode.trim().replace(/\s/g, ''); 
@@ -39,7 +52,6 @@ export default function AdminHomePage() {
 
     return (
         <div className="flex-grow flex flex-col" style={{ backgroundColor: MAIN_BANNER_BG }}>
-            
             {/* Banner Lớn - Chứa Form Tìm Kiếm */}
             <div 
                 className="w-full flex-grow flex flex-col items-center justify-center p-8" 
@@ -92,10 +104,6 @@ export default function AdminHomePage() {
                     </button>
                 </div>
             </div>
-            
-            {/* Footer Admin (Dòng này đã được xóa khỏi file này và chỉ được xử lý trong app/admin/layout.jsx)
-                Tuy nhiên, nếu bạn muốn đảm bảo năm 2025, nó sẽ nằm trong layout.jsx
-            */}
         </div>
     );
 }
