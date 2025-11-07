@@ -117,9 +117,9 @@ export default function LoginPage() {
           )}
 
           <div className="flex items-center justify-between text-sm">
-            <a href="#" className="font-medium text-[#E33AEC] hover:underline">
+            <Link href="/forgot-password" className="font-medium text-[#E33AEC] hover:underline">
               Quên mật khẩu?
-            </a>
+            </Link>
             <p className="text-zinc-600">
               Bạn chưa có tài khoản?{' '}
               <Link href="/register" className="font-medium text-[#E33AEC] hover:underline">
