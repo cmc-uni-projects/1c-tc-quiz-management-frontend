@@ -1,8 +1,14 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* MÀU NỀN TOÀN TRANG */
+  --background: #6D0446; 
+  --foreground: #171717; 
+  
+  /* Các màu Quizizz-like cho các phần tử */
+  --quiz-primary-dark: #4A148C; /* Tím đậm (dùng cho focus input) */
+  --quiz-primary-light: #6A1B9A; /* Tím sáng (dùng cho border input) */
+  --quiz-action-neon: #00E676; /* Xanh neon (dùng cho border thanh nhập mã phòng) */
 }
 
 @theme inline {
@@ -12,15 +18,7 @@
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
-
 body {
-  background: var(--background);
+  background: var(--background); /* Áp dụng màu nền mới */
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
 }
