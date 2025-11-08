@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import toast from 'react-hot-toast';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -33,6 +34,7 @@ export default function LoginPage() {
       if (res.ok) {
         const data = await res.json();
         const role = data.role;
+        toast.success('Đăng nhập thành công!');
         if (role === 'STUDENT') {
           router.push('/student/studenthome');
         } else if (role === 'TEACHER') {
@@ -50,7 +52,14 @@ export default function LoginPage() {
       const errorData = await res.json().catch(() => ({ error: 'Đăng nhập thất bại' }));
       throw new Error(errorData.error || 'Đăng nhập thất bại');
     } catch (err: any) {
-      setError(err.message || 'Đăng nhập thất bại');
+      let errorMessage = 'Đã có lỗi xảy ra. Vui lòng thử lại.';
+      if (err.message === 'Invalid credentials') {
+        errorMessage = 'Sai tài khoản hoặc mật khẩu.';
+      } else if (err.message.includes('Failed to fetch')) {
+        errorMessage = 'Lỗi kết nối. Vui lòng kiểm tra lại đường truyền mạng.';
+      }
+      
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }

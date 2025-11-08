@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { use, useState } from "react";
 import { useRouter } from "next/navigation";
+import toast from "react-hot-toast";
 
 // Inline icons to avoid external dependency issues
 const EyeIcon = (props: React.SVGProps<SVGSVGElement>) => (
@@ -72,12 +73,11 @@ export default function RegisterFormPage({ params }: { params: Promise<{ role: s
         }),
       });
 
-      const text = await res.text();
       if (!res.ok) {
         throw new Error(text || "Đăng ký thất bại");
       }
 
-      setSuccess(text || "Đăng ký thành công!");
+      toast.success("Đăng ký thành công!");
       setTimeout(() => router.push("/login"), 1200);
     } catch (err: any) {
       setError(err.message || "Có lỗi xảy ra, vui lòng thử lại.");
