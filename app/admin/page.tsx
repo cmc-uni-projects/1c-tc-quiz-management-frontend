@@ -1,5 +1,4 @@
-// app/admin/page.jsx
-'use client'; 
+'use client';
 
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
@@ -10,7 +9,7 @@ const MAIN_BANNER_BG = '#6D0446'; // Màu tím sẫm (PRIMARY_COLOR từ layout)
 const BUTTON_BG = '#9453C9'; // Màu tím cho nút Tìm
 const INPUT_BG = 'white'; // Màu trắng cho ô nhập liệu
 
-export default function AdminHomePage() {
+export default function AdminPage() {
     const router = useRouter();
     const [roomCode, setRoomCode] = useState('');
     const [isSearching, setIsSearching] = useState(false);
@@ -18,11 +17,19 @@ export default function AdminHomePage() {
 
     const handleLogout = async () => {
         try {
-            await fetch('/logout', { method: 'POST', credentials: 'include' });
-            router.push('/');
+            const response = await fetch('/api/auth/logout', { 
+                method: 'POST',
+                credentials: 'include' 
+            });
+            
+            if (response.ok) {
+                router.push('/login');
+            } else {
+                console.error('Logout failed');
+            }
         } catch (error) {
             console.error('Logout error:', error);
-            router.push('/');
+            router.push('/login');
         }
     };
 
