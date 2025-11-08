@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import toast from 'react-hot-toast';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -30,28 +31,35 @@ export default function LoginPage() {
         redirect: 'follow',
       });
 
-      if (res.ok || res.redirected || res.type === 'opaqueredirect') {
-        try {
-          const finalUrl = res.url || '';
-          if (finalUrl.includes('/student/')) {
-            router.push('/student/studenthome');
-          } else if (finalUrl.includes('/teacher/')) {
-            router.push('/teacher/teacherhome');
-          } else if (finalUrl.includes('/admin')) {
-            router.push('/admin');
-          } else {
-            router.push('/student/studenthome');
-          }
-        } catch (_) {
+      if (res.ok) {
+        const data = await res.json();
+        const role = data.role;
+        toast.success('Đăng nhập thành công!');
+        if (role === 'STUDENT') {
           router.push('/student/studenthome');
+        } else if (role === 'TEACHER') {
+          router.push('/teacher/teacherhome');
+        } else if (role === 'ADMIN') {
+          router.push('/admin');
+        } else {
+          // Fallback redirect if role is not as expected
+          router.push('/');
         }
         return;
       }
 
-      const text = await res.text();
-      throw new Error(text || 'Đăng nhập thất bại');
+      // Handle errors
+      const errorData = await res.json().catch(() => ({ error: 'Đăng nhập thất bại' }));
+      throw new Error(errorData.error || 'Đăng nhập thất bại');
     } catch (err: any) {
-      setError(err.message || 'Đăng nhập thất bại');
+      let errorMessage = 'Đã có lỗi xảy ra. Vui lòng thử lại.';
+      if (err.message === 'Invalid credentials') {
+        errorMessage = 'Sai tài khoản hoặc mật khẩu.';
+      } else if (err.message.includes('Failed to fetch')) {
+        errorMessage = 'Lỗi kết nối. Vui lòng kiểm tra lại đường truyền mạng.';
+      }
+      
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }
