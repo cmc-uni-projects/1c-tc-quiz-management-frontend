@@ -27,6 +27,7 @@ export default function RootLayout({
   return (
     <html lang="vi">
       <body className={`${geistSans.variable} ${geistMono.variable}`}>
+        {children}
         <Toaster position="bottom-right" />
       </body>
     </html>
