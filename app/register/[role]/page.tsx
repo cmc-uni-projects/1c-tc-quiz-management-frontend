@@ -74,11 +74,18 @@ export default function RegisterFormPage({ params }: { params: Promise<{ role: s
       });
 
       if (!res.ok) {
-        throw new Error(text || "Đăng ký thất bại");
+        const text = await res.text();
+        setError(text || "Đăng ký thất bại");
+        setLoading(false);
+        return;
       }
 
       toast.success("Đăng ký thành công!");
-      setTimeout(() => router.push("/login"), 1200);
+      if (isTeacher) {
+        setTimeout(() => router.push("/register/pending-approval"), 1200);
+      } else {
+        setTimeout(() => router.push("/login"), 1200);
+      }
     } catch (err: any) {
       setError(err.message || "Có lỗi xảy ra, vui lòng thử lại.");
     } finally {
