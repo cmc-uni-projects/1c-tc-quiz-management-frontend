@@ -29,6 +29,7 @@ const MenuIcon = ({ color = 'currentColor', isRotated = false }) => (
 
 
 // Component ProfileDropdown được nhúng trực tiếp
+import toast from 'react-hot-toast';
 const ProfileDropdown = () => {
     const router = useRouter();
     const [isOpen, setIsOpen] = useState(false);
@@ -41,10 +42,12 @@ const ProfileDropdown = () => {
 
     const handleLogoutConfirm = async () => {
         try {
-            await fetch('/logout', { method: 'POST', credentials: 'include' });
+            await fetch('/api/perform_logout', { method: 'POST', credentials: 'include' });
+            toast.success('Đăng xuất thành công!');
             router.push('/');
         } catch (error) {
             console.error('Logout error:', error);
+            toast.error('Lỗi kết nối. Không thể đăng xuất.');
             router.push('/');
         }
     };
@@ -55,10 +58,12 @@ const ProfileDropdown = () => {
 
     const handleLogout = async () => {
         try {
-            await fetch('/logout', { method: 'POST', credentials: 'include' });
+            await fetch('/api/perform_logout', { method: 'POST', credentials: 'include' });
+            toast.success('Đăng xuất thành công!');
             router.push('/');
         } catch (error) {
             console.error('Logout error:', error);
+            toast.error('Lỗi kết nối. Không thể đăng xuất.');
             router.push('/');
         }
     };
