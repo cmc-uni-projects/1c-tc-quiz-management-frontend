@@ -6,20 +6,7 @@ const nextConfig: NextConfig = {
     return [
       {
         source: "/api/:path*",
-        destination: "http://localhost:8082/:path*", // proxy API to Spring Boot
-      },
-      // Proxy password reset endpoints
-      {
-        source: "/forgot-password",
-        destination: "http://localhost:8082/forgot-password",
-      },
-      {
-        source: "/validate-token",
-        destination: "http://localhost:8082/validate-token",
-      },
-      {
-        source: "/reset-password",
-        destination: "http://localhost:8082/reset-password",
+        destination: "http://localhost:8082/api/:path*", // proxy API to Spring Boot
       },
       // Proxy uploaded images to the Spring Boot backend
       {

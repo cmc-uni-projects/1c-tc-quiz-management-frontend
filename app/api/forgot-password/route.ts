@@ -18,7 +18,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     console.log('[forgot-password API] Request email:', body.email);
     
-    const backendUrl = `${BACKEND_URL}/forgot-password`;
+    const backendUrl = `${BACKEND_URL}/api/forgot-password`;
     console.log('[forgot-password API] Calling backend:', backendUrl);
     
     const response = await fetch(backendUrl, {
