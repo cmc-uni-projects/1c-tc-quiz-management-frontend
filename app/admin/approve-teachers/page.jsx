@@ -2,59 +2,123 @@
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
 
-// --- MOCK API & FIRESTORE SETUP (GIỮ NGUYÊN) ---
-// VUI LÒNG KHÔNG XÓA PHẦN NÀY
-const __initializeApp = (config) => { console.log("Initializing Firebase with config:", config); return { name: 'mock_app' } };
-const collection = (db, path) => ({ db, path });
-const query = (colRef, ...constraints) => ({ colRef, constraints });
-const where = (field, op, value) => ({ type: 'where', field, op, value });
-const doc = (db, path, id) => ({ db, path, id });
-const updateDoc = async (docRef, data) => { console.log(`[MOCK DB] Updating ${docRef.path}/${docRef.id} with`, data); return true; };
-const signInWithCustomToken = async () => { console.log("[MOCK AUTH] Signed in with custom token."); return { user: { uid: 'mock-admin-uid' } }; };
-const signInAnonymously = async () => { console.log("[MOCK AUTH] Signed in anonymously."); return { user: { uid: 'mock-anon-uid' } }; };
-const MOCK_AUTH = { currentUser: { uid: 'mock-admin-uid' } }; 
+// === CẤU HÌNH API BACKEND THẬT ===
+const API_URL = process.env.NEXT_PUBLIC_API_BASE_URL || ""; 
 
-// Hàm xây dựng đường dẫn Firestore
-const getPublicCollectionPath = (collectionName) => `/artifacts/${(typeof __app_id !== 'undefined' ? __app_id : 'default-app-id')}/public/data/${collectionName}`;
+// --- HÀM HELPER LẤY TOKEN (CLIENT SIDE) ---
+/**
+ * Lấy JWT Token từ Local Storage (giả định bạn lưu token ở đây sau khi đăng nhập)
+ * Bạn cần đảm bảo tên khóa 'authToken' khớp với tên khóa bạn dùng.
+ */
+function getAuthTokenFromClient() {
+    if (typeof window !== 'undefined') {
+        return localStorage.getItem('authToken'); 
+    }
+    return null;
+}
 
-// Dữ liệu giả lập, chỉ bao gồm 3 trạng thái: pending, active, blocked
-const initialMockRequests = [
-    // Yêu cầu MỚI CỦA BẠN ĐÃ ĐƯỢC THÊM VÀO ĐẦU DANH SÁCH
-    { id: 'req_006', fullName: 'Teacher 6', email: 'Teacher6@gmail.com', status: 'pending', experience: 'Kinh nghiệm 2 năm dạy Tin học, đam mê công nghệ giáo dục.', proofDocumentUrl: '#', requestTimestamp: Date.now() - 1000, phone: '0906789012' }, 
+// --- HÀM GỌI API BACKEND ---
+
+/**
+ * Lấy danh sách giáo viên đang chờ duyệt từ Spring Boot Backend
+ */
+async function fetchTeachersFromBackend() {
+    const authToken = getAuthTokenFromClient();
+
+    if (!authToken) {
+        throw new Error("401: Không có Token Xác thực. Vui lòng đăng nhập lại.");
+    }
     
-    { id: 'req_001', fullName: 'Teacher 1', email: 'Teacher1@gmail.com', status: 'pending', experience: 'Kinh nghiệm 5 năm dạy Toán cấp 3, đã có bằng Thạc sĩ.', proofDocumentUrl: '#', requestTimestamp: Date.now() - 86400000 * 5, phone: '0901234567' },
-    { id: 'req_002', fullName: 'Teacher 2', email: 'Teacher2@gmail.com', status: 'active', experience: 'Kinh nghiệm Anh Văn.', proofDocumentUrl: null, requestTimestamp: Date.now() - 86400000 * 4, phone: '0902345678' },
-    { id: 'req_003', fullName: 'Teacher 3', email: 'Teacher3@gmail.com', status: 'blocked', experience: 'Kinh nghiệm Vật Lý.', proofDocumentUrl: '#', requestTimestamp: Date.now() - 86400000 * 3, phone: '0903456789' },
-    { id: 'req_004', fullName: 'Teacher 4', email: 'Teacher4@gmail.com', status: 'pending', experience: 'Kinh nghiệm 3 năm dạy Hóa học, chứng chỉ sư phạm loại Giỏi.', proofDocumentUrl: '#', requestTimestamp: Date.now() - 86400000 * 2, phone: '0904567890' },
-    { id: 'req_005', fullName: 'Teacher 5', email: 'Teacher5@gmail.com', status: 'active', experience: 'Kinh nghiệm Văn học.', proofDocumentUrl: null, requestTimestamp: Date.now() - 86400000 * 1, phone: '0905678901' },
-];
-
-const getDocs = async (q) => {
-    console.log("[MOCK DB] Fetching documents...");
-    await new Promise(resolve => setTimeout(resolve, 500)); 
+    const res = await fetch(`${API_URL}/teachers/all`, {
+        // THÊM HEADER XÁC THỰC
+        headers: {
+            'Authorization': `Bearer ${authToken}`
+        },
+    }); 
     
-    // Giả lập trả về tất cả docs
-    const results = initialMockRequests
-        .map(req => ({ 
-            id: req.id, 
-            data: () => ({ 
-                ...req, 
-                requestDate: { toDate: () => new Date(req.requestTimestamp) } // Giả lập Timestamp
-            }),
-            requestDate: { toDate: () => new Date(req.requestTimestamp) } 
-        }));
-        
-    return { docs: results };
-};
+    if (res.status === 401 || res.status === 403) {
+         // Xử lý chuyển hướng nếu bị từ chối
+        // Về trang đăng nhập nếu gặp lỗi 401/403
+        window.location.href = '/login'; 
+        throw new Error(`401/403: Quyền truy cập bị từ chối. Đã chuyển hướng đăng nhập.`);
+    }
+
+    if (!res.ok) {
+        const errorText = await res.text();
+        throw new Error(`Lỗi (${res.status}): Không thể tải danh sách giảng viên. Chi tiết: ${errorText.substring(0, 100)}...`);
+    }
+    
+    const data = await res.json();
+    
+    return data.map(t => ({
+        // Giữ nguyên logic ánh xạ
+        id: t.teacherId, 
+        fullName: t.username,
+        email: t.email,
+        status: t.status ? t.status.toLowerCase() : 'pending',
+        experience: t.experience || 'Chưa cập nhật', 
+        phone: t.phone || 'N/A',
+        proofDocumentUrl: t.proofDocumentUrl || null,
+        requestDate: t.createdAt ? new Date(t.createdAt).toLocaleDateString('vi-VN') : 'N/A', 
+        requestTimestamp: t.createdAt ? new Date(t.createdAt).getTime() : 0,
+    }));
+}
+
+/**
+ * Cập nhật trạng thái thành 'active' (Duyệt)
+ */
+async function approveTeacherInBackend(id) {
+    const authToken = getAuthTokenFromClient();
+
+    if (!authToken) {
+        throw new Error("401: Thiếu Token Xác thực.");
+    }
+    
+    const res = await fetch(`${API_URL}/teachers/${id}/approve`, { 
+        method: "POST",
+        // THÊM HEADER XÁC THỰC
+        headers: {
+            'Authorization': `Bearer ${authToken}`
+        },
+    });
+    if (!res.ok) {
+        const errorText = await res.text();
+        throw new Error(`Lỗi (${res.status}): Không thể duyệt giảng viên. Chi tiết: ${errorText.substring(0, 100)}...`);
+    }
+    return res.text();
+}
+
+/**
+ * Cập nhật trạng thái thành 'blocked' (Từ chối)
+ */
+async function rejectTeacherInBackend(id) {
+    const authToken = getAuthTokenFromClient();
+
+    if (!authToken) {
+        throw new Error("401: Thiếu Token Xác thực.");
+    }
+    
+    const res = await fetch(`${API_URL}/teachers/${id}/reject`, { 
+        method: "POST",
+        // THÊM HEADER XÁC THỰC
+        headers: {
+            'Authorization': `Bearer ${authToken}`
+        },
+    });
+    if (!res.ok) {
+        const errorText = await res.text();
+        throw new Error(`Lỗi (${res.status}): Không thể từ chối giảng viên. Chi tiết: ${errorText.substring(0, 100)}...`);
+    }
+    return res.text();
+}
 
 
-// Định nghĩa màu sắc theo hình ảnh
+// === MÀU SẮC CHỦ ĐẠO ===
 const PRIMARY_PURPLE_BG = '#E33AEC7A'; 
 const BUTTON_RED = '#f04040';
 const BUTTON_BLUE = '#1e90ff';
 
-// --- Helper Components (Inline SVGs) ---
-
+// --- ICON SVG (Giữ nguyên) ---
 const RefreshCw = (props) => (
   <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
     <path d="M23 4v6h-6"/>
@@ -93,9 +157,9 @@ const XIcon = (props) => (
     <path d="m6 6 12 12"/>
   </svg>
 );
-// --- Hết Helper Components ---
+// --- Hết ICON SVG ---
 
-// Component Toast Notification (Giả lập)
+// Component Toast Notification (Giữ nguyên)
 const Toast = ({ message, type, onClose }) => {
   const baseClasses = "fixed bottom-5 right-5 p-4 rounded-xl shadow-2xl z-50 flex items-center";
   let typeClasses = "";
@@ -134,7 +198,7 @@ const Toast = ({ message, type, onClose }) => {
 };
 
 
-// Component Modal Chi tiết Giáo viên
+// Component Modal Chi tiết Giáo viên (Giữ nguyên)
 const TeacherDetailModal = ({ teacher, onClose }) => {
   if (!teacher) return null;
 
@@ -145,7 +209,7 @@ const TeacherDetailModal = ({ teacher, onClose }) => {
     >
       <div 
         className="bg-white rounded-xl p-8 max-w-lg w-full shadow-2xl transform transition-all duration-300 scale-100"
-        onClick={(e) => e.stopPropagation()} // Ngăn chặn đóng modal khi click bên trong
+        onClick={(e) => e.stopPropagation()} 
       >
         <div className="flex justify-between items-start border-b pb-3 mb-4">
           <h2 className="text-2xl font-bold text-gray-800 flex items-center">
@@ -203,56 +267,17 @@ export default function AdminReviewTeachersPage() {
     const [allTeachers, setAllTeachers] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
-    const [isAuthReady, setIsAuthReady] = useState(false);
     
-    // ĐẶT TRẠNG THÁI LỌC MẶC ĐỊNH LÀ 'pending' VÀ KHÔNG THAY ĐỔI
-    const filter = 'pending'; 
+    const [toast, setToast] = useState(null); 
+    const [selectedTeacher, setSelectedTeacher] = useState(null); 
     
-    const [toast, setToast] = useState(null); // Quản lý thông báo Toast
-    const [selectedTeacher, setSelectedTeacher] = useState(null); // Quản lý Modal chi tiết
-
-    let realUserId = MOCK_AUTH.currentUser?.uid || 'anonymous';
-    let db = { isMock: true }; 
-
-    // Giả lập Khởi tạo và Xác thực
-    useEffect(() => {
-        const initializeAuth = async () => {
-            try {
-                if (typeof __initial_auth_token !== 'undefined') {
-                    await signInWithCustomToken();
-                } else {
-                    await signInAnonymously();
-                }
-                setIsAuthReady(true);
-            } catch (e) {
-                console.error("Auth Error:", e);
-                setError("Lỗi xác thực Firebase.");
-                setIsAuthReady(true); 
-            }
-        };
-        initializeAuth();
-    }, []);
-
-    // Tải danh sách Giáo viên
+    // Lấy danh sách Giáo viên
     const fetchTeachers = useCallback(async () => {
-        if (!isAuthReady) return;
-
         setLoading(true);
         setError(null);
         try {
-            const teachersCollectionRef = collection(db, getPublicCollectionPath('teacher_requests'));
-            const querySnapshot = await getDocs(query(teachersCollectionRef)); 
-            
-            let fetchedTeachers = querySnapshot.docs.map(doc => {
-                const data = doc.data();
-                return {
-                    id: doc.id,
-                    ...data,
-                    // Giả lập chuyển Timestamp sang Date string
-                    requestDate: data.requestDate?.toDate ? data.requestDate.toDate().toLocaleDateString('vi-VN') : 'N/A', 
-                    status: data.status === 'approved' ? 'active' : (data.status || 'pending') 
-                };
-            });
+            // GỌI HÀM LẤY DỮ LIỆU THẬT (ĐÃ CÓ THÊM HEADER XÁC THỰC)
+            let fetchedTeachers = await fetchTeachersFromBackend(); 
             
             // Sắp xếp theo timestamp giảm dần (để yêu cầu mới nhất lên đầu)
             fetchedTeachers.sort((a, b) => (b.requestTimestamp || 0) - (a.requestTimestamp || 0));
@@ -260,59 +285,51 @@ export default function AdminReviewTeachersPage() {
             setAllTeachers(fetchedTeachers);
         } catch (e) {
             console.error("Error fetching teachers:", e);
-            setError(`Lỗi khi tải danh sách: ${e.message}`);
+            // Xử lý nếu hàm fetchTeachersFromBackend ném lỗi (kể cả lỗi 401/403)
+            setError(`Lỗi khi tải danh sách: ${e.message}`); 
+            setToast({ message: e.message, type: 'error' });
         } finally {
             setLoading(false);
         }
-    }, [isAuthReady]);
+    }, []);
 
     useEffect(() => {
-        if (isAuthReady) {
-            fetchTeachers();
-        }
-    }, [isAuthReady, fetchTeachers]);
+        // Bắt đầu tải ngay khi component mount
+        fetchTeachers(); 
+    }, [fetchTeachers]);
 
 
-    // Xử lý Cập nhật trạng thái và Thông báo Email (Giả lập)
+    // Xử lý Cập nhật trạng thái
     const handleReview = async (teacherId, newStatus) => {
         const teacher = allTeachers.find(t => t.id === teacherId);
         if (!teacher) return;
         
-        if (!db || !realUserId || !isAuthReady) {
-            setToast({ message: "Hệ thống chưa sẵn sàng. Vui lòng thử lại sau.", type: 'error' });
-            return;
-        }
+        // Thêm một lớp bảo vệ UI (ngăn người dùng click liên tục)
+        setLoading(true); 
 
         try {
-            const teacherDocRef = doc(db, getPublicCollectionPath('teacher_requests'), teacherId);
-            
-            await updateDoc(teacherDocRef, {
-                status: newStatus, // 'active' or 'blocked'
-                reviewedBy: realUserId,
-                reviewedAt: new Date(),
-            });
-
-            // Cập nhật trạng thái trong state local
-            // Khi trạng thái thay đổi, giáo viên sẽ tự động biến mất khỏi danh sách hiển thị
-            setAllTeachers(prev => prev.map(t => 
-                t.id === teacherId ? { ...t, status: newStatus } : t
-            ));
-            
-            // --- GIẢ LẬP GỬI EMAIL THÔNG BÁO ---
-            let toastMessage = '';
             if (newStatus === 'active') {
-                toastMessage = `Đã duyệt và gửi email thông báo: ${teacher.email} đã được chấp nhận.`;
+                await approveTeacherInBackend(teacherId);
             } else {
-                toastMessage = `Đã từ chối và gửi email thông báo: ${teacher.email} đã bị từ chối.`;
+                await rejectTeacherInBackend(teacherId);
             }
+
+            // Cập nhật trạng thái trong state local và xóa khỏi danh sách đang hiển thị
+            setAllTeachers(prev => prev.filter(t => t.id !== teacherId));
+            
+            let toastMessage = (newStatus === 'active') 
+                ? `Đã duyệt thành công: ${teacher.fullName} (${teacher.email})`
+                : `Đã từ chối thành công: ${teacher.fullName} (${teacher.email})`;
+                
             setToast({ message: toastMessage, type: 'success' });
             
-            // Đóng modal nếu nó đang mở
             setSelectedTeacher(null);
 
         } catch (e) {
             console.error(`Error updating status for ${teacherId}:`, e);
             setToast({ message: `Lỗi khi cập nhật trạng thái: ${e.message}.`, type: 'error' });
+        } finally {
+             setLoading(false); // Kết thúc trạng thái loading (sau khi fetch lại)
         }
     };
 
@@ -330,14 +347,14 @@ export default function AdminReviewTeachersPage() {
         handleReview(teacherId, 'blocked');
     };
     
-    // Ánh xạ Trạng thái
+    // Ánh xạ Trạng thái (Giữ nguyên)
     const statusMap = {
         'pending': 'Chờ duyệt',
-        'active': 'Đã duyệt', // Đổi tên hiển thị cho rõ ràng
-        'blocked': 'Đã từ chối', // Đổi tên hiển thị cho rõ ràng
+        'active': 'Đã duyệt', 
+        'blocked': 'Đã từ chối',
     };
     
-    // Ánh xạ màu sắc cho Trạng thái (chỉ dùng cho mục đích hiển thị trong modal/danh sách)
+    // Ánh xạ màu sắc cho Trạng thái (Giữ nguyên)
     const statusColorMap = (status) => {
         switch (status) {
             case 'pending': return 'bg-yellow-100 text-yellow-800';
@@ -348,7 +365,7 @@ export default function AdminReviewTeachersPage() {
     }
     
 
-    // Lọc danh sách giáo viên: CHỈ GIỮ LẠI PENDING
+    // Lọc danh sách giáo viên: CHỈ GIỮ LẠI PENDING (Giữ nguyên)
     const filteredTeachers = useMemo(() => {
         return allTeachers.filter(t => t.status === 'pending');
     }, [allTeachers]);
@@ -366,15 +383,17 @@ export default function AdminReviewTeachersPage() {
 
     if (error) {
         return (
-            <div className="bg-red-500/20 text-red-700 p-6 rounded-xl my-4 border border-red-500 shadow-xl">
-                <h3 className="font-bold text-xl mb-2">Lỗi Hệ thống</h3>
-                <p className="mb-4">{error}</p>
-                <button 
-                    onClick={fetchTeachers} 
-                    className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition font-semibold"
-                >
-                    Thử tải lại
-                </button>
+            <div className="p-4 sm:p-8 font-sans">
+                <div className="bg-red-500/20 text-red-700 p-6 rounded-xl my-4 border border-red-500 shadow-xl">
+                    <h3 className="font-bold text-xl mb-2">Lỗi Kết nối API</h3>
+                    <p className="mb-4">{error}</p>
+                    <button 
+                        onClick={fetchTeachers} 
+                        className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition font-semibold"
+                    >
+                        Thử tải lại
+                    </button>
+                </div>
             </div>
         );
     }
@@ -413,7 +432,6 @@ export default function AdminReviewTeachersPage() {
                     {filteredTeachers.map((teacher) => (
                         <div 
                             key={teacher.id} 
-                            // Thêm onClick để mở modal chi tiết
                             onClick={() => setSelectedTeacher(teacher)}
                             className="bg-white rounded-xl p-4 shadow-md flex flex-col md:flex-row justify-between items-center transition duration-300 hover:shadow-lg border border-gray-100 cursor-pointer"
                         >
@@ -425,7 +443,7 @@ export default function AdminReviewTeachersPage() {
                                 <p className="text-gray-600 font-semibold w-full sm:w-40">
                                     {teacher.fullName} 
                                 </p>
-                                {/* Trạng thái (luôn là Chờ duyệt trong danh sách này) */}
+                                {/* Trạng thái */}
                                 <div className={`text-sm font-bold px-3 py-1 rounded-full w-full sm:w-40 text-center ${statusColorMap(teacher.status)}`}>
                                     {statusMap[teacher.status]}
                                 </div>
@@ -468,10 +486,6 @@ export default function AdminReviewTeachersPage() {
                     onClose={() => setToast(null)} 
                 />
             )}
-            
-            <div className="mt-8 text-center text-gray-500 text-sm">
-                
-            </div>
         </div>
     );
 }
