@@ -2,44 +2,23 @@
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
 
-// === CẤU HÌNH API BACKEND THẬT ===
-const API_URL = process.env.NEXT_PUBLIC_API_BASE_URL || ""; 
-
-// --- HÀM HELPER LẤY TOKEN (CLIENT SIDE) ---
-/**
- * Lấy JWT Token từ Local Storage (giả định bạn lưu token ở đây sau khi đăng nhập)
- * Bạn cần đảm bảo tên khóa 'authToken' khớp với tên khóa bạn dùng.
- */
-function getAuthTokenFromClient() {
-    if (typeof window !== 'undefined') {
-        return localStorage.getItem('authToken'); 
-    }
-    return null;
-}
+// === CẤU HÌNH API BACKEND ===
+// Để dùng Next.js rewrites (same-origin, có cookie), để trống sẽ gọi trực tiếp "/admin/..." hoặc "/teachers/..."
+const API_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "";
 
 // --- HÀM GỌI API BACKEND ---
 
 /**
- * Lấy danh sách giáo viên đang chờ duyệt từ Spring Boot Backend
+ * Lấy danh sách giáo viên đang chờ duyệt từ Spring Boot Backend (role ADMIN)
  */
 async function fetchTeachersFromBackend() {
-    const authToken = getAuthTokenFromClient();
+    const res = await fetch(`${API_URL}/admin/teachers/pending`, {
+        credentials: "include",
+    });
 
-    if (!authToken) {
-        throw new Error("401: Không có Token Xác thực. Vui lòng đăng nhập lại.");
-    }
-    
-    const res = await fetch(`${API_URL}/teachers/all`, {
-        // THÊM HEADER XÁC THỰC
-        headers: {
-            'Authorization': `Bearer ${authToken}`
-        },
-    }); 
-    
     if (res.status === 401 || res.status === 403) {
-         // Xử lý chuyển hướng nếu bị từ chối
-        // Về trang đăng nhập nếu gặp lỗi 401/403
-        window.location.href = '/login'; 
+        // Nếu chưa đăng nhập/không có quyền, chuyển hướng đăng nhập
+        window.location.href = '/login';
         throw new Error(`401/403: Quyền truy cập bị từ chối. Đã chuyển hướng đăng nhập.`);
     }
 
@@ -47,39 +26,29 @@ async function fetchTeachersFromBackend() {
         const errorText = await res.text();
         throw new Error(`Lỗi (${res.status}): Không thể tải danh sách giảng viên. Chi tiết: ${errorText.substring(0, 100)}...`);
     }
-    
+
     const data = await res.json();
-    
+
     return data.map(t => ({
-        // Giữ nguyên logic ánh xạ
-        id: t.teacherId, 
+        id: t.teacherId,
         fullName: t.username,
         email: t.email,
         status: t.status ? t.status.toLowerCase() : 'pending',
-        experience: t.experience || 'Chưa cập nhật', 
-        phone: t.phone || 'N/A',
-        proofDocumentUrl: t.proofDocumentUrl || null,
-        requestDate: t.createdAt ? new Date(t.createdAt).toLocaleDateString('vi-VN') : 'N/A', 
+        experience: 'Chưa có thông tin', // Teacher entity doesn't have experience field
+        phone: 'Chưa có thông tin', // Teacher entity doesn't have phone field  
+        proofDocumentUrl: null, // Teacher entity doesn't have proofDocumentUrl field
+        requestDate: t.createdAt ? new Date(t.createdAt).toLocaleDateString('vi-VN') : 'N/A',
         requestTimestamp: t.createdAt ? new Date(t.createdAt).getTime() : 0,
     }));
 }
 
 /**
- * Cập nhật trạng thái thành 'active' (Duyệt)
+ * Duyệt (APPROVED)
  */
 async function approveTeacherInBackend(id) {
-    const authToken = getAuthTokenFromClient();
-
-    if (!authToken) {
-        throw new Error("401: Thiếu Token Xác thực.");
-    }
-    
-    const res = await fetch(`${API_URL}/teachers/${id}/approve`, { 
+    const res = await fetch(`${API_URL}/admin/teachers/${id}/approve`, {
         method: "POST",
-        // THÊM HEADER XÁC THỰC
-        headers: {
-            'Authorization': `Bearer ${authToken}`
-        },
+        credentials: "include",
     });
     if (!res.ok) {
         const errorText = await res.text();
@@ -89,21 +58,12 @@ async function approveTeacherInBackend(id) {
 }
 
 /**
- * Cập nhật trạng thái thành 'blocked' (Từ chối)
+ * Từ chối (REJECTED)
  */
 async function rejectTeacherInBackend(id) {
-    const authToken = getAuthTokenFromClient();
-
-    if (!authToken) {
-        throw new Error("401: Thiếu Token Xác thực.");
-    }
-    
-    const res = await fetch(`${API_URL}/teachers/${id}/reject`, { 
+    const res = await fetch(`${API_URL}/admin/teachers/${id}/reject`, {
         method: "POST",
-        // THÊM HEADER XÁC THỰC
-        headers: {
-            'Authorization': `Bearer ${authToken}`
-        },
+        credentials: "include",
     });
     if (!res.ok) {
         const errorText = await res.text();
@@ -231,28 +191,11 @@ const TeacherDetailModal = ({ teacher, onClose }) => {
             <p className="text-lg">{teacher.email}</p>
           </div>
           <div>
-            <p className="font-medium text-sm text-gray-500">Điện thoại</p>
-            <p className="text-lg">{teacher.phone || 'Chưa cung cấp'}</p>
+            <p className="font-medium text-sm text-gray-500">Trạng thái</p>
+            <p className="text-lg capitalize">{statusMap[teacher.status] || teacher.status}</p>
           </div>
           <div>
-            <p className="font-medium text-sm text-gray-500">Kinh nghiệm</p>
-            <p className="text-base italic bg-gray-50 p-3 rounded-lg border">{teacher.experience}</p>
-          </div>
-          {teacher.proofDocumentUrl && (
-            <div>
-              <p className="font-medium text-sm text-gray-500">Tài liệu đính kèm</p>
-              <a 
-                href={teacher.proofDocumentUrl} 
-                target="_blank" 
-                rel="noopener noreferrer"
-                className="text-blue-600 hover:text-blue-800 underline transition"
-              >
-                Xem tài liệu minh chứng
-              </a>
-            </div>
-          )}
-          <div>
-            <p className="font-medium text-sm text-gray-500">Ngày gửi yêu cầu</p>
+            <p className="font-medium text-sm text-gray-500">Ngày đăng ký</p>
             <p className="text-base">{teacher.requestDate}</p>
           </div>
         </div>
@@ -308,7 +251,7 @@ export default function AdminReviewTeachersPage() {
         setLoading(true); 
 
         try {
-            if (newStatus === 'active') {
+            if (newStatus === 'approved') {
                 await approveTeacherInBackend(teacherId);
             } else {
                 await rejectTeacherInBackend(teacherId);
@@ -317,7 +260,7 @@ export default function AdminReviewTeachersPage() {
             // Cập nhật trạng thái trong state local và xóa khỏi danh sách đang hiển thị
             setAllTeachers(prev => prev.filter(t => t.id !== teacherId));
             
-            let toastMessage = (newStatus === 'active') 
+            let toastMessage = (newStatus === 'approved') 
                 ? `Đã duyệt thành công: ${teacher.fullName} (${teacher.email})`
                 : `Đã từ chối thành công: ${teacher.fullName} (${teacher.email})`;
                 
@@ -333,33 +276,33 @@ export default function AdminReviewTeachersPage() {
         }
     };
 
-    // Hành động: Đồng ý -> active, Từ chối -> blocked
+    // Hành động: Đồng ý -> approved, Từ chối -> rejected
     const handleApprove = (e, teacherId) => {
         if (e && typeof e.stopPropagation === 'function') {
             e.stopPropagation(); 
         }
-        handleReview(teacherId, 'active');
+        handleReview(teacherId, 'approved');
     };
     const handleReject = (e, teacherId) => {
         if (e && typeof e.stopPropagation === 'function') {
             e.stopPropagation(); 
         }
-        handleReview(teacherId, 'blocked');
+        handleReview(teacherId, 'rejected');
     };
     
-    // Ánh xạ Trạng thái (Giữ nguyên)
+    // Ánh xạ Trạng thái (căn chỉnh với backend TeacherStatus enum)
     const statusMap = {
         'pending': 'Chờ duyệt',
-        'active': 'Đã duyệt', 
-        'blocked': 'Đã từ chối',
+        'approved': 'Đã duyệt', 
+        'rejected': 'Đã từ chối',
     };
     
-    // Ánh xạ màu sắc cho Trạng thái (Giữ nguyên)
+    // Ánh xạ màu sắc cho Trạng thái
     const statusColorMap = (status) => {
         switch (status) {
             case 'pending': return 'bg-yellow-100 text-yellow-800';
-            case 'active': return 'bg-green-100 text-green-800';
-            case 'blocked': return 'bg-red-100 text-red-800';
+            case 'approved': return 'bg-green-100 text-green-800';
+            case 'rejected': return 'bg-red-100 text-red-800';
             default: return 'bg-gray-100 text-gray-800';
         }
     }
@@ -415,7 +358,7 @@ export default function AdminReviewTeachersPage() {
                     Duyệt giáo viên
                 </h1>
                 <p className="text-white/80 mt-1 text-sm">
-                    Danh sách các yêu cầu đang chờ xử lý ({filteredTeachers.length} yêu cầu)
+                    Danh sách giáo viên chờ duyệt ({filteredTeachers.length} tài khoản)
                 </p>
             </div>
 
