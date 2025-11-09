@@ -94,9 +94,9 @@ const StudentHome = () => {
                 <button className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 border-b border-gray-100">
                   Cập nhật thông tin
                 </button>
-                <button className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 border-b border-gray-100">
+                <a href="/student/change-password" className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 border-b border-gray-100">
                   Đổi mật khẩu
-                </button>
+                </a>
                 <button
                   onClick={handleLogoutClick}
                   className="w-full text-left px-3 py-2 text-sm text-purple-600 hover:bg-purple-50 flex items-center gap-2"
