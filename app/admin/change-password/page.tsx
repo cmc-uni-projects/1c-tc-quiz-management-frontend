@@ -49,7 +49,7 @@ export default function ChangePasswordPage() {
   const [success, setSuccess] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = async (e: React.MouseEvent<HTMLButtonElement>) => {
     e.preventDefault();
     setError("");
     setSuccess("");
@@ -89,8 +89,9 @@ export default function ChangePasswordPage() {
       setCurrentPassword("");
       setNewPassword("");
       setConfirmPassword("");
-    } catch (err) {
-      setError(err.message || "Đã xảy ra lỗi khi đổi mật khẩu");
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Đã xảy ra lỗi khi đổi mật khẩu";
+      setError(message);
     } finally {
       setIsLoading(false);
     }
