@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 
 // Eye Icon Component
 const EyeIcon = () => (
@@ -38,7 +39,8 @@ const EyeOffIcon = () => (
   </svg>
 );
 
-export default function ChangePasswordPage() {
+export default function ChangePasswordForm() {
+  const router = useRouter();
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -100,7 +102,28 @@ export default function ChangePasswordPage() {
   return (
     // **CHANGE 1: Removed min-h-screen and added py-16 for better fit/centering**
     <div className="bg-gray-50 flex items-center justify-center py-16 px-8">
-      <div className="bg-white rounded-2xl shadow-lg p-8 w-full max-w-md">
+      <div className="bg-white rounded-2xl shadow-lg p-8 w-full max-w-md relative">
+        {/* Back Button */}
+        <button
+          onClick={() => router.back()}
+          className="absolute top-4 left-4 p-2 rounded-full hover:bg-gray-100 transition-colors duration-200"
+          aria-label="Quay lại"
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            className="h-6 w-6 text-gray-600"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+            strokeWidth="2"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              d="M10 19l-7-7m0 0l7-7m-7 7h18"
+            />
+          </svg>
+        </button>
         <h2 className="text-2xl font-bold text-center mb-8">
           Thay đổi mật khẩu
         </h2>
