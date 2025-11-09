@@ -11,31 +11,31 @@ const MAIN_CONTENT_BG = "#6D0446";
 const SEARCH_BAR_BG = "#E33AEC";
 const BUTTON_COLOR = "#9453C9";
 
-// Dữ liệu mẫu giáo viên
-const mockTeachers = [
-  { id: 1, email: "giaovien1@example.com", name: "Nguyễn Văn A", createdDate: "01/01/2025", lastLogin: "09/11/2025 10:30", status: "Hoạt động" },
-  { id: 2, email: "giaovien2@example.com", name: "Trần Thị B", createdDate: "05/01/2025", lastLogin: "08/11/2025 15:20", status: "Hoạt động" },
-  { id: 3, email: "giaovien3@example.com", name: "Lê Văn C", createdDate: "10/01/2025", lastLogin: "07/11/2025 09:15", status: "Hoạt động" },
-  { id: 4, email: "giaovien4@example.com", name: "Phạm Thị D", createdDate: "15/01/2025", lastLogin: "06/11/2025 14:45", status: "Hoạt động" },
-  { id: 5, email: "giaovien5@example.com", name: "Hoàng Văn E", createdDate: "20/01/2025", lastLogin: "05/11/2025 11:00", status: "Hoạt động" },
+// Dữ liệu mẫu học sinh
+const mockStudents = [
+  { id: 1, email: "hocsinh1@example.com", name: "Nguyễn Văn X", createdDate: "01/01/2025", lastLogin: "09/11/2025 10:30", status: "Hoạt động" },
+  { id: 2, email: "hocsinh2@example.com", name: "Trần Thị Y", createdDate: "05/01/2025", lastLogin: "08/11/2025 15:20", status: "Hoạt động" },
+  { id: 3, email: "hocsinh3@example.com", name: "Lê Văn Z", createdDate: "10/01/2025", lastLogin: "07/11/2025 09:15", status: "Hoạt động" },
+  { id: 4, email: "hocsinh4@example.com", name: "Phạm Thị W", createdDate: "15/01/2025", lastLogin: "06/11/2025 14:45", status: "Tạm khóa" },
+  { id: 5, email: "hocsinh5@example.com", name: "Hoàng Văn V", createdDate: "20/01/2025", lastLogin: "05/11/2025 11:00", status: "Hoạt động" },
 ];
 
-const TeacherAccountsPage = () => {
+const StudentAccountsPage = () => {
   const [searchEmail, setSearchEmail] = useState('');
   const [searchName, setSearchName] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [currentPage, setCurrentPage] = useState(1);
-  const [teachers] = useState(mockTeachers);
+  const [students] = useState(mockStudents);
   const [showProfileDropdown, setShowProfileDropdown] = useState(false);
   
   const itemsPerPage = 20;
-  const totalPages = Math.ceil(teachers.length / itemsPerPage);
+  const totalPages = Math.ceil(students.length / itemsPerPage);
 
-  // Lọc giáo viên
-  const filteredTeachers = teachers.filter(teacher => {
-    const emailMatch = teacher.email.toLowerCase().includes(searchEmail.toLowerCase());
-    const nameMatch = teacher.name.toLowerCase().includes(searchName.toLowerCase());
-    const statusMatch = statusFilter === 'all' || teacher.status === statusFilter;
+  // Lọc học sinh
+  const filteredStudents = students.filter(student => {
+    const emailMatch = student.email.toLowerCase().includes(searchEmail.toLowerCase());
+    const nameMatch = student.name.toLowerCase().includes(searchName.toLowerCase());
+    const statusMatch = statusFilter === 'all' || student.status === statusFilter;
     return emailMatch && nameMatch && statusMatch;
   });
 
@@ -46,28 +46,21 @@ const TeacherAccountsPage = () => {
   const handleDelete = (id: number) => {
     Swal.fire({
       title: 'Xác nhận xóa',
-      text: 'Bạn có chắc chắn muốn xóa giáo viên này?',
+      text: 'Bạn có chắc chắn muốn xóa học sinh này?',
       icon: 'warning',
       showCancelButton: true,
       confirmButtonColor: '#3085d6',
       cancelButtonColor: '#d33',
       confirmButtonText: 'Xóa',
-      cancelButtonText: 'Hủy',
-      background: '#fff',
-      customClass: {
-        confirmButton: 'px-4 py-2 rounded-md',
-        cancelButton: 'px-4 py-2 rounded-md'
-      }
+      cancelButtonText: 'Hủy'
     }).then((result) => {
       if (result.isConfirmed) {
-        console.log('Xóa giáo viên:', id);
-        Swal.fire({
-          title: 'Đã xóa!',
-          text: 'Giáo viên đã được xóa thành công.',
-          icon: 'success',
-          confirmButtonColor: '#3085d6',
-          confirmButtonText: 'Đóng'
-        });
+        console.log('Xóa học sinh:', id);
+        Swal.fire(
+          'Đã xóa!',
+          'Học sinh đã được xóa thành công.',
+          'success'
+        );
       }
     });
   };
@@ -76,7 +69,7 @@ const TeacherAccountsPage = () => {
     <div className="flex-1 p-6" style={{ backgroundColor: MAIN_CONTENT_BG }}>
         {/* Thanh tìm kiếm */}
         <div className="bg-white rounded-lg p-6 mb-6 shadow">
-          <h2 className="text-gray-800 text-xl font-bold mb-4">Tìm kiếm giáo viên</h2>
+          <h2 className="text-gray-800 text-xl font-bold mb-4">Tìm kiếm học sinh</h2>
           
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
             {/* Tìm Email */}
@@ -107,12 +100,13 @@ const TeacherAccountsPage = () => {
                 value={statusFilter}
                 onChange={(e) => setStatusFilter(e.target.value)}
                 className="w-full px-4 py-2 rounded-full border border-gray-300 bg-white text-gray-800 text-sm focus:outline-none focus:ring-2 focus:ring-purple-400"
-            >
-              <option value="all">Chọn trạng thái</option>
-              <option value="Hoạt động">Hoạt động</option>
+              >
+                <option value="all">Chọn trạng thái</option>
+                <option value="Hoạt động">Hoạt động</option>
                 <option value="Tạm khóa">Tạm khóa</option>
               </select>
             </div>
+
             {/* Nút tìm kiếm */}
             <div className="flex justify-end">
               <button
@@ -131,7 +125,7 @@ const TeacherAccountsPage = () => {
           {/* Tiêu đề bảng */}
           <div className="p-4 border-b border-gray-200">
             <p className="text-sm text-gray-600">
-              Hiển thị {filteredTeachers.length}/50 giáo viên (Trang {currentPage}/1)
+              Hiển thị {filteredStudents.length}/50 học sinh (Trang {currentPage}/1)
             </p>
           </div>
 
@@ -151,26 +145,26 @@ const TeacherAccountsPage = () => {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200">
-                {filteredTeachers.map((teacher, index) => (
-                  <tr key={teacher.id} className="hover:bg-gray-50 transition">
+                {filteredStudents.map((student, index) => (
+                  <tr key={student.id} className="hover:bg-gray-50 transition">
                     <td className="px-4 py-3 text-sm text-gray-700">{index + 1}</td>
-                    <td className="px-4 py-3 text-sm text-gray-700">{teacher.id}</td>
-                    <td className="px-4 py-3 text-sm text-gray-700">{teacher.email}</td>
-                    <td className="px-4 py-3 text-sm text-gray-700">{teacher.name}</td>
-                    <td className="px-4 py-3 text-sm text-gray-700">{teacher.createdDate}</td>
-                    <td className="px-4 py-3 text-sm text-gray-700">{teacher.lastLogin}</td>
+                    <td className="px-4 py-3 text-sm text-gray-700">{student.id}</td>
+                    <td className="px-4 py-3 text-sm text-gray-700">{student.email}</td>
+                    <td className="px-4 py-3 text-sm text-gray-700">{student.name}</td>
+                    <td className="px-4 py-3 text-sm text-gray-700">{student.createdDate}</td>
+                    <td className="px-4 py-3 text-sm text-gray-700">{student.lastLogin}</td>
                     <td className="px-4 py-3 text-sm">
                       <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
-                        teacher.status === 'Hoạt động' 
+                        student.status === 'Hoạt động' 
                           ? 'bg-green-100 text-green-700' 
                           : 'bg-red-100 text-red-700'
                       }`}>
-                        {teacher.status}
+                        {student.status}
                       </span>
                     </td>
                     <td className="px-4 py-3 text-sm">
                       <button
-                        onClick={() => handleDelete(teacher.id)}
+                        onClick={() => handleDelete(student.id)}
                         className="px-3 py-1 bg-red-500 text-white rounded text-xs font-semibold hover:bg-red-600 transition"
                       >
                         Xóa
@@ -240,4 +234,4 @@ const TeacherAccountsPage = () => {
   );
 };
 
-export default TeacherAccountsPage;
+export default StudentAccountsPage;
