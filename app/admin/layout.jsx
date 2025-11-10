@@ -151,6 +151,7 @@ const AdminSidebar = ({ isSidebarOpen, toggleSidebar }) => {
         { name: "Trang chủ Web", href: "/" },
         { name: "Quản lý tài khoản", href: "/admin/accounts" },
         { name: "Duyệt tài khoản giáo viên", href: "/admin/approve-teachers" },
+        { name: "Danh mục", href: "/admin/categories" },
     ];
     
     const [currentPathname, setCurrentPathname] = useState('/');
@@ -214,8 +215,8 @@ const AdminSidebar = ({ isSidebarOpen, toggleSidebar }) => {
                         if (isHomeWeb) {
                             shouldBeActive = currentPathname === '/';
                         } else if (isHomeAdmin) {
-                            // Active khi là /admin hoặc bất kỳ trang con nào của /admin
-                            shouldBeActive = currentPathname === '/admin' || (currentPathname.startsWith('/admin') && currentPathname.split('/').length <= 3); 
+                            // Chỉ active khi đúng trang /admin, KHÔNG áp dụng cho các trang con
+                            shouldBeActive = currentPathname === '/admin'; 
                         } else {
                             shouldBeActive = currentPathname.startsWith(item.href);
                         }
@@ -256,6 +257,7 @@ const AdminTopBar = ({ toggleSidebar, isSidebarOpen }) => {
                 '/admin': 'Trang chủ Admin',
                 '/admin/accounts': 'Quản lý tài khoản',
                 '/admin/approve-teachers': 'Duyệt tài khoản giáo viên',
+                '/admin/categories': 'Danh mục',
             };
             const mappedTitle = titleMap[path];
             if (mappedTitle) {
