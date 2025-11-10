@@ -305,17 +305,6 @@ const AdminTopBar = ({ toggleSidebar, isSidebarOpen }) => {
     );
 }
 
-// Component Footer 
-const Footer = () => {
-    return (
-        <footer className="w-full bg-white border-t border-zinc-100 text-center py-3">
-            <p className="text-xs text-zinc-600">
-                &copy; 2025 QuizzZone. Mọi quyền được bảo lưu.
-            </p>
-        </footer>
-    );
-}
-
 
 export default function AdminLayout({
     children,
@@ -364,8 +353,6 @@ export default function AdminLayout({
                     {children}
                 </main>
                 
-                {/* Footer */}
-                <Footer />
             </div>
             {/* Thêm CSS cho Animation */}
             <style jsx global>{`
