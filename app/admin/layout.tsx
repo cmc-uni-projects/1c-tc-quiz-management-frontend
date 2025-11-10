@@ -397,17 +397,6 @@ const AdminTopBar = () => {
   );
 };
 
-// Component Footer (Giữ nguyên)
-const Footer = () => {
-  return (
-    // Footer không còn padding cố định
-    <footer className="w-full bg-white border-t border-zinc-100 text-center py-4 mt-auto">
-      <p className="text-sm text-zinc-600">
-        &copy; 2025 QuizzZone. Mọi quyền được bảo lưu.
-      </p>
-    </footer>
-  );
-};
 
 interface AdminLayoutProps {
   children: React.ReactNode;
@@ -438,7 +427,6 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
         >
           {children}
         </main>
-        <Footer />
       </div>
     </div>
   );

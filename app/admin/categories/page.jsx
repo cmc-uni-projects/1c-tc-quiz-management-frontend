@@ -39,9 +39,9 @@ function sentenceCase(value) {
 export default function CategoriesPage() {
   // Dữ liệu giả (chỉ hiển thị)
   const [categories, setCategories] = useState([
-    { id: 1, name: "Toán học", description: "Các chủ đề về Đại số, Hình học, Giải tích" },
-    { id: 2, name: "Ngôn ngữ", description: "Tiếng Anh, Tiếng Việt, Ngôn ngữ học" },
-    { id: 3, name: "Khoa học", description: "Vật lý, Hóa học, Sinh học" },
+    { id: 1, name: "Toán học", description: "Các chủ đề về Đại số, Hình học, Giải tích", createdBy: "admin" },
+    { id: 2, name: "Ngôn ngữ", description: "Tiếng Anh, Tiếng Việt, Ngôn ngữ học", createdBy: "teacher" },
+    { id: 3, name: "Khoa học", description: "Vật lý, Hóa học, Sinh học", createdBy: "admin" },
   ]);
 
   const [keyword, setKeyword] = useState("");
@@ -51,6 +51,20 @@ export default function CategoriesPage() {
   // State cho form
   const [form, setForm] = useState({ name: "", description: "" });
   const [error, setError] = useState("");
+
+  // Badge màu theo người tạo
+  const creatorBadgeClass = (role) => {
+    switch ((role || "").toLowerCase()) {
+      case "admin":
+        // Admin: sắc hồng/tím nổi bật
+        return "bg-fuchsia-100 text-fuchsia-700 border border-fuchsia-200";
+      case "teacher":
+        // Giáo viên: sắc xanh lá dễ phân biệt
+        return "bg-emerald-100 text-emerald-700 border border-emerald-200";
+      default:
+        return "bg-gray-100 text-gray-700 border border-gray-200";
+    }
+  };
 
   const filtered = useMemo(() => {
     const kw = keyword.trim().toLowerCase();
@@ -108,7 +122,8 @@ export default function CategoriesPage() {
       setCategories((prev) => prev.map((c) => (c.id === editing.id ? { ...c, ...form } : c)));
     } else {
       const nextId = Math.max(0, ...categories.map((c) => c.id)) + 1;
-      setCategories((prev) => [...prev, { id: nextId, ...form }]);
+      // Mặc định người tạo là Admin (chỉ hiển thị)
+      setCategories((prev) => [...prev, { id: nextId, createdBy: "admin", ...form }]);
     }
     setModalOpen(false);
   };
@@ -159,13 +174,14 @@ export default function CategoriesPage() {
                 <th className="px-4 py-3 text-left w-16">STT</th>
                 <th className="px-4 py-3 text-left">Tên danh mục</th>
                 <th className="px-4 py-3 text-left">Mô tả</th>
+                <th className="px-4 py-3 text-left w-32">Người tạo</th>
                 <th className="px-4 py-3 text-center w-40">Thao tác</th>
               </tr>
             </thead>
             <tbody>
               {filtered.length === 0 ? (
                 <tr>
-                  <td colSpan={4} className="px-4 py-10 text-center text-gray-500">
+                  <td colSpan={5} className="px-4 py-10 text-center text-gray-500">
                     Không tìm thấy danh mục phù hợp
                   </td>
                 </tr>
@@ -175,6 +191,11 @@ export default function CategoriesPage() {
                     <td className="px-4 py-3">{idx + 1}</td>
                     <td className="px-4 py-3 font-medium text-gray-900">{c.name}</td>
                     <td className="px-4 py-3 text-gray-700">{c.description}</td>
+                    <td className="px-4 py-3">
+                      <span className={`px-2 py-1 rounded-full text-xs font-semibold inline-block ${creatorBadgeClass(c.createdBy)}`}>
+                        {c.createdBy === "teacher" ? "Giáo viên" : "Admin"}
+                      </span>
+                    </td>
                     <td className="px-4 py-3">
                       <div className="flex items-center justify-center gap-2">
                         <button
