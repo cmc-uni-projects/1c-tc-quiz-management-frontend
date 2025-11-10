@@ -39,7 +39,7 @@ const EyeOffIcon = () => (
   </svg>
 );
 
-export default function ChangePasswordForm() {
+export default function AdminChangePasswordPage() {
   const router = useRouter();
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
