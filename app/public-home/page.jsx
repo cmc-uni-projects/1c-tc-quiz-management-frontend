@@ -4,7 +4,7 @@ import React from "react";
 
 // Định nghĩa các màu sắc chính dựa trên yêu cầu
 const PRIMARY_PURPLE = '#E33AEC';
-const BACKGROUND_COLOR = '#6D0446'; // Màu nền tối toàn cục
+const BACKGROUND_COLOR = '#6D0446'; // Màu nền tối toàn cục (sẽ bị ghi đè/kết hợp với ảnh nền)
 const EXPLORE_BUTTON_COLOR = '#A53AEC'; // Màu cho nút "Khám phá ngay"
 
 // Component Header (Navbar) - Sao chép từ PublicHeader trong app/page.jsx gốc
@@ -64,13 +64,18 @@ export default function PublicHome() {
         <>
             <PublicHeader />
             
-            {/* Main Content Area - Giống hệt mẫu bạn gửi */}
+            {/* Main Content Area - Đã thêm ảnh nền */}
             <main 
-                className="min-h-[calc(100vh-140px)] flex flex-col items-center justify-center py-10 px-4 text-white" 
-                style={{ backgroundColor: BACKGROUND_COLOR }}
+                className="min-h-[calc(100vh-140px)] flex flex-col items-center justify-center py-10 px-4 text-white bg-no-repeat bg-cover bg-center" 
+                style={{ 
+                    // Đặt ảnh nền
+                    backgroundImage: `url('/roles/anhnen.jpg')`, 
+                    // Thêm lớp phủ tối (overlay) để chữ trắng dễ đọc hơn trên ảnh
+                    backgroundBlendMode: 'multiply', // Kết hợp màu nền và ảnh (tạo lớp phủ)
+                }}
             >
                 {/* Khối chính giữa màn hình */}
-                <div className="w-full max-w-4xl flex flex-col items-center text-center"> 
+                <div className="w-full max-w-4xl flex flex-col items-center text-center z-10"> 
                     
                     {/* Tiêu đề */}
                     <h1 
