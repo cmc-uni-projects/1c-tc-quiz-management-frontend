@@ -221,6 +221,7 @@ const AdminSidebar: React.FC = () => {
       ],
     },
     { name: "Duyệt tài khoản giáo viên", href: "/admin/approve-teachers" },
+    { name: "Danh mục", href: "/admin/categories" },
   ];
 
   const [currentPathname, setCurrentPathname] = useState<string>("/");
@@ -239,7 +240,8 @@ const AdminSidebar: React.FC = () => {
       return currentPathname === "/";
     }
     if (item.href === "/admin") {
-      return currentPathname === "/admin" || currentPathname.startsWith("/admin/");
+      // Chỉ active khi đúng trang /admin, KHÔNG active cho các trang con
+      return currentPathname === "/admin";
     }
 
     let shouldBeActive = currentPathname.startsWith(item.href);
