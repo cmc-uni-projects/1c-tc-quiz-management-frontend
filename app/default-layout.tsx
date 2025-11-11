@@ -1,6 +1,6 @@
 // app/default-layout.tsx
 import Link from "next/link";
-import Footer from "./components/Footer"; // Giả định đường dẫn
+import Footer from "@/components/Footer"; // Giả định đường dẫn
 
 export default function DefaultLayout({
   children,

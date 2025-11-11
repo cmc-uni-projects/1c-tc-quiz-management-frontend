@@ -1,13 +1,12 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import Link from "next/link";
-import { useSession, signOut } from "next-auth/react";
-import Image from "next/image";
+import { useRouter } from "next/navigation";
 
 export default function ProfileDropdown() {
-  const { data: session, status } = useSession();
+  const router = useRouter();
   const [open, setOpen] = useState(false);
+  const [role, setRole] = useState<string | null>(null);
   const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -25,38 +24,73 @@ export default function ProfileDropdown() {
     };
   }, []);
 
-  if (status !== "authenticated") {
-    return null; // Or a login button
-  }
-
-  const user = session.user;
-  const role = (user as any)?.role; // Cast to any to access custom role property
+  useEffect(() => {
+    const fetchUserRole = async () => {
+      try {
+        const response = await fetch('/api/profile');
+        if (response.ok) {
+          const data = await response.json();
+          setRole(data.role);
+        }
+      } catch (error) {
+        console.error('Error fetching user role:', error);
+      }
+    };
+    fetchUserRole();
+  }, []);
 
   const getProfileUrl = () => {
-    switch (role) {
-      case "ADMIN":
-        return "/admin/profile";
-      case "TEACHER":
-        return "/teacher/profile";
-      case "STUDENT":
-        return "/student/profile";
+    switch (role?.toUpperCase()) {
+      case 'ADMIN':
+        return '/admin/profile';
+      case 'TEACHER':
+        return '/teacher/profile';
+      case 'STUDENT':
+        return '/student/profile';
       default:
-        return "#";
+        return '/student/profile';
     }
   };
-  
+
   const getChangePasswordUrl = () => {
-    switch (role) {
-      case "ADMIN":
-        return "/admin/change-password";
-      case "TEACHER":
-        return "/teacher/change-password";
-      case "STUDENT":
-        return "/student/change-password";
+    switch (role?.toUpperCase()) {
+      case 'ADMIN':
+        return '/admin/change-password';
+      case 'TEACHER':
+        return '/teacher/change-password';
+      case 'STUDENT':
+        return '/student/change-password';
       default:
-        return "#";
+        return '/student/change-password';
     }
-  }
+  };
+
+  const handleProfileClick = () => {
+    setOpen(false);
+    router.push(getProfileUrl());
+  };
+
+  const handleChangePasswordClick = () => {
+    setOpen(false);
+    router.push(getChangePasswordUrl());
+  };
+
+  const handleLogout = async () => {
+    try {
+      const response = await fetch('/api/perform_logout', {
+        method: 'POST',
+        credentials: 'include',
+      });
+      if (response.ok) {
+        setOpen(false);
+        router.push('/login');
+      }
+    } catch (error) {
+      console.error('Logout error:', error);
+      setOpen(false);
+      router.push('/login');
+    }
+  };
 
   return (
     <div className="relative" ref={ref}>
@@ -65,29 +99,28 @@ export default function ProfileDropdown() {
         className="flex items-center gap-2 rounded-full bg-gray-200/50 px-2 py-1.5 text-sm text-zinc-700 hover:bg-gray-200/80"
       >
         <span className="grid h-8 w-8 place-items-center rounded-full bg-gray-300 text-gray-700">
-          {user.image ? (
-            <Image src={user.image} alt="User Avatar" width={32} height={32} className="rounded-full" />
-          ) : (
-            '👤'
-          )}
+          👤
         </span>
-        <span className="hidden sm:inline">Xin chào, {user.name || 'bạn'}</span>
+        <span className="hidden sm:inline">Menu</span>
       </button>
 
       {open && (
         <div className="absolute right-0 mt-2 w-48 overflow-hidden rounded-md border border-zinc-200 bg-white shadow-lg z-10">
-          <Link href={getProfileUrl()} className="block px-3 py-2 text-sm hover:bg-zinc-50">
+          <button
+            onClick={handleProfileClick}
+            className="block w-full px-3 py-2 text-left text-sm hover:bg-zinc-50"
+          >
             Cập nhật thông tin
-          </Link>
-          {/* <Link href="#" className="block px-3 py-2 text-sm hover:bg-zinc-50">
-            Quản lý tài khoản
-          </Link> */}
-          <Link href={getChangePasswordUrl()} className="block px-3 py-2 text-sm hover:bg-zinc-50">
+          </button>
+          <button
+            onClick={handleChangePasswordClick}
+            className="block w-full px-3 py-2 text-left text-sm hover:bg-zinc-50"
+          >
             Đổi mật khẩu
-          </Link>
+          </button>
           <div className="border-t" />
           <button
-            onClick={() => signOut({ callbackUrl: '/login' })}
+            onClick={handleLogout}
             className="block w-full px-3 py-2 text-left text-sm text-rose-600 hover:bg-rose-50"
           >
             ← Đăng xuất

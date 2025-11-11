@@ -1,105 +1,247 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { useSession, signOut } from 'next-auth/react';
-import { useRouter } from 'next/navigation';
+import React, { useState, useRef, useEffect, ChangeEvent, FormEvent } from 'react';
+import toast from 'react-hot-toast';
+
+const PRIMARY_BG = '#6D0446';
+const BUTTON_BG = '#A53AEC';
 
 export default function TeacherProfilePage() {
-  const { data: session, status, update } = useSession();
-  const router = useRouter();
+  const fileRef = useRef<HTMLInputElement | null>(null);
+  const [username, setUsername] = useState('');
+  const [email, setEmail] = useState('');
+  const [avatar, setAvatar] = useState<string | null>(null);
+  const [avatarFile, setAvatarFile] = useState<File | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [loading, setLoading] = useState(true);
 
-  const [name, setName] = useState('');
-  const [image, setImage] = useState('');
-  const [message, setMessage] = useState('');
-  const [isSubmitting, setIsSubmitting] = useState(false);
-
+  // Fetch profile data on mount
   useEffect(() => {
-    if (status === 'authenticated' && session?.user) {
-      setName(session.user.name || '');
-      setImage(session.user.image || '');
+    const fetchProfile = async () => {
+      try {
+        const response = await fetch('/api/profile');
+        if (response.ok) {
+          const data = await response.json();
+          setUsername(data.username || '');
+          setEmail(data.email || '');
+          setAvatar(data.avatar || null);
+        } else {
+          toast.error('Failed to load profile');
+        }
+      } catch (error) {
+        console.error('Error fetching profile:', error);
+        toast.error('Error loading profile');
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchProfile();
+  }, []);
+
+  const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files && e.target.files[0];
+    if (!file) return;
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      toast.error('Please select an image file');
+      return;
     }
-  }, [session, status]);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsSubmitting(true);
-    setMessage('');
+    // Preview
+    const reader = new FileReader();
+    reader.onload = () => {
+      setAvatar(String(reader.result));
+      setAvatarFile(file);
+    };
+    reader.readAsDataURL(file);
+  };
 
-    const response = await fetch('/api/profile', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ name, image }),
-    });
+  const handleChooseFile = () => {
+    fileRef.current?.click();
+  };
 
-    setIsSubmitting(false);
+  const handleDeleteAvatar = async () => {
+    if (!avatar) {
+      toast.error('No avatar to delete');
+      return;
+    }
 
-    if (response.ok) {
-      setMessage('Profile updated successfully!');
-      // Update the session data without reloading the page
-      await update({ ...session, user: { ...session?.user, name, image } });
-    } else {
-      const errorData = await response.json();
-      setMessage(`Error: ${errorData.message || 'Something went wrong.'}`);
+    setSaving(true);
+    try {
+      const response = await fetch('/api/profile', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+      });
+
+      if (response.ok) {
+        setAvatar(null);
+        setAvatarFile(null);
+        toast.success('Avatar deleted successfully!');
+      } else {
+        const errorData = await response.text();
+        toast.error(errorData || 'Failed to delete avatar');
+      }
+    } catch (error) {
+      console.error('Error deleting avatar:', error);
+      toast.error(error instanceof Error ? error.message : 'Error deleting avatar');
+    } finally {
+      setSaving(false);
     }
   };
 
-  if (status === 'loading') {
-    return <div className="flex justify-center items-center h-screen"><p>Loading...</p></div>;
-  }
+  const handleSubmit = async (e: FormEvent) => {
+    e.preventDefault();
+    if (!username.trim()) {
+      toast.error('Name cannot be empty');
+      return;
+    }
 
-  if (status === 'unauthenticated') {
-    router.push('/login');
-    return null;
+    setSaving(true);
+
+    try {
+      let avatarUrl = avatar;
+
+      // Upload avatar if a new file was selected
+      if (avatarFile) {
+        const formData = new FormData();
+        formData.append('file', avatarFile);
+        const uploadResponse = await fetch('/api/profile/upload-avatar', {
+          method: 'POST',
+          body: formData,
+        });
+        if (!uploadResponse.ok) {
+          throw new Error('Failed to upload avatar');
+        }
+        const uploadData = await uploadResponse.json();
+        avatarUrl = uploadData.avatarUrl;
+      }
+
+      // Update profile
+      const response = await fetch('/api/profile', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, avatar: avatarUrl }),
+      });
+
+      if (response.ok) {
+        toast.success('Profile updated successfully!');
+        setAvatarFile(null);
+      } else {
+        const errorData = await response.json();
+        toast.error(errorData.error || 'Failed to update profile');
+      }
+    } catch (error) {
+      console.error('Error updating profile:', error);
+      toast.error(error instanceof Error ? error.message : 'Error updating profile');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center h-screen" style={{ backgroundColor: PRIMARY_BG }}>
+        <p className="text-white text-lg">Loading...</p>
+      </div>
+    );
   }
 
   return (
-    <div className="min-h-screen bg-gray-100 flex items-center justify-center">
-      <div className="bg-white p-8 rounded-lg shadow-md w-full max-w-md">
-        <h1 className="text-2xl font-bold mb-6 text-center">Update Profile</h1>
-        {image && (
-          <div className="flex justify-center mb-4">
-            <img src={image} alt="Avatar Preview" className="w-32 h-32 rounded-full object-cover" />
-          </div>
-        )}
-        <form onSubmit={handleSubmit}>
-          <div className="mb-4">
-            <label htmlFor="name" className="block text-gray-700 font-bold mb-2">
-              Name
-            </label>
-            <input
-              type="text"
-              id="name"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-              required
-            />
-          </div>
-          <div className="mb-6">
-            <label htmlFor="image" className="block text-gray-700 font-bold mb-2">
-              Avatar URL
-            </label>
-            <input
-              type="text"
-              id="image"
-              value={image}
-              onChange={(e) => setImage(e.target.value)}
-              className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-            />
-          </div>
-          <div className="flex items-center justify-between">
-            <button
-              type="submit"
-              disabled={isSubmitting}
-              className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline disabled:bg-gray-400"
+    <div className="max-w-5xl mx-auto" style={{ color: '#111' }}>
+      <div className="bg-white rounded-md shadow-md overflow-hidden mt-12">
+        <div className="flex p-8 gap-8 items-start">
+          {/* Avatar Section */}
+          <div className="flex flex-col items-center" style={{ minWidth: 220 }}>
+            <div
+              className="rounded-full overflow-hidden w-52 h-52 flex items-center justify-center border-2 border-purple-200"
+              style={{ background: '#F7EFFF' }}
             >
-              {isSubmitting ? 'Saving...' : 'Save Changes'}
-            </button>
+              {avatar ? (
+                <img src={avatar} alt="avatar" className="w-full h-full object-cover" />
+              ) : (
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  viewBox="0 0 24 24"
+                  className="w-28 h-28 text-purple-700"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth={1.5}
+                >
+                  <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"></path>
+                  <circle cx="12" cy="7" r="4"></circle>
+                </svg>
+              )}
+            </div>
+            <input
+              ref={fileRef}
+              type="file"
+              accept="image/*"
+              onChange={handleFileChange}
+              className="hidden"
+            />
+            <div className="flex flex-col gap-2 mt-4 w-full">
+              <button
+                type="button"
+                onClick={handleChooseFile}
+                className="px-4 py-2 text-sm bg-zinc-200 rounded-md hover:bg-zinc-300 transition"
+              >
+                Choose Photo
+              </button>
+              {avatar && (
+                <button
+                  type="button"
+                  onClick={handleDeleteAvatar}
+                  disabled={saving}
+                  className="px-4 py-2 text-sm bg-red-200 text-red-700 rounded-md hover:bg-red-300 transition disabled:opacity-50"
+                >
+                  Delete Photo
+                </button>
+              )}
+            </div>
           </div>
-          {message && <p className="mt-4 text-center text-sm text-green-600">{message}</p>}
-        </form>
+
+          {/* Form Section */}
+          <form className="flex-1" onSubmit={handleSubmit}>
+            <div className="max-w-xl ml-auto">
+              <div className="mb-4">
+                <label className="block text-sm text-zinc-600 mb-1">Email</label>
+                <input
+                  value={email}
+                  readOnly
+                  className="w-full px-4 py-3 rounded-md text-sm bg-zinc-100 border border-zinc-200"
+                />
+                <div className="mt-2">
+                  <span className="text-sm text-red-400">Email cannot be changed</span>
+                </div>
+              </div>
+
+              <div className="mb-6">
+                <label className="block text-sm text-zinc-600 mb-1">Name</label>
+                <input
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                  className="w-full px-4 py-3 rounded-md text-sm bg-white border border-zinc-200 focus:outline-none focus:ring-2 focus:ring-purple-400"
+                  placeholder="Enter your name"
+                  required
+                />
+              </div>
+
+              <div className="flex flex-col items-center gap-3">
+                <button
+                  type="submit"
+                  disabled={saving}
+                  style={{ background: BUTTON_BG }}
+                  className={`text-white px-6 py-3 rounded-full font-semibold transition ${
+                    saving ? 'opacity-70 cursor-not-allowed' : 'hover:brightness-110'
+                  }`}
+                >
+                  {saving ? 'Updating...' : 'Update Profile'}
+                </button>
+              </div>
+            </div>
+          </form>
+        </div>
       </div>
     </div>
   );

@@ -1,37 +1,80 @@
-
 import { NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/app/api/auth/[...nextauth]/route';
-import prisma from '@/lib/prisma';
 
-export async function POST(req: Request) {
-  const session = await getServerSession(authOptions);
-
-  if (!session || !session.user || !session.user.id) {
-    return new NextResponse('Unauthorized', { status: 401 });
-  }
-
+// GET - Fetch user profile from backend
+export async function GET(req: Request) {
   try {
-    const body = await req.json();
-    const { name, image } = body;
-    const userId = session.user.id;
-
-    // Since the backend is separate, we would ideally call the external backend API here.
-    // For now, we'll update the local Prisma database as a placeholder.
-    // Replace this with your actual backend API call.
-    const updatedUser = await prisma.user.update({
-      where: {
-        id: userId,
+    const cookies = req.headers.get('cookie');
+    const response = await fetch('http://localhost:8082/api/profile', {
+      method: 'GET',
+      headers: {
+        'Cookie': cookies || '',
+        'Content-Type': 'application/json',
       },
-      data: {
-        name: name,
-        image: image,
-      },
+      credentials: 'include',
     });
 
-    return NextResponse.json(updatedUser);
+    if (!response.ok) {
+      return new NextResponse('Failed to fetch profile', { status: response.status });
+    }
+
+    const data = await response.json();
+    return NextResponse.json(data);
+  } catch (error) {
+    console.error('Error fetching profile:', error);
+    return new NextResponse('Internal Server Error', { status: 500 });
+  }
+}
+
+// PUT - Update user profile on backend
+export async function PUT(req: Request) {
+  try {
+    const body = await req.json();
+    const cookies = req.headers.get('cookie');
+
+    const response = await fetch('http://localhost:8082/api/profile/update', {
+      method: 'PUT',
+      headers: {
+        'Cookie': cookies || '',
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(body),
+      credentials: 'include',
+    });
+
+    if (!response.ok) {
+      const errorData = await response.text();
+      return new NextResponse(errorData, { status: response.status });
+    }
+
+    return new NextResponse('Profile updated successfully', { status: 200 });
   } catch (error) {
     console.error('Error updating profile:', error);
+    return new NextResponse('Internal Server Error', { status: 500 });
+  }
+}
+
+// DELETE - Delete user avatar
+export async function DELETE(req: Request) {
+  try {
+    const cookies = req.headers.get('cookie');
+
+    const response = await fetch('http://localhost:8082/api/profile/delete-avatar', {
+      method: 'DELETE',
+      headers: {
+        'Cookie': cookies || '',
+        'Content-Type': 'application/json',
+      },
+      credentials: 'include',
+    });
+
+    if (!response.ok) {
+      const errorData = await response.text();
+      return new NextResponse(errorData, { status: response.status });
+    }
+
+    return new NextResponse('Avatar deleted successfully', { status: 200 });
+  } catch (error) {
+    console.error('Error deleting avatar:', error);
     return new NextResponse('Internal Server Error', { status: 500 });
   }
 }

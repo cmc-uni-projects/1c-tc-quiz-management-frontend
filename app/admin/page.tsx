@@ -2,7 +2,6 @@
 
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Search as SearchIcon } from 'lucide-react';
 
 // Định nghĩa màu sắc theo cấu trúc layout
 const MAIN_BANNER_BG = '#6D0446'; // Màu tím sẫm (PRIMARY_COLOR từ layout)
@@ -51,7 +50,7 @@ export default function AdminPage() {
         }
     };
     
-    const handleKeyDown = (e) => {
+    const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
         if (e.key === 'Enter') {
             handleSearch();
         }
