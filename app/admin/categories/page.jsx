@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 // Màu tím nhạt giống các trang Admin
 const PRIMARY_PURPLE_BG = "#E33AEC7A";
@@ -36,13 +36,24 @@ function sentenceCase(value) {
   return value.charAt(0).toUpperCase() + value.slice(1);
 }
 
+// Helper: phân loại hiển thị người tạo theo email (không đổi UI)
+function getCreatorBadgeRole(createdBy, currentUser) {
+  const v = (createdBy || "").toLowerCase();
+  // Ưu tiên: nếu trùng người dùng hiện tại thì dùng đúng role từ profile
+  if (currentUser) {
+    const u = (currentUser.username || "").toLowerCase();
+    const e = (currentUser.email || "").toLowerCase();
+    if (v && (v === u || v === e)) {
+      return (currentUser.role || "").toLowerCase();
+    }
+  }
+  // Fallback: đoán theo chuỗi (giữ nguyên UI nếu thiếu thông tin)
+  return v.includes("admin") ? "admin" : "teacher";
+}
+
 export default function CategoriesPage() {
-  // Dữ liệu giả (chỉ hiển thị)
-  const [categories, setCategories] = useState([
-    { id: 1, name: "Toán học", description: "Các chủ đề về Đại số, Hình học, Giải tích", createdBy: "admin" },
-    { id: 2, name: "Ngôn ngữ", description: "Tiếng Anh, Tiếng Việt, Ngôn ngữ học", createdBy: "teacher" },
-    { id: 3, name: "Khoa học", description: "Vật lý, Hóa học, Sinh học", createdBy: "admin" },
-  ]);
+  const [categories, setCategories] = useState([]);
+  const [currentUser, setCurrentUser] = useState(null);
 
   const [keyword, setKeyword] = useState("");
   const [modalOpen, setModalOpen] = useState(false);
@@ -51,6 +62,7 @@ export default function CategoriesPage() {
   // State cho form
   const [form, setForm] = useState({ name: "", description: "" });
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
 
   // Badge màu theo người tạo
   const creatorBadgeClass = (role) => {
@@ -66,10 +78,63 @@ export default function CategoriesPage() {
     }
   };
 
+  // Load tất cả danh mục lần đầu
+  useEffect(() => {
+    const fetchAll = async () => {
+      try {
+        setLoading(true);
+        // Load profile for correct role labeling of current user's items
+        try {
+          const p = await fetch(`/api/profile`, { credentials: "include" });
+          if (p.ok) {
+            const profile = await p.json();
+            setCurrentUser(profile);
+          }
+        } catch {}
+        // Load categories
+        const res = await fetch(`/categories`, { credentials: "include" });
+        if (!res.ok) throw new Error("Failed to load categories");
+        const data = await res.json();
+        setCategories(Array.isArray(data) ? data : []);
+      } catch (e) {
+        console.error(e);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchAll();
+  }, []);
+
+  // Tìm kiếm trên backend (không đổi UI phần input)
+  const handleSearch = async () => {
+    const q = keyword.trim();
+    try {
+      setLoading(true);
+      if (!q) {
+        // nếu trống -> lấy tất cả
+        const res = await fetch(`/categories`, { credentials: "include" });
+        const all = await res.json();
+        setCategories(Array.isArray(all) ? all : []);
+      } else {
+        const params = new URLSearchParams({ name: q, page: "0", size: "50", sort: "id,asc" });
+        const res = await fetch(`/categories/search?${params.toString()}`, { credentials: "include" });
+        if (!res.ok) throw new Error("Search failed");
+        const page = await res.json();
+        // Spring Page object: content, number, totalElements,...
+        setCategories(Array.isArray(page?.content) ? page.content : []);
+      }
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const filtered = useMemo(() => {
+    // vẫn giữ lọc client để người dùng gõ thấy hiệu ứng, nhưng nguồn là dữ liệu backend hiện tại
     const kw = keyword.trim().toLowerCase();
     if (!kw) return categories;
-    return categories.filter((c) => c.name.toLowerCase().includes(kw));
+    return categories.filter((c) => c.name?.toLowerCase().includes(kw));
   }, [categories, keyword]);
 
   const openAdd = () => {
@@ -105,32 +170,72 @@ export default function CategoriesPage() {
     if (!name) {
       return "Tên danh mục là bắt buộc";
     }
-    const exists = categories.some(
-      (c) => c.name.toLowerCase() === name.toLowerCase() && (!editing || c.id !== editing.id)
-    );
-    if (exists) return "Tên danh mục đã tồn tại";
     return "";
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     const err = validate();
     setError(err);
     if (err) return;
 
-    if (editing) {
-      // Cập nhật UI tại chỗ (chưa cần gọi API)
-      setCategories((prev) => prev.map((c) => (c.id === editing.id ? { ...c, ...form } : c)));
-    } else {
-      const nextId = Math.max(0, ...categories.map((c) => c.id)) + 1;
-      // Mặc định người tạo là Admin (chỉ hiển thị)
-      setCategories((prev) => [...prev, { id: nextId, createdBy: "admin", ...form }]);
+    try {
+      setLoading(true);
+      if (editing) {
+        // Update
+        const body = { id: editing.id, name: form.name.trim(), description: form.description?.trim() || "" };
+        const res = await fetch(`/categories/${editing.id}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify(body),
+        });
+        if (!res.ok) throw new Error(await res.text());
+        const updated = await res.json();
+        setCategories((prev) => prev.map((c) => (c.id === updated.id ? updated : c)));
+      } else {
+        // Create
+        const body = { name: form.name.trim(), description: form.description?.trim() || "" };
+        const res = await fetch(`/categories`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify(body),
+        });
+        if (!res.ok) throw new Error(await res.text());
+        const created = await res.json();
+        // Enrich with role for correct badge if this user is the creator
+        let createdByRole = undefined;
+        if (currentUser) {
+          const u = (currentUser.username || "").toLowerCase();
+          const e = (currentUser.email || "").toLowerCase();
+          const v = (created.createdBy || "").toLowerCase();
+          if (v && (v === u || v === e)) {
+            createdByRole = (currentUser.role || "").toLowerCase();
+          }
+        }
+        setCategories((prev) => [...prev, { ...created, ...(createdByRole ? { createdByRole } : {}) }]);
+      }
+      setModalOpen(false);
+    } catch (e) {
+      console.error(e);
+      setError(typeof e === "string" ? e : e?.message || "Có lỗi xảy ra");
+    } finally {
+      setLoading(false);
     }
-    setModalOpen(false);
   };
 
-  const handleDelete = (id) => {
-    // Xóa trên UI (chỉ hiển thị)
-    setCategories((prev) => prev.filter((c) => c.id !== id));
+  const handleDelete = async (id) => {
+    try {
+      setLoading(true);
+      const res = await fetch(`/categories/${id}`, { method: "DELETE", credentials: "include" });
+      if (!res.ok) throw new Error(await res.text());
+      setCategories((prev) => prev.filter((c) => c.id !== id));
+    } catch (e) {
+      console.error(e);
+      // Có thể hiển thị toast/alert sau
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -151,7 +256,7 @@ export default function CategoriesPage() {
               className="w-full sm:w-72 px-4 py-2 bg-white rounded-lg shadow focus:outline-none focus:ring-2 focus:ring-purple-400"
             />
             <div className="flex gap-2">
-              <button className="px-4 py-2 bg-white text-purple-700 font-semibold rounded-lg shadow hover:bg-purple-50">
+              <button onClick={handleSearch} className="px-4 py-2 bg-white text-purple-700 font-semibold rounded-lg shadow hover:bg-purple-50">
                 Tìm kiếm
               </button>
               <button
@@ -179,7 +284,11 @@ export default function CategoriesPage() {
               </tr>
             </thead>
             <tbody>
-              {filtered.length === 0 ? (
+              {loading ? (
+                <tr>
+                  <td colSpan={5} className="px-4 py-10 text-center text-gray-500">Đang tải...</td>
+                </tr>
+              ) : filtered.length === 0 ? (
                 <tr>
                   <td colSpan={5} className="px-4 py-10 text-center text-gray-500">
                     Không tìm thấy danh mục phù hợp
@@ -192,9 +301,14 @@ export default function CategoriesPage() {
                     <td className="px-4 py-3 font-medium text-gray-900">{c.name}</td>
                     <td className="px-4 py-3 text-gray-700">{c.description}</td>
                     <td className="px-4 py-3">
-                      <span className={`px-2 py-1 rounded-full text-xs font-semibold inline-block ${creatorBadgeClass(c.createdBy)}`}>
-                        {c.createdBy === "teacher" ? "Giáo viên" : "Admin"}
-                      </span>
+                      {(() => {
+                        const role = ((c.createdByRole || (currentUser && ((c.createdBy||"").toLowerCase()===((currentUser.email||"").toLowerCase()) || (c.createdBy||"").toLowerCase()===((currentUser.username||"").toLowerCase())) ? (currentUser.role||"").toLowerCase() : null)) || getCreatorBadgeRole(c.createdBy, currentUser));
+                        return (
+                          <span className={`px-2 py-1 rounded-full text-xs font-semibold inline-block ${creatorBadgeClass(role)}`}>
+                            {role === "teacher" ? "Giáo viên" : "Admin"}
+                          </span>
+                        );
+                      })()}
                     </td>
                     <td className="px-4 py-3">
                       <div className="flex items-center justify-center gap-2">
@@ -262,7 +376,7 @@ export default function CategoriesPage() {
 
               <div className="flex justify-end gap-3 pt-2">
                 <button onClick={closeModal} className="px-4 py-2 border rounded-lg hover:bg-gray-50">Hủy</button>
-                <button onClick={handleSave} className="px-4 py-2 bg-purple-700 text-white rounded-lg hover:bg-purple-800 font-semibold">
+                <button onClick={handleSave} className="px-4 py-2 bg-purple-700 text-white rounded-lg hover:bg-purple-800 font-semibold" disabled={loading}>
                   Lưu
                 </button>
               </div>

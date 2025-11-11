@@ -30,6 +30,12 @@ const nextConfig: NextConfig = {
         source: "/uploads/:path*",
         destination: "http://localhost:8082/uploads/:path*",
       },
+
+      // 5. NEW: Proxy categories CRUD to backend Spring Boot
+      {
+        source: "/categories/:path*",
+        destination: "http://localhost:8082/categories/:path*",
+      },
     ];
   },
 };
