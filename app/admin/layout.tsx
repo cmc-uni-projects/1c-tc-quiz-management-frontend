@@ -53,6 +53,58 @@ const ProfileDropdown: React.FC = () => {
   const router = useRouter();
   const [isOpen, setIsOpen] = useState<boolean>(false);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState<boolean>(false);
+  const [role, setRole] = useState<string | null>(null);
+
+  React.useEffect(() => {
+    const fetchUserRole = async () => {
+      try {
+        const response = await fetch('/api/profile');
+        if (response.ok) {
+          const data = await response.json();
+          setRole(data.role);
+        }
+      } catch (error) {
+        console.error('Error fetching user role:', error);
+      }
+    };
+    fetchUserRole();
+  }, []);
+
+  const getProfileUrl = () => {
+    switch (role?.toUpperCase()) {
+      case 'ADMIN':
+        return '/admin/profile';
+      case 'TEACHER':
+        return '/teacher/profile';
+      case 'STUDENT':
+        return '/student/profile';
+      default:
+        return '/admin/profile';
+    }
+  };
+
+  const getChangePasswordUrl = () => {
+    switch (role?.toUpperCase()) {
+      case 'ADMIN':
+        return '/admin/change-password';
+      case 'TEACHER':
+        return '/teacher/change-password';
+      case 'STUDENT':
+        return '/student/change-password';
+      default:
+        return '/admin/change-password';
+    }
+  };
+
+  const handleProfileClick = () => {
+    setIsOpen(false);
+    router.push(getProfileUrl());
+  };
+
+  const handleChangePasswordClick = () => {
+    setIsOpen(false);
+    router.push(getChangePasswordUrl());
+  };
 
   const handleLogoutClick = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -102,18 +154,18 @@ const ProfileDropdown: React.FC = () => {
 
       {isOpen && (
         <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-xl py-1 border border-zinc-200 z-10">
-          <a
-            href="/admin/profile"
-            className="block px-4 py-2 text-sm text-gray-700 hover:bg-purple-50 hover:text-purple-600"
+          <button
+            onClick={handleProfileClick}
+            className="w-full text-left block px-4 py-2 text-sm text-gray-700 hover:bg-purple-50 hover:text-purple-600"
           >
             Cập nhật thông tin
-          </a>
-          <a
-            href="/admin/change-password"
-            className="block px-4 py-2 text-sm text-gray-700 hover:bg-purple-50 hover:text-purple-600"
+          </button>
+          <button
+            onClick={handleChangePasswordClick}
+            className="w-full text-left block px-4 py-2 text-sm text-gray-700 hover:bg-purple-50 hover:text-purple-600"
           >
             Đổi mật khẩu
-          </a>
+          </button>
           <div className="border-t border-zinc-100 my-1"></div>
           <button
             onClick={handleLogoutClick}

@@ -1,27 +1,58 @@
 "use client";
 
-import React, { useState, useRef, ChangeEvent } from "react";
+import React, { useState, useRef, useEffect, ChangeEvent, FormEvent } from "react";
+import toast from "react-hot-toast";
 
 const PRIMARY_BG = "#6D0446";
 const BUTTON_BG = "#A53AEC";
-const INPUT_BG = "#ffffff";
 
 export default function AdminProfilePage() {
-  const [displayName, setDisplayName] = useState("Admin");
-  const [email] = useState("Admin@gmail.com"); // giữ nguyên như ví dụ
-  const [avatar, setAvatar] = useState<string | null>(null);
-  const [saving, setSaving] = useState(false);
-  const [message, setMessage] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement | null>(null);
+  const [username, setUsername] = useState("");
+  const [email, setEmail] = useState("");
+  const [avatar, setAvatar] = useState<string | null>(null);
+  const [avatarFile, setAvatarFile] = useState<File | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [loading, setLoading] = useState(true);
+
+  // Fetch profile data on mount
+  useEffect(() => {
+    const fetchProfile = async () => {
+      try {
+        const response = await fetch("/api/profile");
+        if (response.ok) {
+          const data = await response.json();
+          setUsername(data.username || "");
+          setEmail(data.email || "");
+          setAvatar(data.avatar || null);
+        } else {
+          toast.error("Failed to load profile");
+        }
+      } catch (error) {
+        console.error("Error fetching profile:", error);
+        toast.error("Error loading profile");
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchProfile();
+  }, []);
 
   const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files && e.target.files[0];
     if (!file) return;
 
-    // Hiển thị preview
+    // Validate file type
+    if (!file.type.startsWith("image/")) {
+      toast.error("Please select an image file");
+      return;
+    }
+
+    // Preview
     const reader = new FileReader();
     reader.onload = () => {
       setAvatar(String(reader.result));
+      setAvatarFile(file);
     };
     reader.readAsDataURL(file);
   };
@@ -30,21 +61,91 @@ export default function AdminProfilePage() {
     fileRef.current?.click();
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setSaving(true);
-    setMessage(null);
+  const handleDeleteAvatar = async () => {
+    if (!avatar) {
+      toast.error("No avatar to delete");
+      return;
+    }
 
+    setSaving(true);
     try {
-      // Ở đây chỉ mô phỏng - nếu có API, gọi API update profile
-      await new Promise((r) => setTimeout(r, 800));
-      setMessage("Cập nhật thông tin thành công.");
-    } catch (err) {
-      setMessage("Có lỗi xảy ra. Vui lòng thử lại.");
+      const response = await fetch("/api/profile", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+      });
+
+      if (response.ok) {
+        setAvatar(null);
+        setAvatarFile(null);
+        toast.success("Avatar deleted successfully!");
+      } else {
+        const errorData = await response.text();
+        toast.error(errorData || "Failed to delete avatar");
+      }
+    } catch (error) {
+      console.error("Error deleting avatar:", error);
+      toast.error(error instanceof Error ? error.message : "Error deleting avatar");
     } finally {
       setSaving(false);
     }
   };
+
+  const handleSubmit = async (e: FormEvent) => {
+    e.preventDefault();
+    if (!username.trim()) {
+      toast.error("Name cannot be empty");
+      return;
+    }
+
+    setSaving(true);
+
+    try {
+      let avatarUrl = avatar;
+
+      // Upload avatar if a new file was selected
+      if (avatarFile) {
+        const formData = new FormData();
+        formData.append("file", avatarFile);
+        const uploadResponse = await fetch("/api/profile/upload-avatar", {
+          method: "POST",
+          body: formData,
+        });
+        if (!uploadResponse.ok) {
+          throw new Error("Failed to upload avatar");
+        }
+        const uploadData = await uploadResponse.json();
+        avatarUrl = uploadData.avatarUrl;
+      }
+
+      // Update profile
+      const response = await fetch("/api/profile", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ username, avatar: avatarUrl }),
+      });
+
+      if (response.ok) {
+        toast.success("Profile updated successfully!");
+        setAvatarFile(null);
+      } else {
+        const errorData = await response.json();
+        toast.error(errorData.error || "Failed to update profile");
+      }
+    } catch (error) {
+      console.error("Error updating profile:", error);
+      toast.error(error instanceof Error ? error.message : "Error updating profile");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center h-screen" style={{ backgroundColor: PRIMARY_BG }}>
+        <p className="text-white text-lg">Loading...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-5xl mx-auto" style={{ color: "#111" }}>
@@ -57,7 +158,6 @@ export default function AdminProfilePage() {
               style={{ background: "#F7EFFF" }}
             >
               {avatar ? (
-                // eslint-disable-next-line @next/next/no-img-element
                 <img src={avatar} alt="avatar" className="w-full h-full object-cover" />
               ) : (
                 <svg
@@ -82,13 +182,25 @@ export default function AdminProfilePage() {
               className="hidden"
             />
 
-            <button
-              type="button"
-              onClick={handleChoose}
-              className="mt-4 px-4 py-2 text-sm bg-zinc-200 rounded-md"
-            >
-              Chọn tệp
-            </button>
+            <div className="flex flex-col gap-2 mt-4 w-full">
+              <button
+                type="button"
+                onClick={handleChoose}
+                className="px-4 py-2 text-sm bg-zinc-200 rounded-md hover:bg-zinc-300 transition"
+              >
+                Choose Photo
+              </button>
+              {avatar && (
+                <button
+                  type="button"
+                  onClick={handleDeleteAvatar}
+                  disabled={saving}
+                  className="px-4 py-2 text-sm bg-red-200 text-red-700 rounded-md hover:bg-red-300 transition disabled:opacity-50"
+                >
+                  Delete Photo
+                </button>
+              )}
+            </div>
           </div>
 
           {/* Form thông tin */}
@@ -104,18 +216,19 @@ export default function AdminProfilePage() {
                     className="w-full px-4 py-3 rounded-md text-sm bg-zinc-100 border border-zinc-200"
                   />
                   <div className="mt-2">
-                    <span className="text-sm text-red-400">Không thể thay đổi email</span>
+                    <span className="text-sm text-red-400">Email cannot be changed</span>
                   </div>
                 </div>
               </div>
 
               <div className="mb-6">
-                <label className="block text-sm text-zinc-600 mb-1">Tên hiển thị</label>
+                <label className="block text-sm text-zinc-600 mb-1">Name</label>
                 <input
-                  value={displayName}
-                  onChange={(e) => setDisplayName(e.target.value)}
-                  className="w-full px-4 py-3 rounded-md text-sm bg-white border border-zinc-200"
-                  placeholder="Nhập tên hiển thị"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                  className="w-full px-4 py-3 rounded-md text-sm bg-white border border-zinc-200 focus:outline-none focus:ring-2 focus:ring-purple-400"
+                  placeholder="Enter your name"
+                  required
                 />
               </div>
 
@@ -128,20 +241,12 @@ export default function AdminProfilePage() {
                     saving ? "opacity-70 cursor-not-allowed" : "hover:brightness-110"
                   }`}
                 >
-                  {saving ? "Đang cập nhật..." : "Cập nhật"}
+                  {saving ? "Updating..." : "Update Profile"}
                 </button>
-
-                {message && (
-                  <div className="text-sm text-green-600 text-center" role="status">
-                    {message}
-                  </div>
-                )}
               </div>
             </div>
           </form>
         </div>
-
-        {/* Footer is provided by the admin layout; removed duplicate footer here */}
       </div>
     </div>
   );

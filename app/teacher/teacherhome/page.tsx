@@ -9,6 +9,16 @@ const TeacherHome = () => {
   const [showDropdown, setShowDropdown] = useState(false);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
 
+  const handleProfileClick = () => {
+    setShowDropdown(false);
+    router.push('/teacher/profile');
+  };
+
+  const handleChangePasswordClick = () => {
+    setShowDropdown(false);
+    router.push('/teacher/change-password');
+  };
+
   const handleLogoutClick = () => {
     setShowLogoutConfirm(true);
     setShowDropdown(false);
@@ -96,12 +106,12 @@ const TeacherHome = () => {
             {/* Dropdown Menu */}
             {showDropdown && (
               <div className="absolute top-full right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 z-10">
-                <button className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 border-b border-gray-100">
+                <button onClick={handleProfileClick} className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 border-b border-gray-100">
                   Cập nhật thông tin
                 </button>
-                <a href="/teacher/change-password" className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 border-b border-gray-100">
+                <button onClick={handleChangePasswordClick} className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 border-b border-gray-100">
                   Đổi mật khẩu
-                </a>
+                </button>
                 <button
                   onClick={handleLogoutClick}
                   className="w-full text-left px-3 py-2 text-sm text-purple-600 hover:bg-purple-50 flex items-center gap-2"

@@ -1,14 +1,5 @@
-import { PrismaClient } from '@prisma/client';
+// Prisma client not needed - authentication and data management
+// are handled by the backend Spring Boot server
 
-declare global {
-  // eslint-disable-next-line no-var
-  var prisma: PrismaClient | undefined;
-}
-
-export const prisma = global.prisma || new PrismaClient();
-
-if (process.env.NODE_ENV !== 'production') {
-  global.prisma = prisma;
-}
-
-export default prisma;
+export const prisma = null;
+export default null;
