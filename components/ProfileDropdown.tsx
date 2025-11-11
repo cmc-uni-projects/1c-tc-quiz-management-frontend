@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import toast from "react-hot-toast";
 
 export default function ProfileDropdown() {
   const router = useRouter();
@@ -81,13 +82,14 @@ export default function ProfileDropdown() {
         method: 'POST',
         credentials: 'include',
       });
-      if (response.ok) {
-        setOpen(false);
-        router.push('/login');
-      }
+      setOpen(false);
+      // Consider logout successful if the request completes; API already attempts multiple endpoints
+      toast.success('Đăng xuất thành công');
+      router.push('/login');
     } catch (error) {
       console.error('Logout error:', error);
       setOpen(false);
+      toast.error('Có lỗi khi đăng xuất');
       router.push('/login');
     }
   };

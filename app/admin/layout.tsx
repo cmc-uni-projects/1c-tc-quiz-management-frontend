@@ -3,6 +3,7 @@
 
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
+import toast from "react-hot-toast";
 
 // Màu tím chính và màu sắc theo yêu cầu
 const PRIMARY_COLOR = "#6A1B9A";
@@ -114,13 +115,16 @@ const ProfileDropdown: React.FC = () => {
 
   const handleLogoutConfirm = async (): Promise<void> => {
     try {
-      await fetch("/api/auth/logout", { 
+      const res = await fetch("/api/perform_logout", { 
         method: "POST", 
         credentials: "include" 
       });
+      // Consider logout successful if request completes
+      toast.success("Đăng xuất thành công");
       router.push("/");
     } catch (error) {
       console.error("Logout error:", error);
+      toast.error("Có lỗi khi đăng xuất");
       router.push("/");
     }
   };

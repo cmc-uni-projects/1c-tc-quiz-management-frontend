@@ -3,51 +3,7 @@
 import React from "react";
 
 // Định nghĩa các màu sắc chính dựa trên yêu cầu
-const PRIMARY_PURPLE = '#E33AEC';
-const BACKGROUND_COLOR = '#6D0446'; // Màu nền tối toàn cục (sẽ bị ghi đè/kết hợp với ảnh nền)
 const EXPLORE_BUTTON_COLOR = '#A53AEC'; // Màu cho nút "Khám phá ngay"
-
-// Component Header (Navbar) - Sao chép từ PublicHeader trong app/page.jsx gốc
-const PublicHeader = () => {
-    return (
-        <header data-global="true" className="sticky top-0 z-50 w-full border-b border-zinc-100 bg-white/95 backdrop-blur">
-            <div className="mx-auto flex w-full max-w-full items-center justify-between gap-2 px-4 py-3 md:px-6"> 
-                
-                {/* 1. Logo/Tên dự án */}
-                <a 
-                    href="/" 
-                    className="shrink-0 text-4xl font-black tracking-tighter" 
-                    style={{ color: PRIMARY_PURPLE }} 
-                >
-                    QuizzZone
-                </a>
-                
-                {/* 3. Nút Hành động Đăng nhập/Đăng ký */}
-                <div className="flex shrink-0 items-center gap-2">
-                    <a 
-                        href="/login" 
-                        className="rounded-full px-5 py-2 font-medium shadow-md transition duration-200 text-base" 
-                        style={{ backgroundColor: '#0000002E', color: 'black' }} 
-                    >
-                        Đăng nhập
-                    </a>
-                    
-                    <a 
-                        href="/register" 
-                        className="rounded-full px-5 py-2 font-bold shadow-md transition duration-200 text-base border-2"
-                        style={{ 
-                            backgroundColor: 'white', 
-                            color: PRIMARY_PURPLE, 
-                            borderColor: PRIMARY_PURPLE, 
-                        }} 
-                    >
-                        Đăng ký
-                    </a>
-                </div>
-            </div>
-        </header>
-    );
-};
 
 // Component Footer - Sao chép từ Footer trong app/page.jsx gốc
 const Footer = () => (
@@ -58,12 +14,11 @@ const Footer = () => (
     </footer>
 );
 
-
 export default function PublicHome() {
     return (
         <>
-            <PublicHeader />
-            
+            {/* Dùng Navbar toàn cục trong app/layout.tsx, KHÔNG render header riêng ở đây để tránh trùng lặp */}
+
             {/* Main Content Area - Đã thêm ảnh nền */}
             <main 
                 className="min-h-[calc(100vh-140px)] flex flex-col items-center justify-center py-10 px-4 text-white bg-no-repeat bg-cover bg-center" 

@@ -1,6 +1,7 @@
 'use client'; 
 
 import React, { useState } from "react";
+import toast from "react-hot-toast";
 // Đã loại bỏ import { useRouter } from "next/navigation"; để tránh lỗi biên dịch
 
 // Màu tím chính và màu sắc theo yêu cầu
@@ -39,14 +40,15 @@ const ProfileDropdown = () => {
     };
 
     const handleLogoutConfirm = async () => {
-        // Giả lập hành động đăng xuất
         try {
-            // Thay thế router.push('/') bằng window.location.href
-            // Trong môi trường thực, đây sẽ là một cuộc gọi API tới backend để xóa session/token
-            // await fetch('/logout', { method: 'POST', credentials: 'include' });
-            window.location.href = '/'; 
+            // Gọi API đăng xuất nếu có
+            const res = await fetch('/api/perform_logout', { method: 'POST', credentials: 'include' });
+            // Consider logout successful if request completes
+            toast.success('Đăng xuất thành công');
+            window.location.href = '/';
         } catch (error) {
             console.error('Logout error:', error);
+            toast.error('Có lỗi khi đăng xuất');
             window.location.href = '/'; 
         }
     };
