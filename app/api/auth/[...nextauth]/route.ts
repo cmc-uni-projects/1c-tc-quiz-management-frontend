@@ -6,6 +6,7 @@ import { NextResponse } from 'next/server';
 
 export const authOptions = {
   providers: [],
+
   pages: {
     signIn: '/login',
     error: '/login',
