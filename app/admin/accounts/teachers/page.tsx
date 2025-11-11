@@ -71,16 +71,57 @@ async function deleteTeacherInBackend(id: number) {
 }
 
 // Hàm format ngày
-const formatDate = (dateString: string | null) => {
-  if (!dateString) return 'Chưa có';
-  const date = new Date(dateString);
-  return date.toLocaleString('vi-VN', {
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
-  });
+const formatDate = (dateString: string | null | undefined) => {
+  // Kiểm tra xem trường lastVisit có tồn tại trong dữ liệu không
+  if (dateString === undefined) {
+    console.warn('Trường lastVisit không tồn tại trong dữ liệu trả về');
+    return 'Chưa kích hoạt';
+  }
+  
+  if (dateString === null) {
+    console.log('Giáo viên chưa đăng nhập lần nào hoặc hệ thống chưa cập nhật');
+    return 'Chưa đăng nhập lần nào';
+  }
+  
+  if (dateString.trim() === '') {
+    return 'Chưa cập nhật';
+  }
+  
+  try {
+    let date: Date;
+    
+    // Xử lý timestamp (số nguyên dạng chuỗi)
+    if (/^\d+$/.test(dateString)) {
+      date = new Date(parseInt(dateString));
+    } 
+    // Xử lý định dạng ISO 8601 (có chứa 'T')
+    else if (dateString.includes('T')) {
+      date = new Date(dateString);
+    } 
+    // Thử parse bình thường
+    else {
+      date = new Date(dateString);
+    }
+    
+    // Kiểm tra ngày hợp lệ
+    if (isNaN(date.getTime())) {
+      console.warn('Chuỗi ngày không hợp lệ:', dateString);
+      return 'Ngày không hợp lệ';
+    }
+    
+    // Định dạng ngày tháng theo tiếng Việt
+    return date.toLocaleString('vi-VN', {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: false
+    });
+  } catch (error) {
+    console.error('Lỗi khi định dạng ngày:', error, 'Chuỗi ngày:', dateString);
+    return 'Lỗi định dạng';
+  }
 };
 
 // Hàm format trạng thái
@@ -135,12 +176,33 @@ const TeacherAccountsPage = () => {
         size: itemsPerPage,
       });
 
+      console.log('API Response:', data); // Log the API response
+
       // Filter by status if needed
       let filteredContent = data.content || [];
       if (appliedStatus !== 'all') {
         filteredContent = filteredContent.filter(
           (t: Teacher) => getStatusDisplay(t.status) === appliedStatus
         );
+      }
+
+      // Log the lastVisit data for each teacher
+      console.log('Teachers with lastVisit data (raw):', JSON.stringify(
+        filteredContent.map((t: Teacher) => ({
+          id: t.teacherId,
+          username: t.username,
+          lastVisit: t.lastVisit,
+          lastVisitType: typeof t.lastVisit,
+          isNull: t.lastVisit === null,
+          isUndefined: t.lastVisit === undefined,
+          isEmptyString: t.lastVisit === '',
+          formattedLastVisit: formatDate(t.lastVisit)
+        })), null, 2)
+      );
+      
+      // Log the first teacher's data in detail
+      if (filteredContent.length > 0) {
+        console.log('First teacher full data:', JSON.stringify(filteredContent[0], null, 2));
       }
 
       setTeachers(filteredContent);
