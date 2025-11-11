@@ -6,7 +6,7 @@ import Swal from 'sweetalert2';
 import toast from 'react-hot-toast';
 
 // Cấu hình API
-const API_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "";
+const API_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8082";
 
 // Màu sắc theo layout
 const PRIMARY_COLOR = "#6A1B9A";

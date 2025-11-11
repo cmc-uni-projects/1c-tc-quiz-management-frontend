@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 
 // === CẤU HÌNH API BACKEND ===
 // Để dùng Next.js rewrites (same-origin, có cookie), để trống sẽ gọi trực tiếp "/admin/..." hoặc "/teachers/..."
-const API_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "";
+const API_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8082";
 
 // --- HÀM GỌI API BACKEND ---
 
