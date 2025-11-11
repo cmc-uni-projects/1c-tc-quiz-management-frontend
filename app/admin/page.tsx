@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import toast from 'react-hot-toast';
 
 // Định nghĩa màu sắc theo cấu trúc layout
 const MAIN_BANNER_BG = '#6D0446'; // Màu tím sẫm (PRIMARY_COLOR từ layout)
@@ -16,18 +17,17 @@ export default function AdminPage() {
 
     const handleLogout = async () => {
         try {
-            const response = await fetch('/api/auth/logout', { 
+      const response = await fetch('/api/perform_logout', { 
                 method: 'POST',
                 credentials: 'include' 
             });
             
-            if (response.ok) {
-                router.push('/login');
-            } else {
-                console.error('Logout failed');
-            }
-        } catch (error) {
+        // Treat as success if request completes; server API normalizes redirects
+        toast.success('Đăng xuất thành công');
+        router.push('/login');
+    } catch (error) {
             console.error('Logout error:', error);
+            toast.error('Có lỗi khi đăng xuất');
             router.push('/login');
         }
     };

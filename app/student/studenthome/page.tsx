@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import toast from 'react-hot-toast';
 
 const StudentHome = () => {
   const router = useRouter();
@@ -26,10 +27,13 @@ const StudentHome = () => {
 
   const handleLogoutConfirm = async () => {
     try {
-      await fetch('/logout', { method: 'POST', credentials: 'include' });
+      const res = await fetch('/api/perform_logout', { method: 'POST', credentials: 'include' });
+      // Consider logout successful if request completes
+      toast.success('Đăng xuất thành công');
       router.push('/');
     } catch (error) {
       console.error('Logout error:', error);
+      toast.error('Có lỗi khi đăng xuất');
       router.push('/');
     }
   };

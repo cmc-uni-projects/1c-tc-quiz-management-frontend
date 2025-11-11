@@ -5,8 +5,15 @@ import { usePathname } from "next/navigation";
 export default function Navbar() {
   const pathname = usePathname();
 
-  // Hide navbar for admin section (admin has its own layout)
-  if (pathname?.startsWith("/admin")) return null;
+  // Hide navbar on pages that render their own header to prevent duplicates
+  const hideOnRoutes = [
+    "/admin",                    // Admin area has its own layout/header
+    "/student/studenthome",      // Student home renders a local header
+    "/teacher/teacherhome",      // Teacher home renders a local header
+    "/student/change-password",  // Student change-password has its own header
+    "/teacher/change-password",  // Teacher change-password has its own header
+  ];
+  if (pathname && hideOnRoutes.some((p) => pathname.startsWith(p))) return null;
 
   return (
     <header data-global="true" className="sticky top-0 z-50 w-full border-b border-zinc-100 bg-white/95 backdrop-blur">
