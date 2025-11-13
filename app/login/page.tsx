@@ -4,6 +4,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
+import { fetchApi } from '@/lib/apiClient'; // Sử dụng lại API client của chúng ta
 
 export default function LoginPage() {
   const router = useRouter();
@@ -19,52 +20,41 @@ export default function LoginPage() {
     setLoading(true);
 
     try {
-      const form = new URLSearchParams();
-      form.append('email', username);
-      form.append('password', password);
-
-      const res = await fetch('/api/perform_login', {
+      // Gọi thẳng đến API login của backend
+      const data = await fetchApi('/login', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: form.toString(),
-        credentials: 'include',
-        redirect: 'follow',
+        body: {
+          email: username,
+          password: password,
+        },
       });
 
-      if (res.ok) {
-        const data = await res.json();
-        const role = data.role;
-        toast.success('Đăng nhập thành công!');
-        if (role === 'STUDENT') {
-          router.push('/student/studenthome');
-        } else if (role === 'TEACHER') {
-          router.push('/teacher/teacherhome');
-        } else if (role === 'ADMIN') {
-          router.push('/admin');
-        } else {
-          // Fallback redirect if role is not as expected
-          router.push('/');
-        }
-        return;
-      }
-
-      // Handle errors
-      const errorData = await res.json().catch(() => ({ error: 'Đăng nhập thất bại' }));
-      throw new Error(errorData.error || 'Đăng nhập thất bại');
-    } catch (err: any) {
-      let errorMessage = 'Đã có lỗi xảy ra. Vui lòng thử lại.';
-      if (err.message === 'Invalid credentials') {
-        errorMessage = 'Sai tài khoản hoặc mật khẩu.';
-      } else if (err.message.includes('Failed to fetch')) {
-        errorMessage = 'Lỗi kết nối. Vui lòng kiểm tra lại đường truyền mạng.';
-      }
+      toast.success('Đăng nhập thành công!');
       
-      setError(errorMessage);
+      // Sau khi đăng nhập, refresh lại trang để các component khác
+      // có thể gọi API và lấy đúng trạng thái user mới
+      // Hoặc chuyển hướng dựa trên role trả về
+      const role = data.role;
+      if (role === 'STUDENT') {
+        router.push('/student/studenthome');
+      } else if (role === 'TEACHER') {
+        router.push('/teacher/teacherhome');
+      } else if (role === 'ADMIN') {
+        router.push('/admin');
+      } else {
+        router.push('/');
+      }
+      // Quan trọng: refresh lại state của toàn bộ app
+      router.refresh();
+
+    } catch (err: any) {
+      setError(err.message || 'Sai tài khoản hoặc mật khẩu.');
     } finally {
       setLoading(false);
     }
   }
-
+  
+  // ... (phần JSX của component giữ nguyên)
   return (
     <div className="mx-auto max-w-4xl px-4 py-10">
       <div className="mx-auto w-full rounded-lg border border-zinc-200 bg-white p-8 shadow-sm">

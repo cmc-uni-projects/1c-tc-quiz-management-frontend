@@ -10,7 +10,7 @@ export async function POST(req: NextRequest) {
     const candidates = [
       '/logout',
       '/api/auth/logout',
-      '/perform_logout',
+      '/api/logout',
     ];
 
     let ok = false;
