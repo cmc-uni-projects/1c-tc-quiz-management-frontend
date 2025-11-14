@@ -96,7 +96,7 @@ const ProfileDropdown: React.FC = () => {
   const handleLogoutConfirm = async (): Promise<void> => {
     try {
       // Gọi API logout của backend
-      await fetch("/api/perform_logout", { method: "POST", credentials: "include" });
+      await fetch("/api/logout", { method: "POST", credentials: "include" });
       toast.success("Đăng xuất thành công");
       // Trigger SWR để fetch lại user (sẽ trả về lỗi 401) và tự động redirect
       mutate(); 
