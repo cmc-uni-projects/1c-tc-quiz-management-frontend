@@ -30,7 +30,29 @@ export default function RootLayout({
       <body className={`${geistSans.variable} ${geistMono.variable}`}>
         <Navbar />
         {children}
-        <Toaster position="bottom-right" />
+        <Toaster
+          position="bottom-right"
+          toastOptions={{
+            style: {
+              borderRadius: "10px",
+              background: "#111827",
+              color: "#F9FAFB",
+              fontSize: "0.9rem",
+            },
+            success: {
+              iconTheme: {
+                primary: "#22C55E",
+                secondary: "#ECFDF3",
+              },
+            },
+            error: {
+              iconTheme: {
+                primary: "#EF4444",
+                secondary: "#FEF2F2",
+              },
+            },
+          }}
+        />
       </body>
     </html>
   );

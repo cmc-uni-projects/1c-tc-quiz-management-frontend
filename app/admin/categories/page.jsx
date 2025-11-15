@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import toast from "react-hot-toast";
 
 // Màu tím nhạt giống các trang Admin
 const PRIMARY_PURPLE_BG = "#E33AEC7A";
@@ -192,6 +193,7 @@ export default function CategoriesPage() {
         if (!res.ok) throw new Error(await res.text());
         const updated = await res.json();
         setCategories((prev) => prev.map((c) => (c.id === updated.id ? updated : c)));
+        toast.success("Cập nhật danh mục thành công");
       } else {
         // Create
         const body = { name: form.name.trim(), description: form.description?.trim() || "" };
@@ -214,6 +216,7 @@ export default function CategoriesPage() {
           }
         }
         setCategories((prev) => [...prev, { ...created, ...(createdByRole ? { createdByRole } : {}) }]);
+        toast.success("Tạo danh mục thành công");
       }
       setModalOpen(false);
     } catch (e) {

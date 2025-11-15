@@ -55,20 +55,24 @@ const ProfileDropdown: React.FC = () => {
   const [isOpen, setIsOpen] = useState<boolean>(false);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState<boolean>(false);
   const [role, setRole] = useState<string | null>(null);
+  const [username, setUsername] = useState<string | null>(null);
+  const [avatar, setAvatar] = useState<string | null>(null);
 
   React.useEffect(() => {
-    const fetchUserRole = async () => {
+    const fetchUserProfile = async () => {
       try {
         const response = await fetch('/api/profile');
         if (response.ok) {
           const data = await response.json();
           setRole(data.role);
+          setUsername(data.username || null);
+          setAvatar(data.avatar || null);
         }
       } catch (error) {
-        console.error('Error fetching user role:', error);
+        console.error('Error fetching user profile:', error);
       }
     };
-    fetchUserRole();
+    fetchUserProfile();
   }, []);
 
   const getProfileUrl = () => {
@@ -146,13 +150,17 @@ const ProfileDropdown: React.FC = () => {
         style={profileStyle}
         aria-expanded={isOpen}
       >
-        {/* User Icon */}
-        <div className="w-8 h-8 rounded-full bg-purple-300 flex items-center justify-center text-purple-800">
-          <UserIcon />
+        {/* Avatar or fallback user icon */}
+        <div className="w-8 h-8 rounded-full bg-purple-300 flex items-center justify-center text-purple-800 overflow-hidden">
+          {avatar ? (
+            <img src={avatar} alt="avatar" className="w-full h-full object-cover" />
+          ) : (
+            <UserIcon />
+          )}
         </div>
-        {/* Text "Xin chào, Admin" */}
+        {/* Greeting with username */}
         <span className="font-semibold text-purple-800 text-sm hidden sm:inline">
-          Xin chào, Admin
+          {`Xin chào, ${username || 'Admin'}`}
         </span>
       </button>
 
