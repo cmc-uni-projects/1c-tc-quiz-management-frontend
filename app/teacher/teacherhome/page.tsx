@@ -115,7 +115,7 @@ const TeacherHome = () => {
             Trang chủ
           </a>
           <a
-            href="#"
+            href="/teacher/categories"
             className="block rounded-lg px-3 py-2 hover:bg-zinc-50"
           >
             Danh mục câu hỏi
