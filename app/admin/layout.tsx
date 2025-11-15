@@ -355,11 +355,7 @@ const AdminSidebar: React.FC = () => {
         </div>
 
         {/* Mục Điều hướng */}
-        <nav className="text-xs font-medium text-zinc-700">
-          <div 
-            className="h-1 border-b border-zinc-200"
-            style={{ backgroundColor: "#eee" }}
-          ></div>
+        <nav className="px-4 py-4 text-sm font-medium text-zinc-700 space-y-1">
           {navItems.map((item) => {
             const hasSubmenu = !!item.submenu;
             const isOpen = openSubmenu === item.name;
@@ -367,17 +363,13 @@ const AdminSidebar: React.FC = () => {
 
             if (hasSubmenu) {
               return (
-                <div key={item.name} className="border-b border-zinc-200">
+                <div key={item.name}>
                   {/* Mục cha (có submenu) */}
                   <button
                     onClick={() => handleToggleSubmenu(item.name)}
-                    className={`flex items-center w-full px-4 py-2 text-xs transition duration-150 text-left 
-                                            ${
-                                              isCurrentActive
-                                                ? "bg-zinc-100 font-semibold text-purple-700"
-                                                : "hover:bg-zinc-50"
-                                            }
-                                        `}
+                    className={`flex items-center w-full rounded-lg px-3 py-2 text-left transition-colors duration-150
+                      ${isCurrentActive ? "bg-zinc-100 text-purple-700 font-semibold" : "hover:bg-zinc-50"}
+                    `}
                   >
                     <span>{item.name}</span>
                     <ChevronDownIcon isOpen={isOpen} />
@@ -390,20 +382,14 @@ const AdminSidebar: React.FC = () => {
                     }`}
                   >
                     {item.submenu && item.submenu.map((subItem) => {
-                      const subIsActive = currentPathname.startsWith(
-                        subItem.href
-                      );
+                      const subIsActive = currentPathname.startsWith(subItem.href);
                       return (
                         <a
                           key={subItem.name}
                           href={subItem.href}
-                          className={`flex items-center w-full pl-6 pr-4 py-1.5 text-xs transition duration-150 
-                                                        ${
-                                                          subIsActive
-                                                            ? "bg-zinc-200 font-semibold text-purple-700"
-                                                            : "hover:bg-zinc-100"
-                                                        }
-                                                    `}
+                          className={`mt-1 ml-4 flex items-center w-full rounded-lg px-3 py-1.5 text-xs transition-colors duration-150
+                            ${subIsActive ? "bg-zinc-100 text-purple-700 font-semibold" : "hover:bg-zinc-50"}
+                          `}
                         >
                           <span>{subItem.name}</span>
                         </a>
@@ -414,20 +400,16 @@ const AdminSidebar: React.FC = () => {
               );
             }
 
-            // Mục không có submenu (giữ nguyên)
+            // Mục không có submenu
             return (
               <a
                 key={item.name}
                 href={item.href}
-                className={`flex items-center w-full px-4 py-2 text-xs transition duration-150 border-b border-zinc-200 
-                                    ${
-                                      isCurrentActive
-                                        ? "bg-zinc-100 font-semibold text-purple-700"
-                                        : "hover:bg-zinc-50"
-                                    }
-                                `}
+                className={`block rounded-lg px-3 py-2 transition-colors duration-150
+                  ${isCurrentActive ? "bg-zinc-100 text-purple-700 font-semibold" : "hover:bg-zinc-50"}
+                `}
               >
-                <span>{item.name}</span>
+                {item.name}
               </a>
             );
           })}
