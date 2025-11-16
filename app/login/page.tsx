@@ -4,10 +4,12 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
-import { fetchApi } from '@/lib/apiClient'; // Sử dụng lại API client của chúng ta
+import { fetchApi } from '@/lib/apiClient';
+import { useUser } from '@/lib/user'; // Import useUser
 
 export default function LoginPage() {
   const router = useRouter();
+  const { mutate } = useUser(); // Lấy hàm mutate từ context
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -20,21 +22,28 @@ export default function LoginPage() {
     setLoading(true);
 
     try {
-      // Gọi thẳng đến API login của backend
-      const data = await fetchApi('/login', {
+      const formData = new URLSearchParams();
+      formData.append('email', username);
+      formData.append('password', password);
+
+      // 1. Gọi API login và lấy dữ liệu trả về
+      const loginData = await fetchApi('/login', {
         method: 'POST',
-        body: {
-          email: username,
-          password: password,
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
         },
+        body: formData,
       });
+
+      // 2. Cập nhật "nhanh" state toàn cục của user với dữ liệu từ /login
+      //    SWR sẽ ngay lập tức có dữ liệu user mà không cần gọi /me
+      //    revalidate: false để SWR không trigger gọi lại /me ngay tức thì
+      mutate(loginData, { revalidate: false });
 
       toast.success('Đăng nhập thành công!');
       
-      // Sau khi đăng nhập, refresh lại trang để các component khác
-      // có thể gọi API và lấy đúng trạng thái user mới
-      // Hoặc chuyển hướng dựa trên role trả về
-      const role = data.role;
+      // 3. Chuyển hướng dựa trên vai trò từ response của /login
+      const role = loginData?.role;
       if (role === 'STUDENT') {
         router.push('/student/studenthome');
       } else if (role === 'TEACHER') {
@@ -42,13 +51,17 @@ export default function LoginPage() {
       } else if (role === 'ADMIN') {
         router.push('/admin');
       } else {
+        // Nếu không có vai trò, về trang chủ và để SWR tự cập nhật
         router.push('/');
       }
-      // Quan trọng: refresh lại state của toàn bộ app
-      router.refresh();
 
     } catch (err: any) {
-      setError(err.message || 'Sai tài khoản hoặc mật khẩu.');
+      // Cải thiện xử lý lỗi cho trường hợp CSRF (403)
+      if (err.message && err.message.includes('403')) {
+        setError('Phiên của bạn không hợp lệ. Vui lòng làm mới trang và thử lại.');
+      } else {
+        setError(err.message || 'Sai tài khoản hoặc mật khẩu.');
+      }
     } finally {
       setLoading(false);
     }

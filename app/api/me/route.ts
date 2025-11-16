@@ -17,10 +17,11 @@ export async function GET() {
   try {
     // Gọi đến backend Spring Boot để lấy thông tin user
     // Giả sử backend có endpoint /api/profile để trả về thông tin user hiện tại
+    const allCookies = cookieStore.getAll().map(cookie => `${cookie.name}=${cookie.value}`).join('; ');
+
     const response = await fetch(`${BACKEND_URL}/api/profile`, {
       headers: {
-        // Chuyển tiếp cookie session đến backend
-        'Cookie': `${sessionCookie.name}=${sessionCookie.value}`,
+        'Cookie': allCookies,
       },
     });
 

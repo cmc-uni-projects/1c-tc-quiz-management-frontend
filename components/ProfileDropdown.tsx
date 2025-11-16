@@ -1,13 +1,13 @@
-"use client";
-
+import { fetchApi } from "@/lib/apiClient";
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import toast from "react-hot-toast";
+import { useUser } from "@/lib/user"; // Import useUser
 
 export default function ProfileDropdown() {
   const router = useRouter();
+  const { user, mutate } = useUser(); // Sử dụng hook để lấy user và hàm mutate
   const [open, setOpen] = useState(false);
-  const [role, setRole] = useState<string | null>(null);
   const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -25,23 +25,8 @@ export default function ProfileDropdown() {
     };
   }, []);
 
-  useEffect(() => {
-    const fetchUserRole = async () => {
-      try {
-        const response = await fetch('/api/profile');
-        if (response.ok) {
-          const data = await response.json();
-          setRole(data.role);
-        }
-      } catch (error) {
-        console.error('Error fetching user role:', error);
-      }
-    };
-    fetchUserRole();
-  }, []);
-
   const getProfileUrl = () => {
-    switch (role?.toUpperCase()) {
+    switch (user?.role?.toUpperCase()) {
       case 'ADMIN':
         return '/admin/profile';
       case 'TEACHER':
@@ -54,7 +39,7 @@ export default function ProfileDropdown() {
   };
 
   const getChangePasswordUrl = () => {
-    switch (role?.toUpperCase()) {
+    switch (user?.role?.toUpperCase()) {
       case 'ADMIN':
         return '/admin/change-password';
       case 'TEACHER':
@@ -78,18 +63,17 @@ export default function ProfileDropdown() {
 
   const handleLogout = async () => {
     try {
-      const response = await fetch('/api/perform_logout', {
+      await fetchApi('/logout', { // Sửa endpoint thành /logout
         method: 'POST',
-        credentials: 'include',
       });
-      setOpen(false);
-      // Consider logout successful if the request completes; API already attempts multiple endpoints
       toast.success('Đăng xuất thành công');
-      router.push('/login');
     } catch (error) {
       console.error('Logout error:', error);
-      setOpen(false);
       toast.error('Có lỗi khi đăng xuất');
+    } finally {
+      // Dù thành công hay thất bại, xóa state user và chuyển hướng
+      await mutate(); // Xóa cache SWR và trigger re-fetch (sẽ trả về lỗi 401)
+      setOpen(false);
       router.push('/login');
     }
   };

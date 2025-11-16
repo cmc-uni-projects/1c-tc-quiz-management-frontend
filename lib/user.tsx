@@ -1,52 +1,68 @@
 'use client';
 
-import React, { createContext, useContext } from 'react';
+import React, { createContext, useContext, useCallback } from 'react';
 import useSWR from 'swr';
-import { fetchApi } from './apiClient'; // Dùng apiClient đã có
+import { fetchApi } from './apiClient';
 
-// Định nghĩa kiểu dữ liệu cho User
 interface User {
   id: string;
   name: string;
   email: string;
   role: 'ADMIN' | 'TEACHER' | 'STUDENT';
+  avatarUrl?: string;
 }
 
-// Định nghĩa kiểu dữ liệu cho Context
 interface UserContextType {
   user: User | null;
   isLoading: boolean;
   error: any;
-  mutate: () => void; // Hàm để trigger việc fetch lại dữ liệu user
+  mutate: () => void;
+  isAuthenticated: boolean;
 }
 
-// Tạo Context
 const UserContext = createContext<UserContextType | undefined>(undefined);
 
-// Hàm fetcher cho SWR
-const fetcher = (url: string) => fetchApi(url);
+// Fetcher for SWR: handles fetching user data.
+const fetcher = async (url: string): Promise<User | null> => {
+  try {
+    // fetchApi sends cookies automatically.
+    return await fetchApi(url);
+  } catch (error: any) {
+    // If the error is a 401, it means the user is not logged in.
+    // This is an expected state, so we return null.
+    // This prevents the "error" from being logged to the console.
+    if (error.message.includes('401')) {
+      return null;
+    }
+    // For other errors (e.g., 500), we re-throw so SWR can record it.
+    throw error;
+  }
+};
 
-// Tạo Provider
 export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  // Dùng SWR để fetch dữ liệu từ /api/me
-  // /api/me là một API route của Next.js mà chúng ta sẽ tạo ở bước tiếp theo
-  const { data, error, isLoading, mutate } = useSWR<User>('/me', fetcher, {
-    // Tự động fetch lại khi focus vào tab, nhưng không fetch lại khi bị lỗi
-    revalidateOnFocus: true,
-    shouldRetryOnError: false,
-  });
+  const { data, error, isLoading, mutate } = useSWR<User | null>(
+    '/me', // API endpoint to get user info
+    fetcher,
+    {
+      shouldRetryOnError: false, // Don't retry on errors like 500
+      revalidateOnFocus: false, // Optional: disable re-fetching on window focus
+    }
+  );
+
+  // The user is authenticated if there is data and no error.
+  const isAuthenticated = !!data && !error;
 
   const value = {
     user: data || null,
     isLoading,
     error,
-    mutate,
+    mutate: useCallback(() => mutate(), [mutate]),
+    isAuthenticated,
   };
 
   return <UserContext.Provider value={value}>{children}</UserContext.Provider>;
 };
 
-// Tạo hook `useUser`
 export const useUser = (): UserContextType => {
   const context = useContext(UserContext);
   if (context === undefined) {
