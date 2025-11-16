@@ -247,7 +247,7 @@ export default function CreateExamPage() {
                 </label>
 
                 <div className="flex items-center gap-2">
-                  <span>Khoảng thời gian:</span>
+                 <span className="text-sm">Khoảng thời gian:</span>
                   <input
                     type="number"
                     value={duration}
@@ -409,7 +409,7 @@ export default function CreateExamPage() {
                       onClick={() => addAnswer(q.id)}
                       className="px-4 py-1.5 border border-purple-500 text-purple-600 rounded-md"
                     >
-                      Thêm câu hỏi
+                      Thêm đáp án
                     </button>
                     <button
                       onClick={() => removeQuestion(q.id)}
