@@ -50,7 +50,8 @@ export default function ForgotPasswordPage() {
         console.log('Parsed JSON response:', responseData);
       } catch (e) {
         console.error('Failed to parse response as JSON:', text);
-        throw new Error('Invalid response format from server');
+        // Thông báo thân thiện khi phản hồi từ server không đúng định dạng JSON
+        throw new Error('Phản hồi từ máy chủ không đúng định dạng. Vui lòng thử lại sau.');
       }
 
       if (!res.ok) {

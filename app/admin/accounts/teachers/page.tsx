@@ -46,7 +46,8 @@ async function fetchTeachersFromBackend(params: {
 
   if (res.status === 401 || res.status === 403) {
     window.location.href = '/login';
-    throw new Error('Unauthorized');
+    // Thông báo thân thiện khi chưa đăng nhập hoặc không có quyền
+    throw new Error('Bạn chưa đăng nhập hoặc không có quyền truy cập. Vui lòng đăng nhập lại.');
   }
 
   if (!res.ok) {
@@ -411,12 +412,12 @@ const TeacherAccountsPage = () => {
         </div>
 
         {/* Phân trang */}
-        <div className="p-4 border-t border-gray-200 flex justify-center items-center gap-1">
+        <div className="p-4 border-t border-gray-200 flex justify-center items-center gap-2 text-xs text-gray-500">
           {/* Nút về trang đầu */}
           <button
             onClick={() => setCurrentPage(0)}
             disabled={currentPage === 0 || loading}
-            className="px-3 py-2 border border-gray-300 bg-white text-gray-700 text-sm hover:bg-gray-100 disabled:opacity-40 disabled:cursor-not-allowed transition"
+className="px-2 py-1 rounded-full text-gray-400 hover:text-gray-600 disabled:opacity-40 disabled:cursor-not-allowed transition"
           >
             «
           </button>
@@ -425,7 +426,7 @@ const TeacherAccountsPage = () => {
           <button
             onClick={() => setCurrentPage(prev => Math.max(0, prev - 1))}
             disabled={currentPage === 0 || loading}
-            className="px-3 py-2 border border-gray-300 bg-white text-gray-700 text-sm hover:bg-gray-100 disabled:opacity-40 disabled:cursor-not-allowed transition"
+            className="px-2 py-1 rounded-full text-gray-300 hover:text-gray-500 disabled:opacity-40 disabled:cursor-not-allowed transition"
           >
             ‹
           </button>
@@ -436,11 +437,13 @@ const TeacherAccountsPage = () => {
               key={i}
               onClick={() => setCurrentPage(i)}
               disabled={loading}
-              className={`px-4 py-2 border text-sm transition ${
-                currentPage === i
-                  ? 'bg-white text-blue-600 border-blue-500 font-semibold'
-                  : 'border-gray-300 bg-white text-gray-700 hover:bg-gray-100'
-              }`}
+              className={`mx-1 w-8 h-8 flex items-center justify-center rounded-full text-sm font-semibold transition-colors
+                ${
+                  currentPage === i
+                    ? 'bg-purple-100 text-purple-700'
+                    : 'text-gray-600 hover:bg-gray-100'
+                }
+              `}
             >
               {i + 1}
             </button>
@@ -450,7 +453,7 @@ const TeacherAccountsPage = () => {
           <button
             onClick={() => setCurrentPage(prev => Math.min(totalPages - 1, prev + 1))}
             disabled={currentPage === totalPages - 1 || loading}
-            className="px-3 py-2 border border-gray-300 bg-white text-gray-700 text-sm hover:bg-gray-100 disabled:opacity-40 disabled:cursor-not-allowed transition"
+            className="px-2 py-1 rounded-full text-gray-300 hover:text-gray-500 disabled:opacity-40 disabled:cursor-not-allowed transition"
           >
             ›
           </button>
@@ -459,7 +462,7 @@ const TeacherAccountsPage = () => {
           <button
             onClick={() => setCurrentPage(totalPages - 1)}
             disabled={currentPage === totalPages - 1 || loading}
-            className="px-3 py-2 border border-gray-300 bg-white text-gray-700 text-sm hover:bg-gray-100 disabled:opacity-40 disabled:cursor-not-allowed transition"
+            className="px-2 py-1 rounded-full text-gray-300 hover:text-gray-500 disabled:opacity-40 disabled:cursor-not-allowed transition"
           >
             »
           </button>
