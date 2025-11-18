@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { fetchApi } from '@/lib/apiClient';
 
 export async function POST(request: NextRequest) {
   try {
@@ -6,37 +7,28 @@ export async function POST(request: NextRequest) {
 
     console.log('Registration request received:', body);
 
-    // Forward the request to the backend Spring Boot server
-    const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8082';
-    
-    const response = await fetch(`${backendUrl}/register`, {
+    // Forward the request to the backend Spring Boot server using fetchApi
+    const data = await fetchApi('/register', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(body),
+      body: body,
     });
 
-    const data = await response.text();
+    console.log('Backend response:', data);
 
-    console.log('Backend response:', response.status, data);
+    // fetchApi throws on error, so if we get here, it was successful.
+    // The backend might return a simple text response on success.
+    const responseData = data instanceof Response ? await data.text() : data;
 
-    if (!response.ok) {
-      return new NextResponse(data || 'Registration failed', {
-        status: response.status,
-        headers: { 'Content-Type': 'text/plain' },
-      });
-    }
-
-    return new NextResponse(data || 'Registration successful', {
+    return new NextResponse(responseData || 'Registration successful', {
       status: 200,
       headers: { 'Content-Type': 'text/plain' },
     });
-  } catch (error) {
+  } catch (error: any) {
     console.error('Registration error:', error);
+    // The error from fetchApi should have a meaningful message
     return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
+      { error: error.message || 'Internal server error' },
+      { status: 500 } // Or a more specific error code if available
     );
   }
 }
