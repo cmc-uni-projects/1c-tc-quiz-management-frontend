@@ -1,22 +1,18 @@
 'use client';
 
 import React from "react";
-// Đã loại bỏ import Link từ 'next/link' và sử dụng thẻ <a> thuần
-// Đã loại bỏ import DefaultLayout để tránh lỗi phân giải
 
-// Component Môn học - Giả định đã có đầy đủ logic
 const SubjectCard = ({ title, color, image }: { title: string, color: string, image: string }) => (
     <div 
         className="w-full flex flex-col rounded-xl overflow-hidden shadow-2xl transition duration-300 transform hover:scale-[1.02] cursor-pointer"
         style={{ 
             backgroundColor: color, 
             height: '350px',
-            borderColor: color, // Thêm border color cho rõ ràng
+            borderColor: color,
             borderWidth: '2px',
         }}
     >
-        {/* Phần ảnh Môn học */}
-        <div 
+        <div
             className="h-2/3 flex items-center justify-center bg-white p-4"
             style={{ 
                 backgroundImage: `url(${image})`, 
@@ -24,16 +20,13 @@ const SubjectCard = ({ title, color, image }: { title: string, color: string, im
                 backgroundPosition: 'center' 
             }}
         >
-            {/* Nội dung ảnh (hoặc placeholder nếu ảnh không load) */}
             <div className="text-gray-800 text-3xl font-bold bg-white/70 p-2 rounded-lg backdrop-blur-sm">
-                {/* [Hình ảnh placeholder cho Môn học] */}
             </div>
         </div>
         
-        {/* Phần tên Môn học */}
-        <div 
+        <div
             className="h-1/3 flex items-center justify-center text-3xl font-bold text-white p-4"
-            style={{ backgroundColor: color }} // Dùng màu chủ đạo cho nền
+            style={{ backgroundColor: color }}
         >
             {title}
         </div>
@@ -41,7 +34,6 @@ const SubjectCard = ({ title, color, image }: { title: string, color: string, im
 );
 
 
-// Component Footer - Lấy từ DefaultLayout
 const Footer = () => (
     <footer className="w-full bg-white border-t border-zinc-100 text-center py-6">
         <p className="text-sm text-zinc-600">
@@ -53,7 +45,6 @@ const Footer = () => (
 
 export default function Home() {
     
-    // Dữ liệu 3 môn học
     const subjects = [
         { title: "Toán học", color: "#FBC02D", image: "/roles/Math.jpg" }, // Vàng/Đỏ cam
         { title: "Tiếng Anh", color: "#689F38", image: "/roles/English.jpg" }, // Xanh lá cây
@@ -62,13 +53,10 @@ export default function Home() {
     
   return (
     <>
-        {/* Màu nền toàn trang: #6D0446 (Màu tím/đỏ chủ đạo) */}
         <main className="min-h-[calc(100vh-140px)] flex flex-col items-center justify-start py-10 px-4" style={{ backgroundColor: '#6D0446' }}>
             
-            {/* Khối chính giữa màn hình */}
-            <div className="w-full max-w-6xl flex flex-col items-center"> 
+            <div className="w-full max-w-6xl flex flex-col items-center">
             
-            {/* Phần Title và Slogan */}
             <h1 className="text-6xl font-extrabold mb-4 text-center" style={{ color: '#E33AEC' }}>
                 Quizz ngay bây giờ với QuizzZone
             </h1>
@@ -76,7 +64,6 @@ export default function Home() {
                 Hãy thử thách trí tuệ, khám phá kiến thức và học tập thú vị cùng mọi người.
             </p>
 
-            {/* Thanh Nhập Mã Phòng - Nổi bật */}
             <div className="w-full max-w-xl bg-white p-6 rounded-2xl shadow-2xl mb-16 border-4" style={{ borderColor: '#E33AEC' }}>
                 <h3 className="text-xl font-semibold mb-3 text-gray-700"></h3>
                 <div className="flex gap-3">
@@ -94,7 +81,6 @@ export default function Home() {
                 </div>
             </div>
 
-            {/* Nút Tạo trò chơi */}
             <div className="flex flex-col items-center mb-20">
                 <p className="text-3xl font-medium text-white/90 mb-4">
                     Tạo trò chơi đố vui của riêng bạn, miễn phí!
@@ -108,7 +94,6 @@ export default function Home() {
                 </a>
             </div>
             
-            {/* PHẦN THƯ VIỆN/MÔN HỌC */}
             <h2 className="text-5xl font-extrabold mb-10 text-center text-white">
                 Khám phá Thư viện
             </h2>
@@ -126,7 +111,6 @@ export default function Home() {
             </div>
         </main>
         
-        {/* NHÚNG TRỰC TIẾP FOOTER VÀO ĐÂY */}
         <Footer />
     </>
   );

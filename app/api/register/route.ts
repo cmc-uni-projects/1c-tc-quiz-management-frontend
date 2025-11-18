@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { fetchApi } from '@/lib/apiClient';
+import { fetchApi, ApiError } from '@/lib/apiClient';
 
 export async function POST(request: NextRequest) {
   try {
@@ -11,6 +11,7 @@ export async function POST(request: NextRequest) {
     const data = await fetchApi('/register', {
       method: 'POST',
       body: body,
+      omitCredentials: true, // Do not send cookies for registration
     });
 
     console.log('Backend response:', data);
@@ -25,10 +26,10 @@ export async function POST(request: NextRequest) {
     });
   } catch (error: any) {
     console.error('Registration error:', error);
-    // The error from fetchApi should have a meaningful message
+    const status = error instanceof ApiError ? error.status : 500;
     return NextResponse.json(
       { error: error.message || 'Internal server error' },
-      { status: 500 } // Or a more specific error code if available
+      { status: status }
     );
   }
 }
