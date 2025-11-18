@@ -5,13 +5,15 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
 import { fetchApi } from '@/lib/apiClient';
-import { useUser } from '@/lib/user'; // Import useUser
+import { useUser } from '@/lib/user';
 
 export default function LoginPage() {
   const router = useRouter();
-  const { mutate } = useUser(); // Lấy hàm mutate từ context
+  const { mutate } = useUser();
+
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
+
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -23,26 +25,27 @@ export default function LoginPage() {
 
     try {
       const formData = new URLSearchParams();
-      formData.append('email', username);
+      formData.append('username', username);
       formData.append('password', password);
 
-      // 1. Gọi API login và lấy dữ liệu trả về
+      // Gọi API login
       const loginData = await fetchApi('/login', {
         method: 'POST',
+        // 💡 Bước 1: Chỉ định Content-Type
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded',
         },
-        body: formData,
+        // 💡 Bước 2: BẮT BUỘC chuyển body sang dạng chuỗi string
+        body: formData.toString(),
+
+        credentials: 'include',
       });
 
-      // 2. Cập nhật "nhanh" state toàn cục của user với dữ liệu từ /login
-      //    SWR sẽ ngay lập tức có dữ liệu user mà không cần gọi /me
-      //    revalidate: false để SWR không trigger gọi lại /me ngay tức thì
-      mutate(loginData, { revalidate: false });
+      mutate(loginData, { revalidate: true });
 
       toast.success('Đăng nhập thành công!');
-      
-      // 3. Chuyển hướng dựa trên vai trò từ response của /login
+
+      // Chuyển hướng dựa trên vai trò từ response của /login
       const role = loginData?.role;
       if (role === 'STUDENT') {
         router.push('/student/studenthome');
@@ -51,23 +54,22 @@ export default function LoginPage() {
       } else if (role === 'ADMIN') {
         router.push('/admin');
       } else {
-        // Nếu không có vai trò, về trang chủ và để SWR tự cập nhật
         router.push('/');
       }
 
     } catch (err: any) {
-      // Cải thiện xử lý lỗi cho trường hợp CSRF (403)
       if (err.message && err.message.includes('403')) {
         setError('Phiên của bạn không hợp lệ. Vui lòng làm mới trang và thử lại.');
       } else {
+        // Spring Security failure handler trả về 'Invalid credentials'
         setError(err.message || 'Sai tài khoản hoặc mật khẩu.');
       }
     } finally {
       setLoading(false);
     }
   }
-  
-  // ... (phần JSX của component giữ nguyên)
+
+  // --- JSX RENDER ---
   return (
     <div className="mx-auto max-w-4xl px-4 py-10">
       <div className="mx-auto w-full rounded-lg border border-zinc-200 bg-white p-8 shadow-sm">
