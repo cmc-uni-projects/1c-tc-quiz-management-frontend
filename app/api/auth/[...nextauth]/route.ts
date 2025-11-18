@@ -29,6 +29,7 @@ export const authOptions: AuthOptions = {
         console.log('[NextAuth] Credentials received:', { email: credentials.email });
 
         try {
+            const user = await loginApi(credentials.email, credentials.password);
           console.log('[NextAuth] Calling backend API at /login...');
           const user = await fetchApi('/login', {
             method: 'POST',
