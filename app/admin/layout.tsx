@@ -1,11 +1,55 @@
 // app/admin/layout.tsx
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { useUser } from "@/lib/user"; // THAY ĐỔI: Import useUser
 import toast from "react-hot-toast";
 
-// Màu tím chính và màu sắc theo yêu cầu
+// --- BẢO VỆ ROUTE ---
+const AdminAuthGuard: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const { user, isLoading, error } = useUser(); // THAY ĐỔI: Sử dụng useUser
+  const router = useRouter();
+
+  useEffect(() => {
+    if (isLoading) {
+      return; // Đang tải, chưa làm gì cả
+    }
+
+    // Nếu có lỗi (ví dụ 401 từ /api/me) hoặc không có user, tức là chưa đăng nhập
+    if (error || !user) {
+      toast.error("Bạn cần đăng nhập để truy cập trang này.");
+      router.push("/login");
+      return;
+    }
+
+    // Nếu có user nhưng không phải ADMIN
+    if (user.role !== "ADMIN") {
+      toast.error("Bạn không có quyền truy cập vào khu vực quản trị.");
+      router.push("/");
+      return;
+    }
+  }, [user, isLoading, error, router]);
+
+  // Giao diện loading trong khi chờ xác thực
+  if (isLoading || !user || user.role !== "ADMIN") {
+    return (
+      <div className="flex h-screen w-full items-center justify-center bg-gray-100">
+        <div className="text-center">
+          <div className="mx-auto h-12 w-12 animate-spin rounded-full border-b-2 border-purple-600"></div>
+          <p className="mt-4 text-lg font-semibold text-gray-700">Đang xác thực quyền truy cập...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Nếu mọi thứ OK, hiển thị nội dung
+  return <>{children}</>;
+};
+
+
+// --- CÁC COMPONENT GIAO DIỆN (CẬP NHẬT ĐỂ DÙNG useUser) ---
+
 const PRIMARY_COLOR = "#6A1B9A";
 const LOGO_TEXT_COLOR = "#E33AEC";
 // Màu nền nội dung chính theo yêu cầu của user
@@ -125,6 +169,8 @@ const ProfileDropdown: React.FC = () => {
       });
       // Consider logout successful if request completes
       toast.success("Đăng xuất thành công");
+      // Trigger SWR để fetch lại user (sẽ trả về lỗi 401) và tự động redirect
+      mutate();
       router.push("/");
     } catch (error) {
       console.error("Logout error:", error);
@@ -226,14 +272,9 @@ interface LogoutConfirmationModalProps {
   onCancel: () => void;
 }
 
-// Logout Confirmation Modal Component
-const LogoutConfirmationModal: React.FC<LogoutConfirmationModalProps> = ({ 
-  isOpen, 
-  onConfirm, 
-  onCancel 
-}) => {
+interface LogoutConfirmationModalProps { isOpen: boolean; onConfirm: () => void; onCancel: () => void; }
+const LogoutConfirmationModal: React.FC<LogoutConfirmationModalProps> = ({ isOpen, onConfirm, onCancel }) => {
   if (!isOpen) return null;
-
   return (
     <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50">
       <div className="bg-white rounded-lg p-6 max-w-sm w-full mx-4 shadow-xl">
@@ -449,9 +490,6 @@ interface AdminLayoutProps {
 }
 
 export default function AdminLayout({ children }: AdminLayoutProps) {
-  // Sidebar is always visible now, no need for state
-  const contentPaddingClass = "lg:ml-64"; // Adjusted margin to match the sidebar width
-
   return (
     // Dùng nền xám nhạt cho toàn bộ trang
     <div className="flex flex-col min-h-screen bg-gray-50">
