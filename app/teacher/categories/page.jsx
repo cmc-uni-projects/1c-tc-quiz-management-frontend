@@ -284,6 +284,12 @@ export default function TeacherCategoriesPage() {
 
   const handleDelete = async (id) => {
     const cat = categories.find((c) => c.id === id);
+
+    if ((cat?.createdByRole || "").toLowerCase() === "admin") {
+      toast.error("Bạn không có quyền xóa danh mục này");
+      return;
+    }
+
     const result = await Swal.fire({
       title: "Xác nhận xóa",
       text: cat
