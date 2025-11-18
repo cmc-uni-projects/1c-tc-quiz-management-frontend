@@ -2,6 +2,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
+import { Toaster } from "react-hot-toast";
 import { Providers } from "./providers"; // Import the new Providers component
 
 const geistSans = Geist({
@@ -30,6 +31,31 @@ export default function RootLayout({
         <Providers>
           {children}
         </Providers>
+        <Navbar />
+        {children}
+        <Toaster
+          position="bottom-right"
+          toastOptions={{
+            style: {
+              borderRadius: "10px",
+              background: "#111827",
+              color: "#F9FAFB",
+              fontSize: "0.9rem",
+            },
+            success: {
+              iconTheme: {
+                primary: "#22C55E",
+                secondary: "#ECFDF3",
+              },
+            },
+            error: {
+              iconTheme: {
+                primary: "#EF4444",
+                secondary: "#FEF2F2",
+              },
+            },
+          }}
+        />
       </body>
     </html>
   );

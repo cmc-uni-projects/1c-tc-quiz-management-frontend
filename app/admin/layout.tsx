@@ -98,32 +98,79 @@ const ProfileDropdown: React.FC = () => {
   const router = useRouter();
   const [isOpen, setIsOpen] = useState<boolean>(false);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState<boolean>(false);
-  const { user, mutate } = useUser(); // THAY ĐỔI: Dùng useUser
-  const role = user?.role;
+  const [role, setRole] = useState<string | null>(null);
+  const [username, setUsername] = useState<string | null>(null);
+  const [avatar, setAvatar] = useState<string | null>(null);
+
+  React.useEffect(() => {
+    const fetchUserProfile = async () => {
+      try {
+        const response = await fetch('/api/profile');
+        if (response.ok) {
+          const data = await response.json();
+          setRole(data.role);
+          setUsername(data.username || null);
+          setAvatar(data.avatar || null);
+        }
+      } catch (error) {
+        console.error('Error fetching user profile:', error);
+      }
+    };
+    fetchUserProfile();
+  }, []);
 
   const getProfileUrl = () => {
-    switch (role) {
-      case 'ADMIN': return '/admin/profile';
-      case 'TEACHER': return '/teacher/profile';
-      case 'STUDENT': return '/student/profile';
-      default: return '/login';
+    switch (role?.toUpperCase()) {
+      case 'ADMIN':
+        return '/admin/profile';
+      case 'TEACHER':
+        return '/teacher/profile';
+      case 'STUDENT':
+        return '/student/profile';
+      default:
+        return '/admin/profile';
     }
   };
 
   const getChangePasswordUrl = () => {
-    switch (role) {
-      case 'ADMIN': return '/admin/change-password';
-      case 'TEACHER': return '/teacher/change-password';
-      case 'STUDENT': return '/student/change-password';
-      default: return '/login';
+    switch (role?.toUpperCase()) {
+      case 'ADMIN':
+        return '/admin/change-password';
+      case 'TEACHER':
+        return '/teacher/change-password';
+      case 'STUDENT':
+        return '/student/change-password';
+      default:
+        return '/admin/change-password';
     }
+  };
+
+  const handleProfileClick = () => {
+    setIsOpen(false);
+    router.push(getProfileUrl());
+  };
+
+  const handleChangePasswordClick = () => {
+    setIsOpen(false);
+    router.push(getChangePasswordUrl());
+  };
+
+  const handleLogoutClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    setShowLogoutConfirm(true);
+    setIsOpen(false);
   };
 
   const handleLogoutConfirm = async (): Promise<void> => {
     try {
-      // Gọi API logout của backend
-      await fetch("/api/logout", { method: "POST", credentials: "include" });
+      const res = await fetch("/api/perform_logout", { 
+        method: "POST", 
+        credentials: "include" 
+      });
+      // Consider logout successful if request completes
       toast.success("Đăng xuất thành công");
+      // Trigger SWR để fetch lại user (sẽ trả về lỗi 401) và tự động redirect
+      mutate();
       router.push("/");
     } catch (error) {
       console.error("Logout error:", error);
@@ -225,14 +272,9 @@ interface LogoutConfirmationModalProps {
   onCancel: () => void;
 }
 
-// Logout Confirmation Modal Component
-const LogoutConfirmationModal: React.FC<LogoutConfirmationModalProps> = ({ 
-  isOpen, 
-  onConfirm, 
-  onCancel 
-}) => {
+interface LogoutConfirmationModalProps { isOpen: boolean; onConfirm: () => void; onCancel: () => void; }
+const LogoutConfirmationModal: React.FC<LogoutConfirmationModalProps> = ({ isOpen, onConfirm, onCancel }) => {
   if (!isOpen) return null;
-
   return (
     <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50">
       <div className="bg-white rounded-lg p-6 max-w-sm w-full mx-4 shadow-xl">
@@ -286,21 +328,54 @@ const AdminSidebar: React.FC = () => {
     { name: "Duyệt tài khoản giáo viên", href: "/admin/approve-teachers" },
     { name: "Danh mục", href: "/admin/categories" },
   ];
+
   const [currentPathname, setCurrentPathname] = useState<string>("/");
   const [openSubmenu, setOpenSubmenu] = useState<string | null>(null);
-  const handleToggleSubmenu = (name: string) => setOpenSubmenu(openSubmenu === name ? null : name);
+
+  // Toggle submenu open/close
+  const handleToggleSubmenu = (name: string) => {
+    setOpenSubmenu(openSubmenu === name ? null : name);
+  };
+
+  // Check if an item or any of its subitems is active
   const isActive = (item: NavItem): boolean => {
     if (!item) return false;
-    if (item.href === "/admin") return currentPathname === "/admin";
+    
+    if (item.href === "/") {
+      return currentPathname === "/";
+    }
+    if (item.href === "/admin") {
+      // Chỉ active khi đúng trang /admin, KHÔNG active cho các trang con
+      return currentPathname === "/admin";
+    }
+
     let shouldBeActive = currentPathname.startsWith(item.href);
-    if (item.submenu) shouldBeActive = item.submenu.some(subItem => subItem && currentPathname.startsWith(subItem.href)) || shouldBeActive;
+
+    // Check submenu items if they exist
+    if (item.submenu && Array.isArray(item.submenu)) {
+      shouldBeActive = item.submenu.some(subItem => 
+        subItem && currentPathname.startsWith(subItem.href)
+      ) || shouldBeActive;
+    }
+    
     return shouldBeActive;
   };
-  useEffect(() => {
+
+  React.useEffect(() => {
     if (typeof window !== "undefined") {
       const pathname = window.location.pathname;
       setCurrentPathname(pathname);
-      navItems.forEach(item => { if (item.submenu?.some(sub => pathname.startsWith(sub.href))) setOpenSubmenu(item.name); });
+
+      // Tự động mở submenu nếu một mục con đang active
+      navItems.forEach((item) => {
+        if (item.submenu) {
+          item.submenu.forEach((subItem) => {
+            if (pathname.startsWith(subItem.href)) {
+              setOpenSubmenu(item.name);
+            }
+          });
+        }
+      });
     }
   }, []);
 
@@ -415,9 +490,6 @@ interface AdminLayoutProps {
 }
 
 export default function AdminLayout({ children }: AdminLayoutProps) {
-  // Sidebar is always visible now, no need for state
-  const contentPaddingClass = "lg:ml-64"; // Adjusted margin to match the sidebar width
-
   return (
     // Dùng nền xám nhạt cho toàn bộ trang
     <div className="flex flex-col min-h-screen bg-gray-50">
