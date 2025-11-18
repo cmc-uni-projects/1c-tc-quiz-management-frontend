@@ -65,7 +65,6 @@ export default function CategoriesPage() {
   const PAGE_SIZE = 10;
   const [page, setPage] = useState(0);
   const [totalPages, setTotalPages] = useState(1);
-  const [totalElements, setTotalElements] = useState(0);
 
   // State cho form
   const [form, setForm] = useState({ name: "", description: "" });

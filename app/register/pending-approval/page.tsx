@@ -1,11 +1,8 @@
 'use client';
 
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
 
 export default function PendingApprovalPage() {
-  const router = useRouter();
-
   return (
     <div className="flex min-h-screen items-center justify-center bg-zinc-50">
       <div className="mx-auto w-full max-w-md rounded-lg border border-zinc-200 bg-white p-8 text-center shadow-sm">

@@ -235,7 +235,7 @@ const StudentChangePasswordPage = () => {
 
   const handleLogoutConfirm = async () => {
     try {
-      const res = await fetch('/api/perform_logout', { method: 'POST', credentials: 'include' });
+      await fetch('/api/perform_logout', { method: 'POST', credentials: 'include' });
       // Consider logout successful if request completes
       toast.success('Đăng xuất thành công');
       router.push('/');

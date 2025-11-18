@@ -15,9 +15,10 @@ export async function GET() {
     } else {
       console.error('=> Kết nối API công khai THẤT BẠI với status:', publicApiResponse.status);
     }
-  } catch (error: any) {
-    console.error('=> Lỗi khi gọi API công khai:', error.cause || error.message);
-    publicApiResult = `thất bại với lỗi: ${error.name}`;
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? (error.cause || error.message) : String(error);
+    console.error('=> Lỗi khi gọi API công khai:', errorMessage);
+    publicApiResult = `thất bại với lỗi: ${error instanceof Error ? error.name : 'UnknownError'}`;
   }
 
   console.log('--------------------------------------------------');
@@ -47,10 +48,10 @@ export async function GET() {
       backendApiResult = `thất bại với status: ${backendResponse.status}`;
       console.error('=> Kết nối backend của bạn THẤT BẠI với status:', backendResponse.status);
     }
-  } catch (error: any) {
-    const errorMessage = error.name === 'AbortError' ? 'Request timed out (quá 5 giây)' : (error.cause || error.message);
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? (error.name === 'AbortError' ? 'Request timed out (quá 5 giây)' : (error.cause || error.message)) : String(error);
     console.error('=> Lỗi khi gọi backend của bạn:', errorMessage);
-    backendApiResult = `thất bại với lỗi: ${error.name}`;
+    backendApiResult = `thất bại với lỗi: ${error instanceof Error ? error.name : 'UnknownError'}`;
   }
 
   console.log('--- Kết thúc kiểm tra kết nối backend ---\n');

@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { MagnifyingGlassIcon, ChevronLeftIcon, ChevronRightIcon, UserIcon } from '@heroicons/react/24/outline';
 import Swal from 'sweetalert2';
 import toast from 'react-hot-toast';
 
@@ -9,11 +8,8 @@ import toast from 'react-hot-toast';
 const API_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8082";
 
 // Màu sắc theo layout
-const PRIMARY_COLOR = "#6A1B9A";
-const LOGO_TEXT_COLOR = "#E33AEC";
-const MAIN_CONTENT_BG = "#6D0446";
-const SEARCH_BAR_BG = "#E33AEC";
 const BUTTON_COLOR = "#9453C9";
+const MAIN_CONTENT_BG = "#6D0446";
 
 // Interface cho Student
 interface Student {
@@ -25,13 +21,20 @@ interface Student {
   status: 'ACTIVE' | 'LOCKED';
 }
 
+// Interface for paginated responses
+interface Page<T> {
+  content: T[];
+  totalPages: number;
+  totalElements: number;
+}
+
 // Hàm lấy danh sách học sinh từ backend
 async function fetchStudentsFromBackend(params: {
   email?: string;
   username?: string;
   page?: number;
   size?: number;
-}) {
+}): Promise<Page<Student>> {
   const queryParams = new URLSearchParams();
   if (params.email) queryParams.append('email', params.email);
   if (params.username) queryParams.append('username', params.username);
@@ -124,7 +127,7 @@ const StudentAccountsPage = () => {
   const fetchStudents = useCallback(async () => {
     setLoading(true);
     try {
-      const data = await fetchStudentsFromBackend({
+      const data: Page<Student> = await fetchStudentsFromBackend({
         email: appliedEmail || undefined,
         username: appliedName || undefined,
         page: currentPage,
@@ -142,9 +145,10 @@ const StudentAccountsPage = () => {
       setStudents(filteredContent);
       setTotalPages(data.totalPages || 1);
       setTotalElements(data.totalElements || 0);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error fetching students:', error);
-      toast.error(error.message || 'Không thể tải danh sách học sinh');
+      const message = error instanceof Error ? error.message : 'Không thể tải danh sách học sinh';
+      toast.error(message);
     } finally {
       setLoading(false);
     }
@@ -204,9 +208,10 @@ const StudentAccountsPage = () => {
         await deleteStudentInBackend(id);
         toast.success('Đã xóa học sinh thành công!');
         fetchStudents();
-      } catch (error: any) {
+      } catch (error: unknown) {
         console.error('Error deleting student:', error);
-        toast.error(error.message || 'Không thể xóa học sinh');
+        const message = error instanceof Error ? error.message : 'Không thể xóa học sinh';
+        toast.error(message);
       }
     }
   };

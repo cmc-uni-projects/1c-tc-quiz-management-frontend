@@ -1,5 +1,6 @@
 'use client';
 
+import Image from "next/image"; // Import Image
 import React, { useState, useRef, useEffect, ChangeEvent, FormEvent } from 'react';
 import toast from 'react-hot-toast';
 
@@ -172,7 +173,7 @@ export default function StudentProfilePage() {
               style={{ background: '#F7EFFF' }}
             >
               {avatar ? (
-                <img src={avatar} alt="avatar" className="w-full h-full object-cover" />
+                <Image src={avatar} alt="avatar" width={208} height={208} className="w-full h-full object-cover" />
               ) : (
                 <svg
                   xmlns="http://www.w3.org/2000/svg"

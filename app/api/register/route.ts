@@ -23,11 +23,12 @@ export async function POST(request: NextRequest) {
       status: 200,
       headers: { 'Content-Type': 'text/plain' },
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Registration error:', error);
     // The error from fetchApi should have a meaningful message
+    const errorMessage = error instanceof Error ? error.message : 'Internal server error';
     return NextResponse.json(
-      { error: error.message || 'Internal server error' },
+      { error: errorMessage },
       { status: 500 } // Or a more specific error code if available
     );
   }

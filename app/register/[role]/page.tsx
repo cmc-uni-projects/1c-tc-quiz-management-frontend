@@ -86,8 +86,9 @@ export default function RegisterFormPage({ params }: { params: Promise<{ role: s
       } else {
         setTimeout(() => router.push("/login"), 1200);
       }
-    } catch (err: any) {
-      setError(err.message || "Có lỗi xảy ra, vui lòng thử lại.");
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : "Có lỗi xảy ra, vui lòng thử lại.";
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }

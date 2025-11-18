@@ -2,6 +2,8 @@
 
 import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link'; // Import Link
+import Image from 'next/image'; // Import Image
 import toast from 'react-hot-toast';
 
 const StudentHome = () => {
@@ -15,9 +17,9 @@ const StudentHome = () => {
   useEffect(() => {
     const fetchProfile = async () => {
       try {
-        const res = await fetch('/api/profile');
-        if (res.ok) {
-          const data = await res.json();
+        const response = await fetch('/api/profile'); // Changed 'res' to 'response'
+        if (response.ok) {
+          const data = await response.json();
           setUsername(data.username || null);
           setAvatar(data.avatar || null);
         }
@@ -45,7 +47,7 @@ const StudentHome = () => {
 
   const handleLogoutConfirm = async () => {
     try {
-      const res = await fetch('/api/perform_logout', { method: 'POST', credentials: 'include' });
+      await fetch('/api/perform_logout', { method: 'POST', credentials: 'include' });
       // Consider logout successful if request completes
       toast.success('Đăng xuất thành công');
       router.push('/');
@@ -94,13 +96,13 @@ const StudentHome = () => {
       {/* Navbar */}
       <header className="sticky top-0 z-50 w-full border-b border-zinc-100 bg-white/95 backdrop-blur" onClick={() => setShowDropdown(false)}>
         <div className="mx-auto flex w-full max-w-full items-center justify-between gap-2 px-4 py-3 md:px-6">
-          <a
+          <Link
             href="/"
             className="shrink-0 text-3xl font-black tracking-tighter"
             style={{ color: '#E33AEC' }}
           >
             QuizzZone
-          </a>
+          </Link>
           <nav className="flex flex-1 items-center justify-center text-lg font-medium text-zinc-600">
             <a href="/student/studenthome" className="hover:text-zinc-900 transition duration-150">
               Trang chủ
@@ -116,7 +118,7 @@ const StudentHome = () => {
               className="grid h-8 w-8 place-items-center rounded-full bg-purple-100 text-purple-600 hover:bg-purple-200 transition overflow-hidden"
             >
               {avatar ? (
-                <img src={avatar} alt="avatar" className="h-8 w-8 rounded-full object-cover" />
+                <Image src={avatar} alt="avatar" width={32} height={32} className="h-8 w-8 rounded-full object-cover" />
               ) : (
                 <svg className="h-6 w-6" viewBox="0 0 24 24" fill="currentColor">
                   <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" />

@@ -94,7 +94,6 @@ export default function TeacherCategoriesPage() {
   const PAGE_SIZE = 20;
   const [page, setPage] = useState(0);
   const [totalPages, setTotalPages] = useState(1);
-  const [totalElements, setTotalElements] = useState(0);
 
   // State cho form
   const [form, setForm] = useState({ name: "", description: "" });

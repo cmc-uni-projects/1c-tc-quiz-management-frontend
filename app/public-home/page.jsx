@@ -1,6 +1,7 @@
 'use client';
 
 import React from "react";
+import Link from "next/link";
 
 // Định nghĩa các màu sắc chính dựa trên yêu cầu
 const EXPLORE_BUTTON_COLOR = '#A53AEC'; // Màu cho nút "Khám phá ngay"
@@ -46,13 +47,13 @@ export default function PublicHome() {
                     </p>
 
                     {/* Nút Khám phá ngay */}
-                    <a 
+                    <Link 
                         href="/register" 
                         className="px-12 py-4 rounded-full text-white font-bold transition duration-200 shadow-xl hover:shadow-2xl text-xl sm:text-2xl transform hover:scale-[1.05]"
                         style={{ backgroundColor: EXPLORE_BUTTON_COLOR }}
                     >
                         Khám phá ngay
-                    </a>
+                    </Link>
                 </div>
             </main>
             

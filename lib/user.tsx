@@ -1,8 +1,8 @@
 'use client';
 
-import React, { createContext, useContext, useCallback } from 'react';
+import React, { createContext, useContext } from 'react';
 import useSWR from 'swr';
-import { fetchApi } from './apiClient';
+import { fetchApi, ApiError } from './apiClient';
 
 interface User {
   id: string;
@@ -15,7 +15,7 @@ interface User {
 interface UserContextType {
   user: User | null;
   isLoading: boolean;
-  error: any;
+  error: ApiError | undefined;
   mutate: () => void;
   isAuthenticated: boolean;
 }
@@ -27,14 +27,13 @@ const fetcher = async (url: string): Promise<User | null> => {
   try {
     // fetchApi sends cookies automatically.
     return await fetchApi(url);
-  } catch (error: any) {
-    // If the error is a 401, it means the user is not logged in.
+  } catch (error) {
+    // If the error is an ApiError with status 401, it means the user is not logged in.
     // This is an expected state, so we return null.
-    // This prevents the "error" from being logged to the console.
-    if (error.message.includes('401')) {
+    if (error instanceof ApiError && error.status === 401) {
       return null;
     }
-    // For other errors (e.g., 500), we re-throw so SWR can record it.
+    // For other errors, we re-throw so SWR can record it.
     throw error;
   }
 };
@@ -52,11 +51,12 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
   // The user is authenticated if there is data and no error.
   const isAuthenticated = !!data && !error;
 
+  // The mutate function from SWR is stable, no need to wrap in useCallback.
   const value = {
     user: data || null,
     isLoading,
     error,
-    mutate: useCallback(() => mutate(), [mutate]),
+    mutate,
     isAuthenticated,
   };
 

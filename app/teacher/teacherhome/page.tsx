@@ -1,5 +1,6 @@
 'use client';
 
+import Image from "next/image"; // Import Image
 import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
@@ -53,7 +54,7 @@ const TeacherHome = () => {
 
   const handleLogoutConfirm = async () => {
     try {
-      const res = await fetch('/api/perform_logout', { method: 'POST', credentials: 'include' });
+      await fetch('/api/perform_logout', { method: 'POST', credentials: 'include' });
       // Consider logout successful if request completes
       toast.success('Đăng xuất thành công');
       router.push('/');
@@ -77,30 +78,6 @@ const TeacherHome = () => {
   const handleCreateQuiz = () => {
     console.log('Create new quiz');
   };
-
-  const subjects = [
-    {
-      id: 1,
-      title: 'Toán học',
-      subtitle: 'Giải tích',
-      color: '#FBC02D',
-      image: '/roles/Math.jpg',
-    },
-    {
-      id: 2,
-      title: 'Tiếng anh',
-      subtitle: 'Tiếng anh cấp độ 1',
-      color: '#FBC02D',
-      image: '/roles/English.jpg',
-    },
-    {
-      id: 3,
-      title: 'Vật lý',
-      subtitle: 'Cơ học',
-      color: '#7B1FA2',
-      image: '/roles/Physics.jpg',
-    },
-  ];
 
   return (
     <div className="min-h-screen bg-gray-50 flex">
@@ -126,7 +103,7 @@ const TeacherHome = () => {
             >
               <div className="h-8 w-8 rounded-full bg-purple-300 flex items-center justify-center text-purple-800 overflow-hidden">
                 {avatar ? (
-                  <img src={avatar} alt="avatar" className="h-8 w-8 rounded-full object-cover" />
+                  <Image src={avatar} alt="avatar" width={32} height={32} className="h-8 w-8 rounded-full object-cover" />
                 ) : (
                   <svg className="h-5 w-5" viewBox="0 0 24 24" fill="currentColor">
                     <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" />

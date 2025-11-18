@@ -1,9 +1,11 @@
-// app/layout.tsx
+// app/layout.tsx (ĐÃ SỬA)
+
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { Toaster } from "react-hot-toast";
-import { Providers } from "./providers"; // Import the new Providers component
+import { Providers } from "./providers";
+import Navbar from '@/components/Navbar';
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -28,11 +30,14 @@ export default function RootLayout({
   return (
     <html lang="vi">
       <body className={`${geistSans.variable} ${geistMono.variable}`}>
+        {/* Bắt đầu Providers, bọc toàn bộ nội dung ứng dụng */}
         <Providers>
-          {children}
+          <Navbar />
+          <main className="flex min-h-screen flex-col items-center justify-between">
+             {children}
+          </main>
         </Providers>
-        <Navbar />
-        {children}
+
         <Toaster
           position="bottom-right"
           toastOptions={{

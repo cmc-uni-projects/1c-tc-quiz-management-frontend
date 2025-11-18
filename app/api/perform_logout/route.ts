@@ -25,7 +25,7 @@ export async function POST(req: NextRequest) {
         });
         lastStatus = res.status;
         if (res.status < 400) { ok = true; break; }
-      } catch (e) {
+      } catch {
         // try next
         lastStatus = undefined;
       }

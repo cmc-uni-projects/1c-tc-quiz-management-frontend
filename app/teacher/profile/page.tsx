@@ -1,5 +1,6 @@
 'use client';
 
+import Image from "next/image"; // Import Image
 import React, { useState, useRef, useEffect, ChangeEvent, FormEvent } from 'react';
 import toast from 'react-hot-toast';
 
@@ -172,7 +173,7 @@ export default function TeacherProfilePage() {
               style={{ background: '#F7EFFF' }}
             >
               {avatar ? (
-                <img src={avatar} alt="avatar" className="w-full h-full object-cover" />
+                <Image src={avatar} alt="avatar" width={208} height={208} className="w-full h-full object-cover" />
               ) : (
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
@@ -183,7 +184,7 @@ export default function TeacherProfilePage() {
                   strokeWidth={1.5}
                 >
                   <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"></path>
-                  <circle cx="12" cy="7" r="4"></circle>
+                  <circle cx="12" cy="12" r="4"></circle>
                 </svg>
               )}
             </div>

@@ -1,5 +1,4 @@
 import NextAuth, { AuthOptions } from 'next-auth';
-import { JWT } from 'next-auth/jwt';
 import CredentialsProvider from 'next-auth/providers/credentials';
 import { fetchApi } from '@/lib/apiClient';
 
@@ -52,9 +51,9 @@ export const authOptions: AuthOptions = {
             console.error('[NextAuth] Authentication failed: Backend did not return a valid user object with a role.');
             throw new Error('Sai tài khoản hoặc mật khẩu.');
           }
-        } catch (error: any) {
+        } catch (error: unknown) {
           console.error('[NextAuth] Error during authorization:', error);
-          const errorMessage = error.message || 'Đăng nhập thất bại.';
+          const errorMessage = error instanceof Error ? error.message : 'Đăng nhập thất bại.';
           throw new Error(errorMessage);
         }
       },

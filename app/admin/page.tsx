@@ -1,8 +1,6 @@
 'use client';
 
 import React, { useState } from 'react';
-import { useRouter } from 'next/navigation';
-import toast from 'react-hot-toast';
 
 // Định nghĩa màu sắc theo cấu trúc layout
 const MAIN_BANNER_BG = '#6D0446'; // Màu tím sẫm (PRIMARY_COLOR từ layout)
@@ -10,27 +8,8 @@ const BUTTON_BG = '#9453C9'; // Màu tím cho nút Tìm
 const INPUT_BG = 'white'; // Màu trắng cho ô nhập liệu
 
 export default function AdminPage() {
-    const router = useRouter();
     const [roomCode, setRoomCode] = useState('');
     const [isSearching, setIsSearching] = useState(false);
-    const [showDropdown, setShowDropdown] = useState(false);
-
-    const handleLogout = async () => {
-        try {
-      const response = await fetch('/api/logout', {
-                method: 'POST',
-                credentials: 'include' 
-            });
-            
-        // Treat as success if request completes; server API normalizes redirects
-        toast.success('Đăng xuất thành công');
-        router.push('/login');
-    } catch (error) {
-            console.error('Logout error:', error);
-            toast.error('Có lỗi khi đăng xuất');
-            router.push('/login');
-        }
-    };
 
     const handleSearch = () => {
         const cleanedCode = roomCode.trim().replace(/\s/g, ''); 

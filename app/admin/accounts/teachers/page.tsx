@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { MagnifyingGlassIcon, ChevronLeftIcon, ChevronRightIcon, UserIcon } from '@heroicons/react/24/outline';
 import Swal from 'sweetalert2';
 import toast from 'react-hot-toast';
 
@@ -9,10 +8,7 @@ import toast from 'react-hot-toast';
 const API_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8082";
 
 // Màu sắc theo layout
-const PRIMARY_COLOR = "#6A1B9A";
-const LOGO_TEXT_COLOR = "#E33AEC";
 const MAIN_CONTENT_BG = "#6D0446";
-const SEARCH_BAR_BG = "#E33AEC";
 const BUTTON_COLOR = "#9453C9";
 
 // Interface cho Teacher
@@ -25,13 +21,20 @@ interface Teacher {
   status: 'PENDING' | 'APPROVED' | 'REJECTED' | 'LOCKED';
 }
 
+// Interface for paginated responses
+interface Page<T> {
+  content: T[];
+  totalPages: number;
+  totalElements: number;
+}
+
 // Hàm lấy danh sách giáo viên từ backend
 async function fetchTeachersFromBackend(params: {
   username?: string;
   email?: string;
   page?: number;
   size?: number;
-}) {
+}): Promise<Page<Teacher>> {
   const queryParams = new URLSearchParams();
   if (params.username) queryParams.append('username', params.username);
   if (params.email) queryParams.append('email', params.email);
@@ -73,44 +76,16 @@ async function deleteTeacherInBackend(id: number) {
 
 // Hàm format ngày
 const formatDate = (dateString: string | null | undefined) => {
-  // Kiểm tra xem trường lastVisit có tồn tại trong dữ liệu không
-  if (dateString === undefined) {
-    console.warn('Trường lastVisit không tồn tại trong dữ liệu trả về');
-    return 'Chưa kích hoạt';
-  }
-  
-  if (dateString === null) {
-    console.log('Giáo viên chưa đăng nhập lần nào hoặc hệ thống chưa cập nhật');
-    return 'Chưa đăng nhập lần nào';
-  }
-  
-  if (dateString.trim() === '') {
-    return 'Chưa cập nhật';
+  if (dateString === undefined || dateString === null || dateString.trim() === '') {
+    return 'Chưa có';
   }
   
   try {
-    let date: Date;
-    
-    // Xử lý timestamp (số nguyên dạng chuỗi)
-    if (/^\d+$/.test(dateString)) {
-      date = new Date(parseInt(dateString));
-    } 
-    // Xử lý định dạng ISO 8601 (có chứa 'T')
-    else if (dateString.includes('T')) {
-      date = new Date(dateString);
-    } 
-    // Thử parse bình thường
-    else {
-      date = new Date(dateString);
-    }
-    
-    // Kiểm tra ngày hợp lệ
+    const date = new Date(dateString);
     if (isNaN(date.getTime())) {
-      console.warn('Chuỗi ngày không hợp lệ:', dateString);
       return 'Ngày không hợp lệ';
     }
     
-    // Định dạng ngày tháng theo tiếng Việt
     return date.toLocaleString('vi-VN', {
       year: 'numeric',
       month: '2-digit',
@@ -119,8 +94,7 @@ const formatDate = (dateString: string | null | undefined) => {
       minute: '2-digit',
       hour12: false
     });
-  } catch (error) {
-    console.error('Lỗi khi định dạng ngày:', error, 'Chuỗi ngày:', dateString);
+  } catch {
     return 'Lỗi định dạng';
   }
 };
@@ -170,14 +144,12 @@ const TeacherAccountsPage = () => {
   const fetchTeachers = useCallback(async () => {
     setLoading(true);
     try {
-      const data = await fetchTeachersFromBackend({
+      const data: Page<Teacher> = await fetchTeachersFromBackend({
         username: appliedName || undefined,
         email: appliedEmail || undefined,
         page: currentPage,
         size: itemsPerPage,
       });
-
-      console.log('API Response:', data); // Log the API response
 
       // Filter by status if needed
       let filteredContent = data.content || [];
@@ -187,31 +159,13 @@ const TeacherAccountsPage = () => {
         );
       }
 
-      // Log the lastVisit data for each teacher
-      console.log('Teachers with lastVisit data (raw):', JSON.stringify(
-        filteredContent.map((t: Teacher) => ({
-          id: t.teacherId,
-          username: t.username,
-          lastVisit: t.lastVisit,
-          lastVisitType: typeof t.lastVisit,
-          isNull: t.lastVisit === null,
-          isUndefined: t.lastVisit === undefined,
-          isEmptyString: t.lastVisit === '',
-          formattedLastVisit: formatDate(t.lastVisit)
-        })), null, 2)
-      );
-      
-      // Log the first teacher's data in detail
-      if (filteredContent.length > 0) {
-        console.log('First teacher full data:', JSON.stringify(filteredContent[0], null, 2));
-      }
-
       setTeachers(filteredContent);
       setTotalPages(data.totalPages || 1);
       setTotalElements(data.totalElements || 0);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error fetching teachers:', error);
-      toast.error(error.message || 'Không thể tải danh sách giáo viên');
+      const message = error instanceof Error ? error.message : 'Không thể tải danh sách giáo viên';
+      toast.error(message);
     } finally {
       setLoading(false);
     }
@@ -224,11 +178,9 @@ const TeacherAccountsPage = () => {
 
   // Hàm xử lý khi ấn nút tìm kiếm
   const handleSearch = () => {
-    // Cập nhật giá trị tìm kiếm thực tế
     setAppliedEmail(searchEmail);
     setAppliedName(searchName);
     setAppliedStatus(statusFilter);
-    // Reset về trang đầu
     setCurrentPage(0);
   };
 
@@ -273,9 +225,10 @@ const TeacherAccountsPage = () => {
         await deleteTeacherInBackend(id);
         toast.success('Đã xóa giáo viên thành công!');
         fetchTeachers(); // Reload danh sách
-      } catch (error: any) {
+      } catch (error: unknown) {
         console.error('Error deleting teacher:', error);
-        toast.error(error.message || 'Không thể xóa giáo viên');
+        const message = error instanceof Error ? error.message : 'Không thể xóa giáo viên';
+        toast.error(message);
       }
     }
   };
