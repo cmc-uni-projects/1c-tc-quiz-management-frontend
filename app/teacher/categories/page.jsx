@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import toast from "react-hot-toast";
 import Swal from "sweetalert2";
+import Sidebar from "@/components/teacher/Sidebar";
 
 // Màu tím nhạt giống các trang Admin/Teacher
 const PRIMARY_PURPLE_BG = "#E33AEC7A";
@@ -324,237 +325,240 @@ export default function TeacherCategoriesPage() {
   };
 
   return (
-    <div className="p-4 sm:p-8 font-sans">
-      {/* Thanh tiêu đề + tìm kiếm */}
-      <div
-        className="p-4 sm:p-6 mb-6 rounded-xl shadow-lg"
-        style={{ backgroundColor: PRIMARY_PURPLE_BG }}
-      >
-        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
-          <div>
-            <h1 className="text-2xl font-extrabold text-white">Danh mục câu hỏi</h1>
-            <p className="text-white/80 mt-1 text-sm">
-              Quản lý danh mục câu hỏi dùng cho các bài thi
-            </p>
-          </div>
+    <div className="min-h-screen bg-gray-50 flex">
+      <Sidebar />
+      <main className="flex-1 p-4 sm:p-8 font-sans">
+        {/* Thanh tiêu đề + tìm kiếm */}
+        <div
+          className="p-4 sm:p-6 mb-6 rounded-xl shadow-lg"
+          style={{ backgroundColor: PRIMARY_PURPLE_BG }}
+        >
+          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
+            <div>
+              <h1 className="text-2xl font-extrabold text-white">Danh mục câu hỏi</h1>
+              <p className="text-white/80 mt-1 text-sm">
+                Quản lý danh mục câu hỏi dùng cho các bài thi
+              </p>
+            </div>
 
-          <div className="flex flex-col sm:flex-row gap-3 w-full lg:w-auto">
-            <input
-              value={keyword}
-              onChange={(e) => setKeyword(e.target.value)}
-              placeholder="Tìm theo tên danh mục..."
-              className="w-full sm:w-72 px-4 py-2 bg-white rounded-lg shadow focus:outline-none focus:ring-2 focus:ring-purple-400"
-            />
-            <div className="flex gap-2">
-              <button
-                onClick={handleSearch}
-                className="px-4 py-2 bg-white text-purple-700 font-semibold rounded-lg shadow hover:bg-purple-50"
-              >
-                Tìm kiếm
-              </button>
-              <button
-                onClick={openAdd}
-                className="px-4 py-2 bg-purple-700 text-white font-semibold rounded-lg shadow hover:bg-purple-800 flex items-center gap-2"
-              >
-                <PlusIcon /> Thêm danh mục
-              </button>
+            <div className="flex flex-col sm:flex-row gap-3 w-full lg:w-auto">
+              <input
+                value={keyword}
+                onChange={(e) => setKeyword(e.target.value)}
+                placeholder="Tìm theo tên danh mục..."
+                className="w-full sm:w-72 px-4 py-2 bg-white rounded-lg shadow focus:outline-none focus:ring-2 focus:ring-purple-400"
+              />
+              <div className="flex gap-2">
+                <button
+                  onClick={handleSearch}
+                  className="px-4 py-2 bg-white text-purple-700 font-semibold rounded-lg shadow hover:bg-purple-50"
+                >
+                  Tìm kiếm
+                </button>
+                <button
+                  onClick={openAdd}
+                  className="px-4 py-2 bg-purple-700 text-white font-semibold rounded-lg shadow hover:bg-purple-800 flex items-center gap-2"
+                >
+                  <PlusIcon /> Thêm danh mục
+                </button>
+              </div>
             </div>
           </div>
         </div>
-      </div>
 
-      {/* Bảng danh mục */}
-      <div className="bg-white rounded-xl shadow-md border border-gray-200 overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="min-w-full text-sm">
-            <thead className="bg-gray-50 text-gray-700">
-              <tr>
-                <th className="px-4 py-3 text-left text-xs font-semibold uppercase">STT</th>
-                <th className="px-4 py-3 text-left text-xs font-semibold uppercase">Tên danh mục</th>
-                <th className="px-4 py-3 text-left text-xs font-semibold uppercase">Số câu hỏi</th>
-                <th className="px-4 py-3 text-left text-xs font-semibold uppercase">Người tạo</th>
-                <th className="px-4 py-3 text-right text-xs font-semibold uppercase">Thao tác</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100">
-              {filtered.length === 0 ? (
+        {/* Bảng danh mục */}
+        <div className="bg-white rounded-xl shadow-md border border-gray-200 overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="min-w-full text-sm">
+              <thead className="bg-gray-50 text-gray-700">
                 <tr>
-                  <td
-                    colSpan={5}
-                    className="px-4 py-8 text-center text-gray-500 text-sm"
-                  >
-                    Không có danh mục nào
-                  </td>
+                  <th className="px-4 py-3 text-left text-xs font-semibold uppercase">STT</th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold uppercase">Tên danh mục</th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold uppercase">Số câu hỏi</th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold uppercase">Người tạo</th>
+                  <th className="px-4 py-3 text-right text-xs font-semibold uppercase">Thao tác</th>
                 </tr>
-              ) : (
-                filtered.map((cat, index) => (
-                  <tr key={cat.id} className="hover:bg-gray-50/70">
-                    <td className="px-4 py-3 text-gray-700">
-                      {page * PAGE_SIZE + index + 1}
-                    </td>
-                    <td className="px-4 py-3 text-gray-900 font-medium">
-                      {cat.name}
-                    </td>
-                    <td className="px-4 py-3 text-gray-700">
-                      {cat.questions?.length ?? 0}
-                    </td>
-                    <td className="px-4 py-3">
-                      <span
-                        className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold ${creatorBadgeClass(
-                          cat.createdByRole
-                        )}`}
-                      >
-                        {cat.createdByRole === "admin"
-                          ? "Quản trị viên"
-                          : cat.createdByRole === "teacher"
-                          ? "Giáo viên"
-                          : "Khác"}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3 text-right">
-                      <div className="inline-flex items-center justify-center gap-2">
-                        <button
-                          onClick={() => openEdit(cat)}
-                          className="px-3 py-1.5 rounded-lg bg-blue-600 text-white hover:bg-blue-700 flex items-center gap-1 text-xs"
-                        >
-                          <EditIcon /> Sửa
-                        </button>
-                        <button
-                          onClick={() => handleDelete(cat.id)}
-                          className="px-3 py-1.5 rounded-lg bg-red-500 text-white hover:bg-red-600 flex items-center gap-1 text-xs"
-                        >
-                          <TrashIcon /> Xóa
-                        </button>
-                      </div>
+              </thead>
+              <tbody className="divide-y divide-gray-100">
+                {filtered.length === 0 ? (
+                  <tr>
+                    <td
+                      colSpan={5}
+                      className="px-4 py-8 text-center text-gray-500 text-sm"
+                    >
+                      Không có danh mục nào
                     </td>
                   </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
+                ) : (
+                  filtered.map((cat, index) => (
+                    <tr key={cat.id} className="hover:bg-gray-50/70">
+                      <td className="px-4 py-3 text-gray-700">
+                        {page * PAGE_SIZE + index + 1}
+                      </td>
+                      <td className="px-4 py-3 text-gray-900 font-medium">
+                        {cat.name}
+                      </td>
+                      <td className="px-4 py-3 text-gray-700">
+                        {cat.questions?.length ?? 0}
+                      </td>
+                      <td className="px-4 py-3">
+                        <span
+                          className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold ${creatorBadgeClass(
+                            cat.createdByRole
+                          )}`}
+                        >
+                          {cat.createdByRole === "admin"
+                            ? "Quản trị viên"
+                            : cat.createdByRole === "teacher"
+                            ? "Giáo viên"
+                            : "Khác"}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3 text-right">
+                        <div className="inline-flex items-center justify-center gap-2">
+                          <button
+                            onClick={() => openEdit(cat)}
+                            className="px-3 py-1.5 rounded-lg bg-blue-600 text-white hover:bg-blue-700 flex items-center gap-1 text-xs"
+                          >
+                            <EditIcon /> Sửa
+                          </button>
+                          <button
+                            onClick={() => handleDelete(cat.id)}
+                            className="px-3 py-1.5 rounded-lg bg-red-500 text-white hover:bg-red-600 flex items-center gap-1 text-xs"
+                          >
+                            <TrashIcon /> Xóa
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
 
-        {/* Phân trang thực (backend) */}
-        <div className="flex items-center justify-center gap-1 py-3 border-t border-gray-100 text-xs text-gray-600">
-          {/* Về trang đầu */}
-          <button
-className="px-2 py-1 rounded border border-transparent text-gray-400 hover:text-gray-600 hover:bg-gray-50 disabled:opacity-40"
-            onClick={() => setPage(0)}
-            disabled={page === 0}
-          >
-            «
-          </button>
-          {/* Trang trước */}
-          <button
-            className="px-2 py-1 rounded border border-transparent text-gray-400 hover:bg-gray-50 disabled:opacity-40"
-            onClick={() => setPage((p) => Math.max(0, p - 1))}
-            disabled={page === 0}
-          >
-            ‹
-          </button>
-          {/* Số trang */}
-          {Array.from({ length: totalPages }, (_, i) => (
+          {/* Phân trang thực (backend) */}
+          <div className="flex items-center justify-center gap-1 py-3 border-t border-gray-100 text-xs text-gray-600">
+            {/* Về trang đầu */}
             <button
-              key={i}
-              onClick={() => setPage(i)}
-              className={`px-3 py-1 rounded-full text-sm font-medium transition-colors
-                ${
-                  i === page
-                    ? "bg-purple-100 text-purple-700"
-                    : "text-gray-700 hover:bg-gray-50"
-                }
-              `}
+className="px-2 py-1 rounded border border-transparent text-gray-400 hover:text-gray-600 hover:bg-gray-50 disabled:opacity-40"
+              onClick={() => setPage(0)}
+              disabled={page === 0}
             >
-              {i + 1}
+              «
             </button>
-          ))}
-          {/* Trang tiếp */}
-          <button
-            className="px-2 py-1 rounded border border-transparent text-gray-400 hover:bg-gray-50 disabled:opacity-40"
-            onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))}
-            disabled={page === totalPages - 1}
-          >
-            ›
-          </button>
-          {/* Về trang cuối */}
-          <button
-            className="px-2 py-1 rounded border border-transparent text-gray-400 hover:bg-gray-50 disabled:opacity-40"
-            onClick={() => setPage(totalPages - 1)}
-            disabled={page === totalPages - 1}
-          >
-            »
-          </button>
-        </div>
-      </div>
-
-      {/* Modal Thêm/Sửa */}
-      {modalOpen && (
-        <div
-          className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50"
-          onClick={closeModal}
-        >
-          <div
-            className="bg-white rounded-xl p-6 w-full max-w-lg shadow-2xl"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="flex items-start justify-between mb-4 border-b pb-3">
-              <h2 className="text-xl font-bold text-gray-900">
-                {editing ? "Sửa danh mục" : "Thêm danh mục"}
-              </h2>
+            {/* Trang trước */}
+            <button
+              className="px-2 py-1 rounded border border-transparent text-gray-400 hover:bg-gray-50 disabled:opacity-40"
+              onClick={() => setPage((p) => Math.max(0, p - 1))}
+              disabled={page === 0}
+            >
+              ‹
+            </button>
+            {/* Số trang */}
+            {Array.from({ length: totalPages }, (_, i) => (
               <button
-                onClick={closeModal}
-                className="text-gray-500 hover:text-gray-700"
+                key={i}
+                onClick={() => setPage(i)}
+                className={`px-3 py-1 rounded-full text-sm font-medium transition-colors
+                  ${
+                    i === page
+                      ? "bg-purple-100 text-purple-700"
+                      : "text-gray-700 hover:bg-gray-50"
+                  }
+                `}
               >
-                ✕
+                {i + 1}
               </button>
-            </div>
+            ))}
+            {/* Trang tiếp */}
+            <button
+              className="px-2 py-1 rounded border border-transparent text-gray-400 hover:bg-gray-50 disabled:opacity-40"
+              onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))}
+              disabled={page === totalPages - 1}
+            >
+              ›
+            </button>
+            {/* Về trang cuối */}
+            <button
+              className="px-2 py-1 rounded border border-transparent text-gray-400 hover:bg-gray-50 disabled:opacity-40"
+              onClick={() => setPage(totalPages - 1)}
+              disabled={page === totalPages - 1}
+            >
+              »
+            </button>
+          </div>
+        </div>
 
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Tên danh mục
-                </label>
-                <input
-                  value={form.name}
-                  onChange={onChangeName}
-                  placeholder="Nhập tên danh mục..."
-                  className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-400"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Mô tả
-                </label>
-                <textarea
-                  value={form.description}
-                  onChange={onChangeDesc}
-                  rows={3}
-                  placeholder="Mô tả ngắn gọn..."
-                  className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-400"
-                />
-              </div>
-
-              {error && <p className="text-sm text-red-600">{error}</p>}
-
-              <div className="flex justify-end gap-3 pt-2">
+        {/* Modal Thêm/Sửa */}
+        {modalOpen && (
+          <div
+            className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50"
+            onClick={closeModal}
+          >
+            <div
+              className="bg-white rounded-xl p-6 w-full max-w-lg shadow-2xl"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="flex items-start justify-between mb-4 border-b pb-3">
+                <h2 className="text-xl font-bold text-gray-900">
+                  {editing ? "Sửa danh mục" : "Thêm danh mục"}
+                </h2>
                 <button
                   onClick={closeModal}
-                  className="px-4 py-2 border rounded-lg hover:bg-gray-50"
+                  className="text-gray-500 hover:text-gray-700"
                 >
-                  Hủy
+                  ✕
                 </button>
-                <button
-                  onClick={handleSave}
-                  className="px-4 py-2 bg-purple-700 text-white rounded-lg hover:bg-purple-800 font-semibold"
-                  disabled={loading}
-                >
-                  Lưu
-                </button>
+              </div>
+
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Tên danh mục
+                  </label>
+                  <input
+                    value={form.name}
+                    onChange={onChangeName}
+                    placeholder="Nhập tên danh mục..."
+                    className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-400"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Mô tả
+                  </label>
+                  <textarea
+                    value={form.description}
+                    onChange={onChangeDesc}
+                    rows={3}
+                    placeholder="Mô tả ngắn gọn..."
+                    className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-400"
+                  />
+                </div>
+
+                {error && <p className="text-sm text-red-600">{error}</p>}
+
+                <div className="flex justify-end gap-3 pt-2">
+                  <button
+                    onClick={closeModal}
+                    className="px-4 py-2 border rounded-lg hover:bg-gray-50"
+                  >
+                    Hủy
+                  </button>
+                  <button
+                    onClick={handleSave}
+                    className="px-4 py-2 bg-purple-700 text-white rounded-lg hover:bg-purple-800 font-semibold"
+                    disabled={loading}
+                  >
+                    Lưu
+                  </button>
+                </div>
               </div>
             </div>
           </div>
-        </div>
-      )}
+        )}
+      </main>
     </div>
   );
 }
