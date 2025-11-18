@@ -148,16 +148,29 @@ const LogoutConfirmationModal = ({ isOpen, onConfirm, onCancel }) => {
 
 // Component Sidebar
 const AdminSidebar = ({ isSidebarOpen, toggleSidebar }) => {
+    // START: Cập nhật Nav Items để phản ánh cấu trúc menu cấp 2 trong ảnh
     const navItems = [
-        { name: "Trang chủ Admin", href: "/admin" },
-        { name: "Trang chủ Web", href: "/" },
-        { name: "Quản lý tài khoản", href: "/admin/accounts" },
-        { name: "Duyệt tài khoản giáo viên", href: "/admin/approve-teachers" },
-        { name: "Danh mục", href: "/admin/categories" },
+        // Mục chính
+        { name: "Trang chủ", href: "/admin", type: 'main' },
+
+        // Mục cha có dropdown
+        { name: "Quản lý tài khoản", href: "/admin/accounts", type: 'parent' },
+
+        // Các mục con của "Quản lý tài khoản"
+        { name: "Giáo viên", href: "/admin/teachers", type: 'child' }, // Giả định theo ảnh
+        { name: "Học sinh", href: "/admin/students", type: 'child' }, // Giả định theo ảnh
+        { name: "Duyệt tài khoản giáo viên", href: "/admin/approve-teachers", type: 'child' },
+        { name: "Danh mục", href: "/admin/categories", type: 'child' },
+        { name: "Quản lý câu hỏi", href: "/admin/questions", type: 'child' }, // MỤC ĐÃ THÊM
+
+        // Các mục khác (nếu có)
+        { name: "Trang chủ Web", href: "/", type: 'other' },
     ];
-    
+    // END: Cập nhật Nav Items
+
+
     const [currentPathname, setCurrentPathname] = useState('/');
-    
+
     // Lấy pathname an toàn
     React.useEffect(() => {
         if (typeof window !== 'undefined') {
@@ -165,37 +178,81 @@ const AdminSidebar = ({ isSidebarOpen, toggleSidebar }) => {
         }
     }, []);
 
+    // Xác định mục cha có đang active hay không
+    const getIsAccountOpenInitial = () => {
+        if (typeof window === 'undefined') return true;
+
+        // Mở dropdown nếu bất kỳ mục con nào đang active
+        return navItems
+            .filter(item => item.type === 'child')
+            .some(item => window.location.pathname.startsWith(item.href) && item.href !== '/admin');
+    };
+
+    const [isAccountOpen, setIsAccountOpen] = useState(getIsAccountOpenInitial());
+
+
+    const getLinkClasses = (href, type) => {
+        const isActive = currentPathname.startsWith(href) && href !== '/admin';
+        const isExactActive = currentPathname === href;
+
+        if (type === 'main' || type === 'other') {
+            // Dành cho Trang chủ và các mục cấp cao nhất
+            return `flex items-center w-full px-6 py-3 transition duration-150 border-b border-zinc-100
+                ${isExactActive // Dùng isExactActive cho mục chính như Trang chủ
+                    ? 'bg-purple-50 font-semibold text-purple-700 border-l-4 border-purple-600'
+                    : 'hover:bg-zinc-50 border-l-4 border-transparent'
+                }`;
+        }
+
+        if (type === 'child') {
+            // Mục con (Giáo viên, Danh mục, Quản lý câu hỏi)
+            return `flex items-center w-full pl-10 pr-6 py-2 transition duration-150
+                ${isActive
+                    ? 'bg-purple-100 font-semibold text-purple-700'
+                    : 'hover:bg-zinc-100 text-zinc-600'
+                }`;
+        }
+
+        // Mục cha (Quản lý tài khoản)
+        return `flex items-center justify-between w-full px-6 py-3 transition duration-150 border-b border-zinc-100 cursor-pointer
+            ${isAccountOpen || isActive // Highlight nếu đang mở hoặc mục cha đang active
+                ? 'bg-purple-50 font-semibold text-purple-700 border-l-4 border-purple-600'
+                : 'hover:bg-zinc-50 border-l-4 border-transparent text-zinc-700'
+            }`;
+    };
+
+
     return (
         <>
             {/* Lớp phủ cho mobile */}
             {isSidebarOpen && (
-                <div 
-                    className="md:hidden fixed inset-0 bg-black/50 z-40" 
+                <div
+                    className="md:hidden fixed inset-0 bg-black/50 z-40"
                     onClick={toggleSidebar}
                 ></div>
             )}
-            
+
             {/* Sidebar chính */}
-            <aside 
+            <aside
                 className={`w-80 bg-white border-r border-zinc-200 h-screen fixed top-0 left-0 z-50 transform transition-transform duration-300 shadow-2xl md:translate-x-0
                     ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}
             >
-                
+
                 {/* Khu vực Logo */}
-                <div 
-                    className="flex items-center justify-between px-6 py-4 border-b border-zinc-200 bg-white" 
+                <div
+                    className="flex items-center justify-between px-6 py-4 border-b border-zinc-200 bg-white"
                 >
                     {/* Logo/Tên dự án */}
-                    <a 
-                        href="/admin" 
-                        className="text-2xl font-black tracking-tighter" 
-                        style={{ color: LOGO_TEXT_COLOR }} 
+                    <a
+                        href="/admin"
+                        className="text-2xl font-black tracking-tighter"
+                        style={{ color: LOGO_TEXT_COLOR }}
                     >
                         QuizzZone
                     </a>
                     {/* Nút đóng trên mobile */}
-                    <button 
-                        onClick={toggleSidebar} 
+                    <button
+                        onClick={toggleSidebar}
                         className="md:hidden text-zinc-600 hover:text-purple-600 p-1 rounded transition duration-150"
                     >
                         <MenuIcon color={PRIMARY_COLOR} isRotated={true} />
@@ -208,36 +265,73 @@ const AdminSidebar = ({ isSidebarOpen, toggleSidebar }) => {
                         Điều hướng
                     </div>
                     {navItems.map((item) => {
-                        // Logic Active Path (chỉ dùng window.location.pathname)
-                        const isHomeWeb = item.href === '/';
-                        const isHomeAdmin = item.href === '/admin';
-                        
-                        let shouldBeActive = false;
-                        
-                        if (isHomeWeb) {
-                            shouldBeActive = currentPathname === '/';
-                        } else if (isHomeAdmin) {
-                            // Chỉ active khi đúng trang /admin, KHÔNG áp dụng cho các trang con
-                            shouldBeActive = currentPathname === '/admin'; 
-                        } else {
-                            shouldBeActive = currentPathname.startsWith(item.href);
+                        // Mục chính (Trang chủ)
+                        if (item.type === 'main') {
+                            return (
+                                <a
+                                    key={item.href}
+                                    href={item.href}
+                                    className={getLinkClasses(item.href, 'main')}
+                                    onClick={toggleSidebar}
+                                >
+                                    <span>{item.name}</span>
+                                </a>
+                            );
                         }
 
-                        return (
-                            <a
-                                key={item.name}
-                                href={item.href}
-                                className={`flex items-center w-full px-6 py-3 transition duration-150 border-b border-zinc-100 
-                                    ${shouldBeActive 
-                                        ? 'bg-purple-50 font-semibold text-purple-700 border-l-4 border-purple-600' 
-                                        : 'hover:bg-zinc-50 border-l-4 border-transparent'
-                                    }
-                                `}
-                                onClick={toggleSidebar} // Đóng sidebar sau khi click trên mobile
-                            >
-                                <span>{item.name}</span>
-                            </a>
-                        );
+                        // Mục cha (Quản lý tài khoản)
+                        if (item.type === 'parent') {
+                            return (
+                                <div key={item.href}>
+                                    <div
+                                        className={getLinkClasses(item.href, 'parent')}
+                                        onClick={() => setIsAccountOpen(!isAccountOpen)}
+                                    >
+                                        <span>{item.name}</span>
+                                        <span className={`transform transition-transform duration-200 ${isAccountOpen ? 'rotate-90' : 'rotate-0'}`}>
+                                            {/* Simple SVG Arrow Icon */}
+                                            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                                            </svg>
+                                        </span>
+                                    </div>
+
+                                    {/* Sub-menu (Chỉ render nếu isAccountOpen là true) */}
+                                    {isAccountOpen && (
+                                        <div>
+                                            {navItems
+                                                .filter(subItem => subItem.type === 'child')
+                                                .map(subItem => (
+                                                    <a
+                                                        key={subItem.href}
+                                                        href={subItem.href}
+                                                        className={getLinkClasses(subItem.href, 'child')}
+                                                        onClick={toggleSidebar}
+                                                    >
+                                                        {subItem.name}
+                                                    </a>
+                                                ))}
+                                        </div>
+                                    )}
+                                </div>
+                            );
+                        }
+
+                        // Các mục khác (như Trang chủ Web)
+                        if (item.type === 'other') {
+                             return (
+                                <a
+                                    key={item.href}
+                                    href={item.href}
+                                    className={getLinkClasses(item.href, 'main')}
+                                    onClick={toggleSidebar}
+                                >
+                                    <span>{item.name}</span>
+                                </a>
+                            );
+                        }
+
+                        return null;
                     })}
                 </nav>
             </aside>
@@ -250,18 +344,37 @@ const AdminSidebar = ({ isSidebarOpen, toggleSidebar }) => {
 const AdminTopBar = ({ toggleSidebar, isSidebarOpen }) => {
     const [currentPath, setCurrentPath] = useState("Trang chủ");
 
+    // START: Cập nhật Title Map
+    const titleMap = {
+        '/': 'Trang chủ Website',
+        '/admin': 'Trang chủ Admin',
+        '/admin/accounts': 'Quản lý tài khoản',
+        '/admin/teachers': 'Quản lý Giáo viên',
+        '/admin/students': 'Quản lý Học sinh',
+        '/admin/approve-teachers': 'Duyệt tài khoản giáo viên',
+        '/admin/categories': 'Danh mục',
+        '/admin/questions': 'Quản lý Câu hỏi',
+    };
+    // END: Cập nhật Title Map
+
     // Lấy tên trang hiện tại cho Header
     React.useEffect(() => {
         if (typeof window !== 'undefined') {
             const path = window.location.pathname;
-            const titleMap = {
-                '/': 'Trang chủ Website', 
-                '/admin': 'Trang chủ Admin',
-                '/admin/accounts': 'Quản lý tài khoản',
-                '/admin/approve-teachers': 'Duyệt tài khoản giáo viên',
-                '/admin/categories': 'Danh mục',
-            };
-            const mappedTitle = titleMap[path];
+
+            // Tìm kiếm chính xác hoặc tìm kiếm theo prefix (cho routes động như /admin/questions/123)
+            let mappedTitle = titleMap[path];
+
+            // Nếu không tìm thấy chính xác, tìm kiếm theo prefix
+            if (!mappedTitle) {
+                for (const key in titleMap) {
+                    if (path.startsWith(key) && key !== '/admin' && key !== '/') {
+                        mappedTitle = titleMap[key];
+                        break;
+                    }
+                }
+            }
+
             if (mappedTitle) {
                 setCurrentPath(mappedTitle);
             } else if (path.startsWith('/admin')) {
