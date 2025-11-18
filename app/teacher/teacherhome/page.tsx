@@ -18,7 +18,13 @@ const TeacherHome = () => {
         const res = await fetch('/api/profile');
         if (res.ok) {
           const data = await res.json();
-          setUsername(data.username || null);
+          // Ưu tiên username
+          let displayName: string | null = data.username || null;
+          if (!displayName && data.email) {
+            const email: string = data.email;
+            displayName = email.includes('@') ? email.split('@')[0] : email;
+          }
+          setUsername(displayName);
           setAvatar(data.avatar || null);
         }
       } catch (err) {
@@ -144,7 +150,7 @@ const TeacherHome = () => {
         >
           <div className="relative flex items-center gap-3" onClick={(e) => e.stopPropagation()}>
             <span className="text-sm text-zinc-700">
-              {`Xin chào, ${username || 'Thầy A'}`}
+              {`Xin chào, ${username || 'Giáo viên'}`}
             </span>
             <button
               onClick={(e) => {
@@ -201,7 +207,7 @@ const TeacherHome = () => {
               <div className="flex-1 px-6 sm:px-8 py-6 sm:py-8 flex flex-col gap-4">
                 <div>
                   <h1 className="text-2xl sm:text-3xl md:text-4xl font-extrabold mb-2">
-                    {`Chào mừng, thầy ${username || 'A'}!`}
+                    {username ? `Chào mừng, ${username}!` : 'Chào mừng bạn!'}
                   </h1>
                   <p className="text-sm sm:text-base text-purple-100 max-w-xl">
                     Bắt đầu xây dựng ngân hàng đề thi chất lượng ngay hôm nay.
