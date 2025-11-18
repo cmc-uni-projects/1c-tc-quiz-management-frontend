@@ -64,4 +64,3 @@ export default function DefaultLayout({
     );
 }
 
-// Giờ bạn phải import DefaultLayout này vào app/page.tsx, app/login/page.tsx, app/register/page.tsx, v.v.

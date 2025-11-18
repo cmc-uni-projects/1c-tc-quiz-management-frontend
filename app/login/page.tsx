@@ -61,7 +61,6 @@ export default function LoginPage() {
       if (err.message && err.message.includes('403')) {
         setError('Phiên của bạn không hợp lệ. Vui lòng làm mới trang và thử lại.');
       } else {
-        // Spring Security failure handler trả về 'Invalid credentials'
         setError(err.message || 'Sai tài khoản hoặc mật khẩu.');
       }
     } finally {
