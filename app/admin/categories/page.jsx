@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import toast from "react-hot-toast";
+import Swal from "sweetalert2";
 
 // Màu tím nhạt giống các trang Admin
 const PRIMARY_PURPLE_BG = "#E33AEC7A";
@@ -59,10 +61,40 @@ export default function CategoriesPage() {
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState(null); // null: thêm mới, object: đang sửa
 
+  // Phân trang phía backend
+  const PAGE_SIZE = 10;
+  const [page, setPage] = useState(0);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalElements, setTotalElements] = useState(0);
+
   // State cho form
   const [form, setForm] = useState({ name: "", description: "" });
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+
+  // Chuẩn hóa thông báo lỗi từ backend sang dạng thân thiện, tiếng Việt
+  const extractErrorMessage = async (res, fallback = "Có lỗi xảy ra") => {
+    try {
+      const text = await res.text();
+      if (!text) return fallback;
+
+      let raw = text;
+      try {
+        const parsed = JSON.parse(text);
+        raw = parsed.message || parsed.error || text;
+      } catch {
+        // text không phải JSON, giữ nguyên
+      }
+
+      if (raw && raw.includes("Category name already exists")) {
+        return "Tên danh mục đã tồn tại";
+      }
+
+      return raw || fallback;
+    } catch {
+      return fallback;
+    }
+  };
 
   // Badge màu theo người tạo
   const creatorBadgeClass = (role) => {
@@ -78,51 +110,52 @@ export default function CategoriesPage() {
     }
   };
 
-  // Load tất cả danh mục lần đầu
+  // Load profile once
   useEffect(() => {
-    const fetchAll = async () => {
+    const fetchProfile = async () => {
       try {
-        setLoading(true);
-        // Load profile for correct role labeling of current user's items
-        try {
-          const p = await fetch(`/api/profile`, { credentials: "include" });
-          if (p.ok) {
-            const profile = await p.json();
-            setCurrentUser(profile);
-          }
-        } catch {}
-        // Load categories
-        const res = await fetch(`/categories`, { credentials: "include" });
-        if (!res.ok) throw new Error("Failed to load categories");
-        const data = await res.json();
-        setCategories(Array.isArray(data) ? data : []);
+        const p = await fetch(`/api/profile`, { credentials: "include" });
+        if (p.ok) {
+          const profile = await p.json();
+          setCurrentUser(profile);
+        }
       } catch (e) {
         console.error(e);
-      } finally {
-        setLoading(false);
       }
     };
-    fetchAll();
+    fetchProfile();
   }, []);
 
-  // Tìm kiếm trên backend (không đổi UI phần input)
-  const handleSearch = async () => {
-    const q = keyword.trim();
+  // Fetch categories from backend with pagination + optional search
+  const fetchCategories = async (pageParam = page, keywordParam = keyword) => {
     try {
       setLoading(true);
+      const q = keywordParam.trim();
+      let url;
       if (!q) {
-        // nếu trống -> lấy tất cả
-        const res = await fetch(`/categories`, { credentials: "include" });
-        const all = await res.json();
-        setCategories(Array.isArray(all) ? all : []);
+        // dùng endpoint search để lấy Page, sort theo id desc (id lớn hơn là mới hơn)
+        const params = new URLSearchParams({
+          page: String(pageParam),
+          size: String(PAGE_SIZE),
+          sort: "id,desc",
+        });
+        url = `/categories/search?${params.toString()}`;
       } else {
-        const params = new URLSearchParams({ name: q, page: "0", size: "50", sort: "id,asc" });
-        const res = await fetch(`/categories/search?${params.toString()}`, { credentials: "include" });
-        if (!res.ok) throw new Error("Search failed");
-        const page = await res.json();
-        // Spring Page object: content, number, totalElements,...
-        setCategories(Array.isArray(page?.content) ? page.content : []);
+        const params = new URLSearchParams({
+          name: q,
+          page: String(pageParam),
+          size: String(PAGE_SIZE),
+          sort: "id,desc",
+        });
+        url = `/categories/search?${params.toString()}`;
       }
+      const res = await fetch(url, { credentials: "include" });
+      if (!res.ok) throw new Error("Failed to load categories");
+      const data = await res.json();
+      const content = Array.isArray(data?.content) ? data.content : Array.isArray(data) ? data : [];
+      setCategories(content);
+      if (typeof data.totalPages === "number") setTotalPages(data.totalPages || 1);
+      if (typeof data.totalElements === "number") setTotalElements(data.totalElements || content.length);
     } catch (e) {
       console.error(e);
     } finally {
@@ -130,8 +163,20 @@ export default function CategoriesPage() {
     }
   };
 
+  // Load khi page hoặc keyword thay đổi
+  useEffect(() => {
+    fetchCategories();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [page]);
+
+  // Tìm kiếm: reset về trang 0 và gọi lại fetchCategories với keyword hiện tại
+  const handleSearch = async () => {
+    setPage(0);
+    await fetchCategories(0, keyword);
+  };
+
   const filtered = useMemo(() => {
-    // vẫn giữ lọc client để người dùng gõ thấy hiệu ứng, nhưng nguồn là dữ liệu backend hiện tại
+    // vẫn giữ lọc client để người dùng gõ thấy hiệu ứng trong danh sách trang hiện tại
     const kw = keyword.trim().toLowerCase();
     if (!kw) return categories;
     return categories.filter((c) => c.name?.toLowerCase().includes(kw));
@@ -189,9 +234,13 @@ export default function CategoriesPage() {
           credentials: "include",
           body: JSON.stringify(body),
         });
-        if (!res.ok) throw new Error(await res.text());
+        if (!res.ok) {
+          const msg = await extractErrorMessage(res);
+          throw new Error(msg);
+        }
         const updated = await res.json();
         setCategories((prev) => prev.map((c) => (c.id === updated.id ? updated : c)));
+        toast.success("Cập nhật danh mục thành công");
       } else {
         // Create
         const body = { name: form.name.trim(), description: form.description?.trim() || "" };
@@ -201,19 +250,17 @@ export default function CategoriesPage() {
           credentials: "include",
           body: JSON.stringify(body),
         });
-        if (!res.ok) throw new Error(await res.text());
-        const created = await res.json();
-        // Enrich with role for correct badge if this user is the creator
-        let createdByRole = undefined;
-        if (currentUser) {
-          const u = (currentUser.username || "").toLowerCase();
-          const e = (currentUser.email || "").toLowerCase();
-          const v = (created.createdBy || "").toLowerCase();
-          if (v && (v === u || v === e)) {
-            createdByRole = (currentUser.role || "").toLowerCase();
-          }
+        if (!res.ok) {
+          const msg = await extractErrorMessage(res);
+          throw new Error(msg);
         }
-        setCategories((prev) => [...prev, { ...created, ...(createdByRole ? { createdByRole } : {}) }]);
+        await res.json();
+        // Sau khi tạo, luôn quay về trang đầu và tải lại từ backend để đảm bảo danh sách sort đúng (mới nhất trước)
+        toast.success("Tạo danh mục thành công");
+        setModalOpen(false);
+        setPage(0);
+        await fetchCategories(0, keyword);
+        return;
       }
       setModalOpen(false);
     } catch (e) {
@@ -225,14 +272,34 @@ export default function CategoriesPage() {
   };
 
   const handleDelete = async (id) => {
+    const cat = categories.find((c) => c.id === id);
+    const result = await Swal.fire({
+      title: "Xác nhận xóa",
+      text: cat ? `Bạn có chắc chắn muốn xóa danh mục "${cat.name}"?` : "Bạn có chắc chắn muốn xóa danh mục này?",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#3085d6",
+      cancelButtonColor: "#d33",
+      confirmButtonText: "Xóa",
+      cancelButtonText: "Hủy",
+      background: "#fff",
+      customClass: {
+        confirmButton: "px-4 py-2 rounded-md",
+        cancelButton: "px-4 py-2 rounded-md",
+      },
+    });
+
+    if (!result.isConfirmed) return;
+
     try {
       setLoading(true);
       const res = await fetch(`/categories/${id}`, { method: "DELETE", credentials: "include" });
       if (!res.ok) throw new Error(await res.text());
       setCategories((prev) => prev.filter((c) => c.id !== id));
+      toast.success("Đã xóa danh mục thành công");
     } catch (e) {
       console.error(e);
-      // Có thể hiển thị toast/alert sau
+      toast.error(e?.message || "Không thể xóa danh mục");
     } finally {
       setLoading(false);
     }
@@ -297,7 +364,7 @@ export default function CategoriesPage() {
               ) : (
                 filtered.map((c, idx) => (
                   <tr key={c.id} className="border-t border-gray-100 hover:bg-gray-50">
-                    <td className="px-4 py-3">{idx + 1}</td>
+                    <td className="px-4 py-3">{page * PAGE_SIZE + idx + 1}</td>
                     <td className="px-4 py-3 font-medium text-gray-900">{c.name}</td>
                     <td className="px-4 py-3 text-gray-700">{c.description}</td>
                     <td className="px-4 py-3">
@@ -333,12 +400,56 @@ export default function CategoriesPage() {
           </table>
         </div>
 
-        {/* Phân trang giả lập */}
-        <div className="flex items-center justify-center gap-2 py-3 border-t border-gray-100 text-xs text-gray-600">
-          <button className="px-2 py-1 rounded hover:bg-gray-100">«</button>
-          <button className="px-2 py-1 rounded bg-purple-100 text-purple-700">1</button>
-          <button className="px-2 py-1 rounded hover:bg-gray-100">2</button>
-          <button className="px-2 py-1 rounded hover:bg-gray-100">»</button>
+        {/* Phân trang thực (backend) */}
+        <div className="flex items-center justify-center gap-1 py-3 border-t border-gray-100 text-xs text-gray-600">
+          {/* Về trang đầu */}
+          <button
+className="px-2 py-1 rounded border border-transparent text-gray-400 hover:text-gray-600 hover:bg-gray-50 disabled:opacity-40"
+            onClick={() => setPage(0)}
+            disabled={page === 0}
+          >
+            «
+          </button>
+          {/* Trang trước */}
+          <button
+            className="px-2 py-1 rounded border border-transparent text-gray-400 hover:bg-gray-50 disabled:opacity-40"
+            onClick={() => setPage((p) => Math.max(0, p - 1))}
+            disabled={page === 0}
+          >
+            ‹
+          </button>
+          {/* Số trang */}
+          {Array.from({ length: totalPages }, (_, i) => (
+            <button
+              key={i}
+              onClick={() => setPage(i)}
+              className={`px-3 py-1 rounded-full text-sm font-medium transition-colors
+                ${
+                  i === page
+                    ? "bg-purple-100 text-purple-700"
+                    : "text-gray-700 hover:bg-gray-50"
+                }
+              `}
+            >
+              {i + 1}
+            </button>
+          ))}
+          {/* Trang tiếp */}
+          <button
+            className="px-2 py-1 rounded border border-transparent text-gray-400 hover:bg-gray-50 disabled:opacity-40"
+            onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))}
+            disabled={page === totalPages - 1}
+          >
+            ›
+          </button>
+          {/* Về trang cuối */}
+          <button
+            className="px-2 py-1 rounded border border-transparent text-gray-400 hover:bg-gray-50 disabled:opacity-40"
+            onClick={() => setPage(totalPages - 1)}
+            disabled={page === totalPages - 1}
+          >
+            »
+          </button>
         </div>
       </div>
 

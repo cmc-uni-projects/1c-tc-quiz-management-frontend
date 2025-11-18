@@ -86,7 +86,7 @@ export default function LoginPage() {
               type="email"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
-              placeholder="Enter your email"
+              placeholder="Nhập email của bạn"
               className="w-full rounded-md border border-zinc-300 bg-white px-4 py-3 text-zinc-900 placeholder:text-zinc-400 focus:border-[#E33AEC] focus:outline-none focus:ring-2 focus:ring-[#E33AEC]/30"
               required
             />

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
 
@@ -9,6 +9,24 @@ const StudentHome = () => {
   const [roomCode, setRoomCode] = useState('');
   const [showDropdown, setShowDropdown] = useState(false);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+  const [username, setUsername] = useState<string | null>(null);
+  const [avatar, setAvatar] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchProfile = async () => {
+      try {
+        const res = await fetch('/api/profile');
+        if (res.ok) {
+          const data = await res.json();
+          setUsername(data.username || null);
+          setAvatar(data.avatar || null);
+        }
+      } catch (err) {
+        console.error('Error fetching profile:', err);
+      }
+    };
+    fetchProfile();
+  }, []);
 
   const handleProfileClick = () => {
     setShowDropdown(false);
@@ -89,17 +107,21 @@ const StudentHome = () => {
             </a>
           </nav>
           <div className="flex shrink-0 items-center gap-3 relative" onClick={(e) => e.stopPropagation()}>
-            <span className="text-sm text-zinc-600">Xin chào, Student</span>
+            <span className="text-sm text-zinc-600">{`Xin chào, ${username || 'Student'}`}</span>
             <button
               onClick={(e) => {
                 e.stopPropagation();
                 setShowDropdown(!showDropdown);
               }}
-              className="rounded-full bg-purple-100 p-2 text-purple-600 hover:bg-purple-200 transition"
+              className="grid h-8 w-8 place-items-center rounded-full bg-purple-100 text-purple-600 hover:bg-purple-200 transition overflow-hidden"
             >
-              <svg className="h-6 w-6" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" />
-              </svg>
+              {avatar ? (
+                <img src={avatar} alt="avatar" className="h-8 w-8 rounded-full object-cover" />
+              ) : (
+                <svg className="h-6 w-6" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" />
+                </svg>
+              )}
             </button>
             
             {/* Dropdown Menu */}

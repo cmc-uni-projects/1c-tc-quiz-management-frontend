@@ -5,6 +5,7 @@ import toast from 'react-hot-toast';
 
 const PRIMARY_BG = '#6D0446';
 const BUTTON_BG = '#A53AEC';
+const MAX_AVATAR_SIZE = 5 * 1024 * 1024; // 5MB
 
 export default function TeacherProfilePage() {
   const fileRef = useRef<HTMLInputElement | null>(null);
@@ -26,11 +27,11 @@ export default function TeacherProfilePage() {
           setEmail(data.email || '');
           setAvatar(data.avatar || null);
         } else {
-          toast.error('Failed to load profile');
+          toast.error('Không thể tải thông tin hồ sơ');
         }
       } catch (error) {
         console.error('Error fetching profile:', error);
-        toast.error('Error loading profile');
+        toast.error('Lỗi khi tải thông tin hồ sơ');
       } finally {
         setLoading(false);
       }
@@ -40,11 +41,20 @@ export default function TeacherProfilePage() {
 
   const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files && e.target.files[0];
-    if (!file) return;
+    if (!file) {
+      if (e.target) e.target.value = '';
+      return;
+    }
 
     // Validate file type
     if (!file.type.startsWith('image/')) {
-      toast.error('Please select an image file');
+      toast.error('Vui lòng chọn tệp hình ảnh');
+      return;
+    }
+
+    // Validate file size (5MB)
+    if (file.size > MAX_AVATAR_SIZE) {
+      toast.error('Ảnh đại diện không được lớn hơn 5MB');
       return;
     }
 
@@ -55,6 +65,8 @@ export default function TeacherProfilePage() {
       setAvatarFile(file);
     };
     reader.readAsDataURL(file);
+
+    if (e.target) e.target.value = '';
   };
 
   const handleChooseFile = () => {
@@ -63,7 +75,7 @@ export default function TeacherProfilePage() {
 
   const handleDeleteAvatar = async () => {
     if (!avatar) {
-      toast.error('No avatar to delete');
+      toast.error('Không có ảnh đại diện để xóa');
       return;
     }
 
@@ -77,14 +89,15 @@ export default function TeacherProfilePage() {
       if (response.ok) {
         setAvatar(null);
         setAvatarFile(null);
-        toast.success('Avatar deleted successfully!');
+        if (fileRef.current) fileRef.current.value = '';
+        toast.success('Xóa ảnh đại diện thành công');
       } else {
         const errorData = await response.text();
-        toast.error(errorData || 'Failed to delete avatar');
+        toast.error(errorData || 'Xóa ảnh đại diện thất bại');
       }
     } catch (error) {
       console.error('Error deleting avatar:', error);
-      toast.error(error instanceof Error ? error.message : 'Error deleting avatar');
+      toast.error('Lỗi khi xóa ảnh đại diện');
     } finally {
       setSaving(false);
     }
@@ -93,7 +106,7 @@ export default function TeacherProfilePage() {
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     if (!username.trim()) {
-      toast.error('Name cannot be empty');
+      toast.error('Tên không được để trống');
       return;
     }
 
@@ -111,7 +124,8 @@ export default function TeacherProfilePage() {
           body: formData,
         });
         if (!uploadResponse.ok) {
-          throw new Error('Failed to upload avatar');
+          const text = await uploadResponse.text();
+          throw new Error(text || 'Tải ảnh đại diện thất bại');
         }
         const uploadData = await uploadResponse.json();
         avatarUrl = uploadData.avatarUrl;
@@ -125,15 +139,15 @@ export default function TeacherProfilePage() {
       });
 
       if (response.ok) {
-        toast.success('Profile updated successfully!');
+        toast.success('Cập nhật hồ sơ thành công');
         setAvatarFile(null);
       } else {
         const errorData = await response.json();
-        toast.error(errorData.error || 'Failed to update profile');
+        toast.error(errorData.error || 'Cập nhật hồ sơ thất bại');
       }
     } catch (error) {
       console.error('Error updating profile:', error);
-      toast.error(error instanceof Error ? error.message : 'Error updating profile');
+      toast.error('Lỗi khi cập nhật hồ sơ');
     } finally {
       setSaving(false);
     }
