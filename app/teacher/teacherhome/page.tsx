@@ -4,6 +4,8 @@ import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
 
+import Sidebar from '@/components/teacher/Sidebar';
+
 const TeacherHome = () => {
   const router = useRouter();
   const [roomCode, setRoomCode] = useState('');
@@ -102,44 +104,7 @@ const TeacherHome = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 flex">
-      {/* Sidebar */}
-      <aside className="w-56 border-r border-zinc-200 bg-white flex flex-col">
-        <div className="px-6 py-4 border-b border-zinc-200">
-          <a
-            href="/"
-            className="text-xl font-black tracking-tight"
-            style={{ color: '#E33AEC' }}
-          >
-            QuizzZone
-          </a>
-        </div>
-        <nav className="flex-1 px-4 py-4 text-sm font-medium text-zinc-700 space-y-1">
-          <a
-            href="/teacher/teacherhome"
-            className="block rounded-lg px-3 py-2 bg-zinc-100 text-purple-700 font-semibold"
-          >
-            Trang chủ
-          </a>
-          <a
-            href="/teacher/categories"
-            className="block rounded-lg px-3 py-2 hover:bg-zinc-50"
-          >
-            Danh mục câu hỏi
-          </a>
-          <a
-            href="#"
-            className="block rounded-lg px-3 py-2 hover:bg-zinc-50"
-          >
-            Quản lý câu hỏi
-          </a>
-          <a
-            href="#"
-            className="block rounded-lg px-3 py-2 hover:bg-zinc-50"
-          >
-            Quản lý bài thi
-          </a>
-        </nav>
-      </aside>
+      <Sidebar />
 
       {/* Main column */}
       <div className="flex-1 flex flex-col">
