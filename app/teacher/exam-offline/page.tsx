@@ -154,6 +154,21 @@ export default function CreateExamPage() {
       )
     );
   };
+  const toggleCorrectAnswer = (qid: number, aid: number) => {
+  setQuestions(
+    questions.map((q) =>
+      q.id === qid
+        ? {
+            ...q,
+            answers: q.answers.map((a) =>
+              a.id === aid ? { ...a, isCorrect: !a.isCorrect } : a
+            ),
+          }
+        : q
+    )
+  );
+};
+
 
   return (
     <div className="min-h-screen flex bg-[#F5F5F5] text-gray-900">
@@ -306,6 +321,13 @@ export default function CreateExamPage() {
           <section className="bg-white rounded-2xl shadow p-8">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-semibold">Thêm câu hỏi</h3>
+            <div className="flex items-center gap-2">
+            <button
+            onClick={() => console.log("Thư viện clicked")}
+            className="px-5 py-2 border-2 border-[#A53AEC] text-[#A53AEC] bg-white rounded-full"
+            >
+            Thư viện
+            </button>
               <button
                 onClick={addQuestion}
                 className="px-5 py-2 bg-[#A53AEC] text-white rounded-full"
@@ -313,7 +335,7 @@ export default function CreateExamPage() {
                 Thêm câu hỏi
               </button>
             </div>
-
+            </div>
             <div className="space-y-6">
               {questions.map((q, index) => (
                 <div key={q.id} className="p-4">
@@ -374,35 +396,43 @@ export default function CreateExamPage() {
                   </div>
 
                   {/* Danh sách đáp án */}
-                  <div className="space-y-2 mb-4">
-                    {q.answers.map((a) => (
-                      <div key={a.id} className="flex items-center gap-2">
-                        <input
-                          type="radio"
-                          checked={a.isCorrect}
-                          onChange={() => setCorrectAnswer(q.id, a.id)}
-                        />
+                 <div className="space-y-2 mb-4">
+                 {q.answers.map((a) => (
+                 <div key={a.id} className="flex items-center gap-2">
 
-                        <input
-                          type="text"
-                          value={a.text}
-                          placeholder={`Đáp án ${a.id}`}
-                          onChange={(e) =>
-                            updateAnswerText(q.id, a.id, e.target.value)
-                          }
-                          className="flex-1 border px-3 py-2 rounded-md"
-                        />
-
-                        <button
-                          onClick={() => removeAnswer(q.id, a.id)}
-                          className="p-2 hover:bg-gray-200 rounded-md"
-                        >
-                          🗑
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-
+                 {q.questionType === "multi" ? (
+                 <input
+                 type="checkbox"
+                 checked={a.isCorrect}
+                 onChange={() => toggleCorrectAnswer(q.id, a.id)}
+                 className="form-checkbox h-4 w-4 text-purple-600 border-gray-300 rounded"
+                />
+                ) : (
+               <input
+               type="radio"
+               name={`question-${q.id}`}
+               checked={a.isCorrect}
+               onChange={() => setCorrectAnswer(q.id, a.id)}
+               />
+               )}
+              <input
+              type="text"
+              value={a.text}
+              placeholder={`Đáp án ${a.id}`}
+              onChange={(e) =>
+              updateAnswerText(q.id, a.id, e.target.value)
+              }
+              className="flex-1 border px-3 py-2 rounded-md"
+              />
+              <button
+              onClick={() => removeAnswer(q.id, a.id)}
+              className="p-2 hover:bg-gray-200 rounded-md"
+              >
+              🗑
+             </button>
+             </div>
+            ))}
+            </div>
                   {/* Buttons */}
                   <div className="flex gap-3">
                     <button
