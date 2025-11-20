@@ -321,12 +321,20 @@ export default function CreateExamPage() {
           <section className="bg-white rounded-2xl shadow p-8">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-semibold">Thêm câu hỏi</h3>
-              <button
-                onClick={addQuestion}
-                className="px-5 py-2 bg-[#A53AEC] text-white rounded-full"
-              >
-                Thêm câu hỏi
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => console.log("Thư viện clicked")}
+                  className="px-5 py-2 border-2 border-[#A53AEC] text-[#A53AEC] bg-white rounded-full"
+                >
+                  Thư viện
+                </button>
+                <button
+                  onClick={addQuestion}
+                  className="px-5 py-2 bg-[#A53AEC] text-white rounded-full"
+                >
+                  Thêm câu hỏi
+                </button>
+              </div>
             </div>
 
 
