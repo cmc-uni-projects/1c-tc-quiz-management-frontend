@@ -21,7 +21,6 @@ interface FetchApiOptions extends RequestInit {
 export async function fetchApi(endpoint: string, options: FetchApiOptions = {}) {
   // Get the JWT from localStorage
   const token = localStorage.getItem('jwt');
-  console.log(`[fetchApi] Attempting to fetch ${endpoint}. Token found:`, !!token); // DEBUGGING
 
   const headers: HeadersInit = {
     'Content-Type': 'application/json',
@@ -31,9 +30,6 @@ export async function fetchApi(endpoint: string, options: FetchApiOptions = {}) 
   // If a token exists, add the Authorization header
   if (token) {
     headers['Authorization'] = `Bearer ${token}`;
-    console.log('[fetchApi] Authorization header set.'); // DEBUGGING
-  } else {
-    console.log('[fetchApi] No token found, Authorization header NOT set.'); // DEBUGGING
   }
 
   let body = options.body;
