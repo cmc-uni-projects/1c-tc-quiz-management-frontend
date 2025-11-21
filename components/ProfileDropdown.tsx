@@ -64,7 +64,7 @@ export default function ProfileDropdown() {
 
   const handleLogout = async () => {
     setOpen(false);
-    await signOut({ callbackUrl: '/login' });
+    await signOut({ callbackUrl: '/auth/login' });
     toast.success('Đăng xuất thành công');
   };
 

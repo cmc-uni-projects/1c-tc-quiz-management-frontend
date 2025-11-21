@@ -1,4 +1,4 @@
-// app/login/layout.tsx
+// app/auth/login/layout.tsx
 "use client";
 
 export default function LoginLayout({

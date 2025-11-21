@@ -44,7 +44,7 @@ async function fetchStudentsFromBackend(params: {
   });
 
   if (res.status === 401 || res.status === 403) {
-    window.location.href = '/login';
+    window.location.href = '/auth/login';
     // Thông báo thân thiện khi chưa đăng nhập hoặc không có quyền
     throw new Error('Bạn chưa đăng nhập hoặc không có quyền truy cập. Vui lòng đăng nhập lại.');
   }
