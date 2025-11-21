@@ -1,11 +1,39 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import toast from 'react-hot-toast';
+import toast, { Toast } from 'react-hot-toast';
 import { useUser } from '@/lib/user';
 
-import Sidebar from '@/components/teacher/Sidebar';
+// Custom toast hook to prevent duplicate toasts
+const useToast = () => {
+  const toastRef = useRef<string | null>(null);
+
+  const showError = (message: string) => {
+    if (toastRef.current) {
+      toast.dismiss(toastRef.current);
+    }
+    toastRef.current = toast.error(message);
+    return toastRef.current;
+  };
+
+  const showSuccess = (message: string) => {
+    if (toastRef.current) {
+      toast.dismiss(toastRef.current);
+    }
+    toastRef.current = toast.success(message);
+    return toastRef.current;
+  };
+
+  const dismiss = () => {
+    if (toastRef.current) {
+      toast.dismiss(toastRef.current);
+      toastRef.current = null;
+    }
+  };
+
+  return { showError, showSuccess, dismiss };
+};
 
 const TeacherHome = () => {
   const router = useRouter();
@@ -32,11 +60,13 @@ const TeacherHome = () => {
     setShowDropdown(false);
   };
 
+  const { showSuccess } = useToast();
+
   const handleLogoutConfirm = async () => {
     setShowLogoutConfirm(false);
     localStorage.removeItem('jwt'); // Clear JWT from localStorage
     router.push('/auth/login'); // Redirect to login page
-    toast.success('Đăng xuất thành công');
+    showSuccess('Đăng xuất thành công');
   };
 
   const handleLogoutCancel = () => {
@@ -78,11 +108,8 @@ const TeacherHome = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-gray-50 flex">
-      <Sidebar />
-
-      {/* Main column */}
-      <div className="flex-1 flex flex-col">
+    <>
+      <div className="min-h-screen bg-gray-50 flex flex-1 flex-col">
         {/* Top greeting bar */}
         <header
           className="flex justify-end items-center px-8 py-4 border-b border-zinc-200 bg-white"
@@ -217,7 +244,7 @@ const TeacherHome = () => {
           &copy; 2025 QuizzZone. Mọi quyền được bảo lưu.
         </footer>
       </div>
-
+      
       {/* Logout Confirmation Modal */}
       {showLogoutConfirm && (
         <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50">
@@ -241,7 +268,7 @@ const TeacherHome = () => {
           </div>
         </div>
       )}
-    </div>
+    </>
   );
 };
 

@@ -2,10 +2,40 @@
 
 import React from 'react';
 import { useRouter } from 'next/navigation';
-import { useState } from 'react';
-import toast from 'react-hot-toast';
+import { useState, useRef } from 'react';
+import toast, { Toast } from 'react-hot-toast';
 import { useUser } from '@/lib/user';
 import { fetchApi } from '@/lib/apiClient';
+
+// Custom toast hook to prevent duplicate toasts
+const useToast = () => {
+  const toastRef = useRef<string | null>(null);
+
+  const showError = (message: string) => {
+    if (toastRef.current) {
+      toast.dismiss(toastRef.current);
+    }
+    toastRef.current = toast.error(message);
+    return toastRef.current;
+  };
+
+  const showSuccess = (message: string) => {
+    if (toastRef.current) {
+      toast.dismiss(toastRef.current);
+    }
+    toastRef.current = toast.success(message);
+    return toastRef.current;
+  };
+
+  const dismiss = () => {
+    if (toastRef.current) {
+      toast.dismiss(toastRef.current);
+      toastRef.current = null;
+    }
+  };
+
+  return { showError, showSuccess, dismiss };
+};
 
 // Eye Icon Component
 const EyeIcon = () => (
@@ -52,13 +82,12 @@ function ChangePasswordForm() {
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [error, setError] = useState("");
-  const [success, setSuccess] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const { showError, showSuccess } = useToast();
 
   const handleSubmit = async (e: React.MouseEvent<HTMLButtonElement>) => {
     e.preventDefault();
     setError("");
-    setSuccess("");
 
     if (newPassword !== confirmPassword) {
       setError("Mật khẩu mới và xác nhận mật khẩu không khớp");
@@ -81,15 +110,14 @@ function ChangePasswordForm() {
         },
       });
 
-      setSuccess("Đổi mật khẩu thành công!");
-      toast.success("Đổi mật khẩu thành công!");
+      showSuccess("Đổi mật khẩu thành công!");
       setCurrentPassword("");
       setNewPassword("");
       setConfirmPassword("");
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : "Đã xảy ra lỗi khi đổi mật khẩu";
       setError(message);
-      toast.error(message);
+      showError(message);
     } finally {
       setIsLoading(false);
     }
@@ -126,12 +154,6 @@ function ChangePasswordForm() {
         {error && (
           <div className="mb-4 p-3 bg-red-50 border-l-4 border-red-500 text-red-700 text-sm">
             <p>{error}</p>
-          </div>
-        )}
-
-        {success && (
-          <div className="mb-4 p-3 bg-green-50 border-l-4 border-green-500 text-green-700 text-sm">
-            <p>{success}</p>
           </div>
         )}
 

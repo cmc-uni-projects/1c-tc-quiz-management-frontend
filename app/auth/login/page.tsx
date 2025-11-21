@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import toast from 'react-hot-toast';
+import { toastSuccess, toastError } from '@/lib/toast';
 import { fetchApi } from '@/lib/apiClient';
 
 export default function LoginPage() {
@@ -29,7 +29,7 @@ export default function LoginPage() {
 
       if (response.token) {
         localStorage.setItem('jwt', response.token);
-        toast.success('Đăng nhập thành công!');
+        toastSuccess('Đăng nhập thành công!');
 
         const user = await fetchApi('/me');
         console.log('LoginPage: User data fetched:', user);
@@ -64,8 +64,7 @@ export default function LoginPage() {
       console.error('Login Error:', err);
       const errorMessage = err.message || 'Sai tài khoản hoặc mật khẩu.';
       setError(errorMessage);
-      toast.error(errorMessage);
-
+      toastError(errorMessage);
       localStorage.removeItem('jwt');
     } finally {
       setLoading(false);

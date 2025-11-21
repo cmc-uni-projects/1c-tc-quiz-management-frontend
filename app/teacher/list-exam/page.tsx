@@ -1,5 +1,4 @@
 "use client";
-import Sidebar from "@/components/teacher/Sidebar";
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 
@@ -75,11 +74,7 @@ export default function TeacherExamListPage() {
   };
 
   return (
-    <div className="flex min-h-screen bg-gray-50">
-      <Sidebar />
-
-      {/* ============ MAIN ============ */}
-      <div className="flex-1 flex flex-col">
+    <div className="flex-1 flex flex-col">
         <main className="flex-1 px-10 py-8">
           {/* TAB DANH SÁCH BÀI THI / LỊCH SỬ */}
           <div className="border-b border-gray-200 mb-6 flex gap-6 text-sm">
@@ -164,6 +159,5 @@ export default function TeacherExamListPage() {
           © 2025 QuizzZone. Mọi quyền được bảo lưu.
         </footer>
       </div>
-    </div>
   );
 }
