@@ -27,8 +27,8 @@ const StudentAuthGuard = ({ children }) => {
       redirectPath = "/auth/login";
       toastMessage = "Bạn cần đăng nhập để truy cập trang này.";
     } else if (user?.role !== "STUDENT") {
-      redirectPath = "/";
       toastMessage = "Bạn không có quyền truy cập vào khu vực học sinh.";
+      redirectPath = "/";
     }
 
     if (redirectPath) {

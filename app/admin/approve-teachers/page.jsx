@@ -1,74 +1,95 @@
 "use client";
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
+const API_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "/api";
 
-import { useState, useEffect, useCallback, useMemo } from 'react';
-
-// === CẤU HÌNH API BACKEND ===
-// Để dùng Next.js rewrites (same-origin, có cookie), để trống sẽ gọi trực tiếp "/admin/..." hoặc "/teachers/..."
-const API_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8082/api";
-
-// --- HÀM GỌI API BACKEND ---
 
 /**
- * Lấy danh sách giáo viên đang chờ duyệt từ Spring Boot Backend (role ADMIN)
+ * @returns {string | null}
  */
-async function fetchTeachersFromBackend() {
-    const res = await fetch(`${API_URL}/admin/teachers/pending`, {
-        credentials: "include",
-    });
+const getAuthToken = () => {
+  if (typeof window !== 'undefined') {
+    return localStorage.getItem('jwt');
+  }
+  return null;
+};
 
-    if (!res.ok) {
-        const errorText = await res.text();
-        throw new Error(`Lỗi (${res.status}): Không thể tải danh sách giảng viên. Chi tiết: ${errorText.substring(0, 100)}...`);
+/**
+ * @param {string} url The API endpoint URL.
+ * @param {object} options Fetch options including method, headers, and body.
+ * @returns {Promise<any>} The parsed JSON data from the successful response.
+ */
+async function fetchApi(url, options = {}) {
+  const token = getAuthToken();
+
+  const defaultHeaders = {
+    'Content-Type': 'application/json',
+    ...(token && { 'Authorization': `Bearer ${token}` }),
+  };
+
+  const config = {
+    method: options.method || 'GET',
+    headers: {
+      ...defaultHeaders,
+      ...(options.headers || {}),
+    },
+    credentials: "include",
+  };
+
+  if (options.body) {
+    config.body = JSON.stringify(options.body);
+  }
+
+  const response = await fetch(url, config);
+  const isJson = response.headers.get('content-type')?.includes('application/json');
+
+  if (!response.ok) {
+    let errorText = "Lỗi không xác định";
+    try {
+        errorText = isJson ? (await response.json()).message : await response.text();
+    } catch {
+        // ignore
     }
+    const errorMessage = `Lỗi (${response.status}): ${errorText.substring(0, 100)}...`;
+    throw new Error(errorMessage);
+  }
 
-    const data = await res.json();
+  return isJson ? await response.json() : await response.text();
+}
 
-    return data.map(t => ({
+async function fetchTeachersFromBackend() {
+    const data = await fetchApi(`${API_URL}/admin/teachers/pending`);
+
+    const rawTeachers = Array.isArray(data) ? data : (data.content || data.data || []);
+
+
+    return rawTeachers.map(t => ({
         id: t.teacherId,
         fullName: t.username,
         email: t.email,
         status: t.status ? t.status.toLowerCase() : 'pending',
-        experience: 'Chưa có thông tin', // Teacher entity doesn't have experience field
-        phone: 'Chưa có thông tin', // Teacher entity doesn't have phone field  
-        proofDocumentUrl: null, // Teacher entity doesn't have proofDocumentUrl field
+        experience: 'Chưa có thông tin',
+        phone: 'Chưa có thông tin',
+        proofDocumentUrl: null,
         requestDate: t.createdAt ? new Date(t.createdAt).toLocaleDateString('vi-VN') : 'N/A',
         requestTimestamp: t.createdAt ? new Date(t.createdAt).getTime() : 0,
     }));
 }
 
-/**
- * Duyệt (APPROVED)
- */
 async function approveTeacherInBackend(id) {
-    const res = await fetch(`${API_URL}/admin/teachers/${id}/approve`, {
+    await fetchApi(`${API_URL}/admin/teachers/${id}/approve`, {
         method: "POST",
-        credentials: "include",
     });
-    if (!res.ok) {
-        const errorText = await res.text();
-        throw new Error(`Lỗi (${res.status}): Không thể duyệt giảng viên. Chi tiết: ${errorText.substring(0, 100)}...`);
-    }
-    return res.text();
 }
 
-/**
- * Từ chối (REJECTED)
- */
 async function rejectTeacherInBackend(id) {
-    const res = await fetch(`${API_URL}/admin/teachers/${id}/reject`, {
+    await fetchApi(`${API_URL}/admin/teachers/${id}/reject`, {
         method: "POST",
-        credentials: "include",
     });
-    if (!res.ok) {
-        const errorText = await res.text();
-        throw new Error(`Lỗi (${res.status}): Không thể từ chối giảng viên. Chi tiết: ${errorText.substring(0, 100)}...`);
-    }
-    return res.text();
 }
 
 
 // === MÀU SẮC CHỦ ĐẠO ===
-const PRIMARY_PURPLE_BG = '#E33AEC7A'; 
+const PRIMARY_PURPLE_BG = '#E33AEC7A';
 const BUTTON_RED = '#f04040';
 const BUTTON_BLUE = '#1e90ff';
 
@@ -113,36 +134,24 @@ const XIcon = (props) => (
 );
 // --- Hết ICON SVG ---
 
-// Component Toast Notification (Giữ nguyên)
+// Component Toast Notification (Được điều chỉnh để dùng state cục bộ)
 const Toast = ({ message, type, onClose }) => {
   const baseClasses = "fixed bottom-5 right-5 p-4 rounded-xl shadow-2xl z-50 flex items-center";
   let typeClasses = "";
 
   switch (type) {
     case 'success':
-      typeClasses = "bg-green-500 text-white";
+      typeClasses = "bg-green-600 text-white";
       break;
     case 'error':
-      typeClasses = "bg-red-500 text-white";
+      typeClasses = "bg-red-600 text-white";
       break;
     default:
       typeClasses = "bg-gray-700 text-white";
   }
 
   return (
-    <div className={`${baseClasses} ${typeClasses} animate-slide-in-up`}>
-      <style jsx global>{`
-        @keyframes slide-in-up {
-          from {
-            transform: translateY(100%);
-            opacity: 0;
-          }
-          to {
-            transform: translateY(0);
-            opacity: 1;
-          }
-        }
-      `}</style>
+    <div className={`${baseClasses} ${typeClasses} transition-all duration-300 transform translate-y-0 opacity-100`}>
       <p className="mr-4 font-semibold">{message}</p>
       <button onClick={onClose} className="ml-4 opacity-75 hover:opacity-100 transition">
         <XIcon className="w-5 h-5" />
@@ -151,23 +160,29 @@ const Toast = ({ message, type, onClose }) => {
   );
 };
 
+// Ánh xạ Trạng thái (để dùng trong Modal)
+const statusMap = {
+    'pending': 'Chờ duyệt',
+    'approved': 'Đã duyệt',
+    'rejected': 'Đã từ chối',
+};
 
 // Component Modal Chi tiết Giáo viên (Giữ nguyên)
 const TeacherDetailModal = ({ teacher, onClose }) => {
   if (!teacher) return null;
 
   return (
-    <div 
+    <div
       className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50 backdrop-blur-sm"
       onClick={onClose}
     >
-      <div 
+      <div
         className="bg-white rounded-xl p-8 max-w-lg w-full shadow-2xl transform transition-all duration-300 scale-100"
-        onClick={(e) => e.stopPropagation()} 
+        onClick={(e) => e.stopPropagation()}
       >
         <div className="flex justify-between items-start border-b pb-3 mb-4">
           <h2 className="text-2xl font-bold text-gray-800 flex items-center">
-            <Info className="w-6 h-6 mr-2 text-purple-600"/> 
+            <Info className="w-6 h-6 mr-2 text-purple-600"/>
             Chi tiết Yêu cầu
           </h2>
           <button onClick={onClose} className="text-gray-400 hover:text-gray-600 transition">
@@ -192,6 +207,28 @@ const TeacherDetailModal = ({ teacher, onClose }) => {
             <p className="font-medium text-sm text-gray-500">Ngày đăng ký</p>
             <p className="text-base">{teacher.requestDate}</p>
           </div>
+          {/* Thêm các trường thiếu nếu có: Experience, Phone, ProofDocumentUrl */}
+          <div>
+            <p className="font-medium text-sm text-gray-500">Kinh nghiệm</p>
+            <p className="text-base">{teacher.experience}</p>
+          </div>
+          <div>
+            <p className="font-medium text-sm text-gray-500">Điện thoại</p>
+            <p className="text-base">{teacher.phone}</p>
+          </div>
+          {teacher.proofDocumentUrl && (
+            <div>
+              <p className="font-medium text-sm text-gray-500">Tài liệu đính kèm</p>
+              <a
+                href={teacher.proofDocumentUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-blue-500 hover:underline text-base"
+              >
+                Xem tài liệu
+              </a>
+            </div>
+          )}
         </div>
       </div>
     </div>
@@ -204,18 +241,19 @@ export default function AdminReviewTeachersPage() {
     const [allTeachers, setAllTeachers] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
-    
-    const [toast, setToast] = useState(null); 
-    const [selectedTeacher, setSelectedTeacher] = useState(null); 
-    
+
+    // Sử dụng Toast state thay vì thư viện bên ngoài
+    const [toastState, setToastState] = useState(null);
+    const [selectedTeacher, setSelectedTeacher] = useState(null);
+
     // Lấy danh sách Giáo viên
     const fetchTeachers = useCallback(async () => {
         setLoading(true);
         setError(null);
         try {
-            // GỌI HÀM LẤY DỮ LIỆU THẬT (ĐÃ CÓ THÊM HEADER XÁC THỰC)
-            let fetchedTeachers = await fetchTeachersFromBackend(); 
-            
+            // GỌI HÀM LẤY DỮ LIỆU THẬT
+            let fetchedTeachers = await fetchTeachersFromBackend();
+
             // Sắp xếp theo timestamp giảm dần (để yêu cầu mới nhất lên đầu)
             fetchedTeachers.sort((a, b) => (b.requestTimestamp || 0) - (a.requestTimestamp || 0));
 
@@ -223,8 +261,8 @@ export default function AdminReviewTeachersPage() {
         } catch (e) {
             console.error("Error fetching teachers:", e);
             // Xử lý nếu hàm fetchTeachersFromBackend ném lỗi (kể cả lỗi 401/403)
-            setError(`Lỗi khi tải danh sách: ${e.message}`); 
-            setToast({ message: e.message, type: 'error' });
+            setError(`Lỗi khi tải danh sách: ${e.message}`);
+            setToastState({ message: e.message, type: 'error' });
         } finally {
             setLoading(false);
         }
@@ -232,7 +270,7 @@ export default function AdminReviewTeachersPage() {
 
     useEffect(() => {
         // Bắt đầu tải ngay khi component mount
-        fetchTeachers(); 
+        fetchTeachers();
     }, [fetchTeachers]);
 
 
@@ -240,9 +278,9 @@ export default function AdminReviewTeachersPage() {
     const handleReview = async (teacherId, newStatus) => {
         const teacher = allTeachers.find(t => t.id === teacherId);
         if (!teacher) return;
-        
+
         // Thêm một lớp bảo vệ UI (ngăn người dùng click liên tục)
-        setLoading(true); 
+        setLoading(true);
 
         try {
             if (newStatus === 'approved') {
@@ -253,44 +291,37 @@ export default function AdminReviewTeachersPage() {
 
             // Cập nhật trạng thái trong state local và xóa khỏi danh sách đang hiển thị
             setAllTeachers(prev => prev.filter(t => t.id !== teacherId));
-            
-            let toastMessage = (newStatus === 'approved') 
+
+            let toastMessage = (newStatus === 'approved')
                 ? `Đã duyệt thành công: ${teacher.fullName} (${teacher.email})`
                 : `Đã từ chối thành công: ${teacher.fullName} (${teacher.email})`;
-                
-            setToast({ message: toastMessage, type: 'success' });
-            
+
+            setToastState({ message: toastMessage, type: 'success' });
+
             setSelectedTeacher(null);
 
         } catch (e) {
             console.error(`Error updating status for ${teacherId}:`, e);
-            setToast({ message: `Lỗi khi cập nhật trạng thái: ${e.message}.`, type: 'error' });
+            setToastState({ message: `Lỗi khi cập nhật trạng thái: ${e.message}.`, type: 'error' });
         } finally {
-             setLoading(false); // Kết thúc trạng thái loading (sau khi fetch lại)
+             setLoading(false); // Kết thúc trạng thái loading
         }
     };
 
     // Hành động: Đồng ý -> approved, Từ chối -> rejected
     const handleApprove = (e, teacherId) => {
         if (e && typeof e.stopPropagation === 'function') {
-            e.stopPropagation(); 
+            e.stopPropagation();
         }
         handleReview(teacherId, 'approved');
     };
     const handleReject = (e, teacherId) => {
         if (e && typeof e.stopPropagation === 'function') {
-            e.stopPropagation(); 
+            e.stopPropagation();
         }
         handleReview(teacherId, 'rejected');
     };
-    
-    // Ánh xạ Trạng thái (căn chỉnh với backend TeacherStatus enum)
-    const statusMap = {
-        'pending': 'Chờ duyệt',
-        'approved': 'Đã duyệt', 
-        'rejected': 'Đã từ chối',
-    };
-    
+
     // Ánh xạ màu sắc cho Trạng thái
     const statusColorMap = (status) => {
         switch (status) {
@@ -300,16 +331,16 @@ export default function AdminReviewTeachersPage() {
             default: return 'bg-gray-100 text-gray-800';
         }
     }
-    
+
 
     // Lọc danh sách giáo viên: CHỈ GIỮ LẠI PENDING (Giữ nguyên)
     const filteredTeachers = useMemo(() => {
         return allTeachers.filter(t => t.status === 'pending');
     }, [allTeachers]);
-    
+
     // --- UI Rendering ---
 
-    if (loading) {
+    if (loading && filteredTeachers.length === 0) {
         return (
             <div className="flex items-center justify-center min-h-[50vh] text-gray-800">
                 <RefreshCw className="animate-spin -ml-1 mr-3 h-6 w-6 text-purple-600" />
@@ -318,14 +349,14 @@ export default function AdminReviewTeachersPage() {
         );
     }
 
-    if (error) {
+    if (error && filteredTeachers.length === 0) {
         return (
             <div className="p-4 sm:p-8 font-sans">
                 <div className="bg-red-500/20 text-red-700 p-6 rounded-xl my-4 border border-red-500 shadow-xl">
                     <h3 className="font-bold text-xl mb-2">Lỗi Kết nối API</h3>
                     <p className="mb-4">{error}</p>
-                    <button 
-                        onClick={fetchTeachers} 
+                    <button
+                        onClick={fetchTeachers}
                         className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition font-semibold"
                     >
                         Thử tải lại
@@ -339,12 +370,12 @@ export default function AdminReviewTeachersPage() {
         <div className="p-4 sm:p-8 font-sans">
             <style jsx global>{`
                 body {
-                    background-color: #f0f0f0; 
+                    background-color: #f0f0f0;
                 }
             `}</style>
-            
+
             {/* Thanh tiêu đề Duyệt giáo viên */}
-            <div 
+            <div
                 className="p-4 sm:p-6 mb-8 rounded-xl shadow-lg"
                 style={{ backgroundColor: PRIMARY_PURPLE_BG }}
             >
@@ -367,8 +398,8 @@ export default function AdminReviewTeachersPage() {
             ) : (
                 <div className="space-y-4">
                     {filteredTeachers.map((teacher) => (
-                        <div 
-                            key={teacher.id} 
+                        <div
+                            key={teacher.id}
                             onClick={() => setSelectedTeacher(teacher)}
                             className="bg-white rounded-xl p-4 shadow-md flex flex-col md:flex-row justify-between items-center transition duration-300 hover:shadow-lg border border-gray-100 cursor-pointer"
                         >
@@ -378,21 +409,22 @@ export default function AdminReviewTeachersPage() {
                                     {teacher.email}
                                 </p>
                                 <p className="text-gray-600 font-semibold w-full sm:w-40">
-                                    {teacher.fullName} 
+                                    {teacher.fullName}
                                 </p>
                                 {/* Trạng thái */}
                                 <div className={`text-sm font-bold px-3 py-1 rounded-full w-full sm:w-40 text-center ${statusColorMap(teacher.status)}`}>
                                     {statusMap[teacher.status]}
                                 </div>
                             </div>
-                            
+
                             {/* Nút hành động */}
                             <div className="flex space-x-3 mt-3 md:mt-0">
                                 <button
-                                    type="button" 
+                                    type="button"
                                     onClick={(e) => handleReject(e, teacher.id)}
                                     style={{ backgroundColor: BUTTON_RED }}
                                     className="px-5 py-2 text-white font-semibold rounded-lg shadow-sm hover:opacity-90 transition flex items-center"
+                                    disabled={loading}
                                 >
                                     <UserX className="w-4 h-4 mr-1"/> Từ chối
                                 </button>
@@ -401,6 +433,7 @@ export default function AdminReviewTeachersPage() {
                                     onClick={(e) => handleApprove(e, teacher.id)}
                                     style={{ backgroundColor: BUTTON_BLUE }}
                                     className="px-5 py-2 text-white font-semibold rounded-lg shadow-sm hover:opacity-90 transition flex items-center"
+                                    disabled={loading}
                                 >
                                     <UserCheck className="w-4 h-4 mr-1"/> Đồng ý
                                 </button>
@@ -416,12 +449,22 @@ export default function AdminReviewTeachersPage() {
             )}
 
             {/* Component Toast Notification */}
-            {toast && (
-                <Toast 
-                    message={toast.message} 
-                    type={toast.type} 
-                    onClose={() => setToast(null)} 
+            {toastState && (
+                <Toast
+                    message={toastState.message}
+                    type={toastState.type}
+                    onClose={() => setToastState(null)}
                 />
+            )}
+
+            {/* Loading overlay khi đang xử lý action */}
+            {loading && filteredTeachers.length > 0 && (
+                <div className="fixed inset-0 bg-black bg-opacity-10 flex items-center justify-center z-40">
+                    <div className="bg-white p-4 rounded-lg shadow-xl flex items-center">
+                        <RefreshCw className="animate-spin -ml-1 mr-3 h-5 w-5 text-purple-600" />
+                        Đang xử lý...
+                    </div>
+                </div>
             )}
         </div>
     );

@@ -13,14 +13,21 @@ interface FetchApiOptions extends RequestInit {
   body?: any;
 }
 
+// Check if the code is running in a browser environment
+const isClient = typeof window !== 'undefined';
+
 /**
  * A wrapper for the fetch API that automatically adds the JWT Authorization header.
  * @param endpoint The API endpoint to call (e.g., '/products', '/me').
  * @param options Fetch options.
  */
 export async function fetchApi(endpoint: string, options: FetchApiOptions = {}) {
-  // Get the JWT from localStorage
-  const token = localStorage.getItem('jwt');
+  let token: string | null = null;
+
+  // Get the JWT from localStorage ONLY if running in the browser (client-side)
+  if (isClient) {
+    token = localStorage.getItem('jwt');
+  }
 
   const headers: HeadersInit = {
     'Content-Type': 'application/json',
@@ -52,8 +59,12 @@ export async function fetchApi(endpoint: string, options: FetchApiOptions = {}) 
   if (!response.ok) {
     // Handle 401 Unauthorized or 403 Forbidden errors
     if (response.status === 401 || response.status === 403) {
-      localStorage.removeItem('jwt'); // Clear invalid token
-      window.location.href = '/auth/login'; // Redirect to login page
+      // Perform client-side actions (clearing token, redirection) only if in the browser
+      if (isClient) {
+        localStorage.removeItem('jwt'); // Clear invalid token
+        window.location.href = '/auth/login'; // Redirect to login page
+      }
+
       // Throw an error to stop further processing in the calling function
       throw new ApiError('Phiên đăng nhập đã hết hạn hoặc không hợp lệ. Vui lòng đăng nhập lại.', response.status);
     }
