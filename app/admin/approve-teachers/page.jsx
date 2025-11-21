@@ -29,7 +29,7 @@ async function fetchTeachersFromBackend() {
         email: t.email,
         status: t.status ? t.status.toLowerCase() : 'pending',
         experience: 'Chưa có thông tin', // Teacher entity doesn't have experience field
-        phone: 'Chưa có thông tin', // Teacher entity doesn't have phone field  
+        phone: 'Chưa có thông tin', // Teacher entity doesn't have phone field
         proofDocumentUrl: null, // Teacher entity doesn't have proofDocumentUrl field
         requestDate: t.createdAt ? new Date(t.createdAt).toLocaleDateString('vi-VN') : 'N/A',
         requestTimestamp: t.createdAt ? new Date(t.createdAt).getTime() : 0,

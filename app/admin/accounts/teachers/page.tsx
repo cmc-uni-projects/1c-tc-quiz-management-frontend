@@ -5,8 +5,7 @@ import { MagnifyingGlassIcon, ChevronLeftIcon, ChevronRightIcon, UserIcon } from
 import Swal from 'sweetalert2';
 import toast from 'react-hot-toast';
 
-// Cấu hình API
-const API_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8082/api";
+
 
 // Màu sắc theo layout
 const PRIMARY_COLOR = "#6A1B9A";
@@ -40,34 +39,15 @@ async function fetchTeachersFromBackend(params: {
   queryParams.append('sort', 'createdAt');
   queryParams.append('direction', 'desc');
 
-  const res = await fetch(`${API_URL}/teachers?${queryParams.toString()}`, {
-    credentials: 'include',
-  });
-
-  if (res.status === 401 || res.status === 403) {
-    // Thông báo thân thiện khi chưa đăng nhập hoặc không có quyền
-    throw new Error('Bạn chưa đăng nhập hoặc không có quyền truy cập. Vui lòng đăng nhập lại.');
-  }
-
-  if (!res.ok) {
-    const errorText = await res.text();
-    throw new Error(`Lỗi (${res.status}): ${errorText}`);
-  }
-
-  return await res.json();
+  const data = await fetchApi(`/teachers?${queryParams.toString()}`);
+  return data;
 }
 
 // Hàm xóa giáo viên
 async function deleteTeacherInBackend(id: number) {
-  const res = await fetch(`${API_URL}/teachers/${id}`, {
+  await fetchApi(`/teachers/${id}`, {
     method: 'DELETE',
-    credentials: 'include',
   });
-
-  if (!res.ok) {
-    const errorText = await res.text();
-    throw new Error(`Không thể xóa giáo viên: ${errorText}`);
-  }
 }
 
 // Hàm format ngày

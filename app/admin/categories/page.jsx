@@ -3,7 +3,6 @@
 import { useEffect, useMemo, useState } from "react";
 import toast from "react-hot-toast";
 import Swal from "sweetalert2";
-
 // Màu tím nhạt giống các trang Admin
 const PRIMARY_PURPLE_BG = "#E33AEC7A";
 
@@ -72,29 +71,7 @@ export default function CategoriesPage() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
-  // Chuẩn hóa thông báo lỗi từ backend sang dạng thân thiện, tiếng Việt
-  const extractErrorMessage = async (res, fallback = "Có lỗi xảy ra") => {
-    try {
-      const text = await res.text();
-      if (!text) return fallback;
 
-      let raw = text;
-      try {
-        const parsed = JSON.parse(text);
-        raw = parsed.message || parsed.error || text;
-      } catch {
-        // text không phải JSON, giữ nguyên
-      }
-
-      if (raw && raw.includes("Category name already exists")) {
-        return "Tên danh mục đã tồn tại";
-      }
-
-      return raw || fallback;
-    } catch {
-      return fallback;
-    }
-  };
 
   // Badge màu theo người tạo
   const creatorBadgeClass = (role) => {
@@ -114,11 +91,8 @@ export default function CategoriesPage() {
   useEffect(() => {
     const fetchProfile = async () => {
       try {
-        const p = await fetch(`/api/profile`, { credentials: "include" });
-        if (p.ok) {
-          const profile = await p.json();
-          setCurrentUser(profile);
-        }
+        const profile = await fetchApi(`/api/me`); // Assuming /api/me gives profile details
+        setCurrentUser(profile);
       } catch (e) {
         console.error(e);
       }
@@ -133,13 +107,12 @@ export default function CategoriesPage() {
       const q = keywordParam.trim();
       let url;
       if (!q) {
-        // dùng endpoint search để lấy Page, sort theo id desc (id lớn hơn là mới hơn)
         const params = new URLSearchParams({
           page: String(pageParam),
           size: String(PAGE_SIZE),
           sort: "id,desc",
         });
-        url = `/categories/search?${params.toString()}`;
+        url = `/api/categories/search?${params.toString()}`;
       } else {
         const params = new URLSearchParams({
           name: q,
@@ -147,17 +120,16 @@ export default function CategoriesPage() {
           size: String(PAGE_SIZE),
           sort: "id,desc",
         });
-        url = `/categories/search?${params.toString()}`;
+        url = `/api/categories/search?${params.toString()}`;
       }
-      const res = await fetch(url, { credentials: "include" });
-      if (!res.ok) throw new Error("Failed to load categories");
-      const data = await res.json();
+      const data = await fetchApi(url);
       const content = Array.isArray(data?.content) ? data.content : Array.isArray(data) ? data : [];
       setCategories(content);
       if (typeof data.totalPages === "number") setTotalPages(data.totalPages || 1);
       if (typeof data.totalElements === "number") setTotalElements(data.totalElements || content.length);
     } catch (e) {
       console.error(e);
+      toast.error(e?.message || "Không thể tải danh mục");
     } finally {
       setLoading(false);
     }
@@ -228,34 +200,19 @@ export default function CategoriesPage() {
       if (editing) {
         // Update
         const body = { id: editing.id, name: form.name.trim(), description: form.description?.trim() || "" };
-        const res = await fetch(`/categories/${editing.id}`, {
+        await fetchApi(`/api/categories/${editing.id}`, {
           method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          credentials: "include",
-          body: JSON.stringify(body),
+          body: body,
         });
-        if (!res.ok) {
-          const msg = await extractErrorMessage(res);
-          throw new Error(msg);
-        }
-        const updated = await res.json();
-        setCategories((prev) => prev.map((c) => (c.id === updated.id ? updated : c)));
+        setCategories((prev) => prev.map((c) => (c.id === editing.id ? { ...editing, name: form.name.trim(), description: form.description?.trim() || "" } : c)));
         toast.success("Cập nhật danh mục thành công");
       } else {
         // Create
         const body = { name: form.name.trim(), description: form.description?.trim() || "" };
-        const res = await fetch(`/categories`, {
+        await fetchApi(`/api/categories`, {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
-          credentials: "include",
-          body: JSON.stringify(body),
+          body: body,
         });
-        if (!res.ok) {
-          const msg = await extractErrorMessage(res);
-          throw new Error(msg);
-        }
-        await res.json();
-        // Sau khi tạo, luôn quay về trang đầu và tải lại từ backend để đảm bảo danh sách sort đúng (mới nhất trước)
         toast.success("Tạo danh mục thành công");
         setModalOpen(false);
         setPage(0);
@@ -293,8 +250,7 @@ export default function CategoriesPage() {
 
     try {
       setLoading(true);
-      const res = await fetch(`/categories/${id}`, { method: "DELETE", credentials: "include" });
-      if (!res.ok) throw new Error(await res.text());
+      await fetchApi(`/api/categories/${id}`, { method: "DELETE" });
       setCategories((prev) => prev.filter((c) => c.id !== id));
       toast.success("Đã xóa danh mục thành công");
     } catch (e) {
