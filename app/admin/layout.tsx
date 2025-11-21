@@ -13,16 +13,14 @@ const contentPaddingClass = "ml-64";
 
 /** @type {React.FC<{ children: React.ReactNode }>} */
 const AdminAuthGuard = ({ children }) => {
+  console.log('[AdminAuthGuard] Component is rendering.');
   const { user, isLoading, isAuthenticated } = useUser();
   const router = useRouter();
   
   const [isRedirecting, setIsRedirecting] = useState(false);
 
   useEffect(() => {
-    console.log('[AdminAuthGuard] Checking auth state:', { isLoading, isAuthenticated, user });
-
     if (isLoading || isRedirecting) {
-      console.log('[AdminAuthGuard] Still loading or already redirecting, skipping check.');
       return;
     }
 
