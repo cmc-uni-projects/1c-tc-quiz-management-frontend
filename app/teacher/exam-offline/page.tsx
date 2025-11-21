@@ -175,34 +175,6 @@ export default function CreateExamPage() {
   return (
     <div className="min-h-screen flex bg-[#F5F5F5] text-gray-900">
 
-      {/* ====================== SIDEBAR ====================== */}
-      <aside className="w-56 bg-[#F8F5FB] border-r border-gray-200 flex flex-col">
-        <nav className="flex-1 py-4 text-sm">
-          <ul className="space-y-1">
-            <li>
-              <a href="#" className="block px-6 py-2 hover:bg-white">
-                Trang chủ
-              </a>
-            </li>
-            <li>
-              <a href="#" className="block px-6 py-2 hover:bg-white">
-                Danh mục câu hỏi
-              </a>
-            </li>
-            <li>
-              <a href="#" className="block px-6 py-2 hover:bg-white">
-                Quản lý câu hỏi
-              </a>
-            </li>
-            <li>
-              <a href="#" className="block px-6 py-2 hover:bg-white">
-                Quản lý bài thi
-              </a>
-            </li>
-          </ul>
-        </nav>
-      </aside>
-
       {/* ====================== MAIN ====================== */}
       <div className="flex-1 flex flex-col">
 
