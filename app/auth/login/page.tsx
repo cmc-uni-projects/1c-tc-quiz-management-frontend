@@ -60,13 +60,6 @@ export default function LoginPage() {
       } else {
         throw new Error('Phản hồi đăng nhập không chứa Token. Vui lòng kiểm tra API.');
       }
-    } catch (err: any) {
-      console.error('Login Error:', err);
-      const errorMessage = err.message || 'Sai tài khoản hoặc mật khẩu.';
-      setError(errorMessage);
-      toast.error(errorMessage);
-
-      localStorage.removeItem('jwt');
     } finally {
       setLoading(false);
     }

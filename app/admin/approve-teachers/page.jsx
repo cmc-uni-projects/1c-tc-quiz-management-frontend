@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 
 // === CẤU HÌNH API BACKEND ===
 // Để dùng Next.js rewrites (same-origin, có cookie), để trống sẽ gọi trực tiếp "/admin/..." hoặc "/teachers/..."
-const API_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8082";
+const API_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8082/api";
 
 // --- HÀM GỌI API BACKEND ---
 
@@ -15,12 +15,6 @@ async function fetchTeachersFromBackend() {
     const res = await fetch(`${API_URL}/admin/teachers/pending`, {
         credentials: "include",
     });
-
-    if (res.status === 401 || res.status === 403) {
-        // Nếu chưa đăng nhập/không có quyền, chuyển hướng đăng nhập
-        window.location.href = '/auth/login';
-        throw new Error(`401/403: Quyền truy cập bị từ chối. Đã chuyển hướng đăng nhập.`);
-    }
 
     if (!res.ok) {
         const errorText = await res.text();
