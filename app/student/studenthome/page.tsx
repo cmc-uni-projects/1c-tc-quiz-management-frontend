@@ -1,45 +1,93 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
 import { useUser } from '@/lib/user';
+import ProfileDropdown from '@/components/ProfileDropdown';
 
-const StudentHome = () => {
+const LOGO_TEXT_COLOR = "#E33AEC";
+
+/** @type {React.FC<{ children: React.ReactNode }>} */
+const StudentAuthGuard = ({ children }) => {
+  const { user, isLoading, isAuthenticated } = useUser();
+  const router = useRouter();
+  
+  const [isRedirecting, setIsRedirecting] = useState(false);
+
+  useEffect(() => {
+    if (isLoading || isRedirecting) {
+      return;
+    }
+
+    let redirectPath = null;
+    let toastMessage = null;
+
+    if (!isAuthenticated) {
+      redirectPath = "/auth/login";
+      toastMessage = "Bạn cần đăng nhập để truy cập trang này.";
+    } else if (user?.role !== "STUDENT") {
+      redirectPath = "/";
+      toastMessage = "Bạn không có quyền truy cập vào khu vực học sinh.";
+    }
+
+    if (redirectPath) {
+        setIsRedirecting(true);
+        if (toastMessage) {
+            toast.error(toastMessage);
+        }
+        router.push(redirectPath);
+    }
+
+  }, [user, isLoading, isAuthenticated, router, isRedirecting]);
+
+  if (isLoading) {
+    return (
+      <div className="flex h-screen w-full items-center justify-center bg-gray-50">
+        <div className="text-center">
+          <div className="mx-auto h-12 w-12 animate-spin rounded-full border-green-600 border-b-2"></div>
+          <p className="mt-4 text-lg font-semibold text-gray-700">Đang tải dữ liệu người dùng...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!isAuthenticated || user?.role !== "STUDENT") {
+    return null;
+  }
+
+  return <>{children}</>;
+};
+
+/** @type {React.FC} */
+const StudentTopBar = () => {
+  return (
+    <header className="w-full border-b border-zinc-200 bg-white shadow-sm">
+      <div className="mx-auto flex w-full max-w-full items-center justify-between gap-2 px-4 py-3 md:px-6">
+        <a
+          href="/student/studenthome"
+          className="shrink-0 text-3xl font-black tracking-tighter"
+          style={{ color: LOGO_TEXT_COLOR }}
+        >
+          QuizzZone
+        </a>
+        <nav className="flex flex-1 items-center justify-center text-lg font-medium text-zinc-600">
+          <a href="/student/studenthome" className="hover:text-zinc-900 transition duration-150">
+            Trang chủ
+          </a>
+        </nav>
+        <div className="flex shrink-0 items-center gap-3 relative">
+          <ProfileDropdown />
+        </div>
+      </div>
+    </header>
+  );
+};
+
+const StudentHomeContent = () => {
   const router = useRouter();
   const { user } = useUser();
   const [roomCode, setRoomCode] = useState('');
-  const [showDropdown, setShowDropdown] = useState(false);
-  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
-
-  const username = user?.name;
-  const avatar = user?.avatarUrl;
-
-  const handleProfileClick = () => {
-    setShowDropdown(false);
-    router.push('/student/profile');
-  };
-
-  const handleChangePasswordClick = () => {
-    setShowDropdown(false);
-    router.push('/student/change-password');
-  };
-
-  const handleLogoutClick = () => {
-    setShowLogoutConfirm(true);
-    setShowDropdown(false);
-  };
-
-  const handleLogoutConfirm = async () => {
-    setShowLogoutConfirm(false);
-    localStorage.removeItem('jwt'); // Clear JWT from localStorage
-    router.push('/auth/login'); // Redirect to login page
-    toast.success('Đăng xuất thành công');
-  };
-
-  const handleLogoutCancel = () => {
-    setShowLogoutConfirm(false);
-  };
 
   const handleJoinRoom = () => {
     if (roomCode.trim()) {
@@ -70,63 +118,9 @@ const StudentHome = () => {
       image: '/roles/Physics.jpg',
     },
   ];
+
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Navbar */}
-      <header className="sticky top-0 z-50 w-full border-b border-zinc-100 bg-white/95 backdrop-blur" onClick={() => setShowDropdown(false)}>
-        <div className="mx-auto flex w-full max-w-full items-center justify-between gap-2 px-4 py-3 md:px-6">
-          <a
-            href="/"
-            className="shrink-0 text-3xl font-black tracking-tighter"
-            style={{ color: '#E33AEC' }}
-          >
-            QuizzZone
-          </a>
-          <nav className="flex flex-1 items-center justify-center text-lg font-medium text-zinc-600">
-            <a href="/student/studenthome" className="hover:text-zinc-900 transition duration-150">
-              Trang chủ
-            </a>
-          </nav>
-          <div className="flex shrink-0 items-center gap-3 relative" onClick={(e) => e.stopPropagation()}>
-            <span className="text-sm text-zinc-600">{`Xin chào, ${username || 'Student'}`}</span>
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                setShowDropdown(!showDropdown);
-              }}
-              className="grid h-8 w-8 place-items-center rounded-full bg-purple-100 text-purple-600 hover:bg-purple-200 transition overflow-hidden"
-            >
-              {avatar ? (
-                <img src={avatar} alt="avatar" className="h-8 w-8 rounded-full object-cover" />
-              ) : (
-                <svg className="h-6 w-6" viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" />
-                </svg>
-              )}
-            </button>
-            
-            {/* Dropdown Menu */}
-            {showDropdown && (
-              <div className="absolute top-full right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 z-10">
-                <button onClick={handleProfileClick} className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 border-b border-gray-100">
-                  Cập nhật thông tin
-                </button>
-                <button onClick={handleChangePasswordClick} className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 border-b border-gray-100">
-                  Đổi mật khẩu
-                </button>
-                <button
-                  onClick={handleLogoutClick}
-                  className="w-full text-left px-3 py-2 text-sm text-purple-600 hover:bg-purple-50 flex items-center gap-2"
-                >
-                  <span>←</span>
-                  Đăng xuất
-                </button>
-              </div>
-            )}
-          </div>
-        </div>
-      </header>
-
       {/* Main Content */}
       <main className="w-full">
         {/* Hero Section */}
@@ -181,32 +175,15 @@ const StudentHome = () => {
           &copy; 2025 QuizzZone. Mọi quyền được bảo lưu.
         </p>
       </footer>
-
-      {/* Logout Confirmation Modal */}
-      {showLogoutConfirm && (
-        <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 max-w-sm w-full mx-4 shadow-xl">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Xác nhận đăng xuất</h3>
-            <p className="text-gray-600 mb-6">Bạn có chắc chắn muốn đăng xuất khỏi hệ thống?</p>
-            <div className="flex gap-3 justify-end">
-              <button
-                onClick={handleLogoutCancel}
-                className="px-4 py-2 text-gray-600 hover:text-gray-800 transition"
-              >
-                Hủy
-              </button>
-              <button
-                onClick={handleLogoutConfirm}
-                className="px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700 transition"
-              >
-                Đăng xuất
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 };
 
-export default StudentHome;
+export default function StudentHomeWrapper() {
+  return (
+    <StudentAuthGuard>
+      <StudentTopBar />
+      <StudentHomeContent />
+    </StudentAuthGuard>
+  );
+}

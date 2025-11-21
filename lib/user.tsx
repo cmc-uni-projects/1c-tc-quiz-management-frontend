@@ -2,14 +2,17 @@
 
 import React, { createContext, useContext, useCallback } from 'react';
 import useSWR from 'swr';
-import { fetchApi, ApiError } from './apiClient';
+import { fetchApi, ApiError } from '@/lib/apiClient';
 
 interface User {
-  id: string;
-  name: string;
+  id: number;
+  username: string;
+  firstName?: string;
+  lastName?: string;
   email: string;
-  role: 'ADMIN' | 'TEACHER' | 'STUDENT';
+  role: 'ADMIN' | 'TEACHER' | 'STUDENT' | 'UNKNOWN';
   avatarUrl?: string;
+  authorities: Array<{ authority: string }>;
 }
 
 interface UserContextType {
@@ -23,52 +26,63 @@ interface UserContextType {
 const UserContext = createContext<UserContextType | undefined>(undefined);
 
 const fetcher = async (url: string): Promise<User | null> => {
-  // This check ensures the code only runs on the client-side
-  if (typeof window === 'undefined') {
-    return null;
-  }
-  try {
-    // Check if JWT exists before making the request
-    const token = localStorage.getItem('jwt');
-    if (!token) {
-      return null; // No token, so no authenticated user
-    }
-    return await fetchApi(url);
-  } catch (error: any) {
-    if (error instanceof ApiError && error.status === 401) {
-      // Token might be expired or invalid, fetchApi already handles clearing and redirecting
-      return null;
-    }
-    throw error;
-  }
-};
+      if (typeof window === 'undefined') {
+        return null;
+      }
+      try {
+        const token = localStorage.getItem('jwt');
+        if (!token) {
+          return null;
+        }
 
-export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { data, error, isLoading, mutate } = useSWR<User | null>(
-    '/me', // Endpoint to fetch user data
-    fetcher,
-    {
-      shouldRetryOnError: false,
-      revalidateOnFocus: false,
-      // Revalidate if token changes (e.g., after login/logout)
-      revalidateIfStale: true,
-      revalidateOnMount: true,
-    }
-  );
+        const rawUserData = await fetchApi(url);
 
-  // Determine authentication status based on data presence and error absence
-  const isAuthenticated = !!data && !error;
+        const rawAuthority = rawUserData?.authorities?.[0]?.authority || 'ROLE_UNKNOWN';
+        const cleanRole = rawAuthority.replace('ROLE_', '').toUpperCase();
 
-  const value = {
-    user: data || null,
-    isLoading,
-    error,
-    mutate: useCallback(() => mutate(), [mutate]),
-    isAuthenticated,
-  };
+        const transformedUser: User = {
+            ...rawUserData,
+            id: rawUserData.id,
+            email: rawUserData.username,
+            role: cleanRole as User['role'],
+        };
 
-  return <UserContext.Provider value={value}>{children}</UserContext.Provider>;
-};
+        console.log('UserProvider fetcher: Data transformed. Clean Role:', transformedUser.role);
+
+        return transformedUser;
+      } catch (error: any) {
+        console.error('UserProvider fetcher: Error fetching /me:', error);
+        if (error instanceof ApiError && (error.status === 401 || error.status === 403)) {
+          return null;
+        }
+        throw error;
+      }
+    };
+
+    export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+      const { data, error, isLoading, mutate } = useSWR<User | null>(
+        '/me',
+        fetcher,
+        {
+          shouldRetryOnError: false,
+          revalidateOnFocus: false,
+          revalidateIfStale: true,
+          revalidateOnMount: true,
+        }
+      );
+
+      const isAuthenticated = !!data && !error;
+
+      const value = {
+        user: data || null,
+        isLoading,
+        error,
+        mutate: useCallback(() => mutate(), [mutate]),
+        isAuthenticated,
+      };
+
+      return <UserContext.Provider value={value}>{children}</UserContext.Provider>;
+    };
 
 export const useUser = (): UserContextType => {
   const context = useContext(UserContext);
