@@ -1,40 +1,22 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
+import { useSession, signOut } from 'next-auth/react';
 
 import Sidebar from '@/components/teacher/Sidebar';
 
 const TeacherHome = () => {
   const router = useRouter();
+  const { data: session } = useSession();
   const [roomCode, setRoomCode] = useState('');
   const [showDropdown, setShowDropdown] = useState(false);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
-  const [username, setUsername] = useState<string | null>(null);
-  const [avatar, setAvatar] = useState<string | null>(null);
 
-  useEffect(() => {
-    const fetchProfile = async () => {
-      try {
-        const res = await fetch('/api/profile');
-        if (res.ok) {
-          const data = await res.json();
-          // Ưu tiên username
-          let displayName: string | null = data.username || null;
-          if (!displayName && data.email) {
-            const email: string = data.email;
-            displayName = email.includes('@') ? email.split('@')[0] : email;
-          }
-          setUsername(displayName);
-          setAvatar(data.avatar || null);
-        }
-      } catch (err) {
-        console.error('Error fetching profile:', err);
-      }
-    };
-    fetchProfile();
-  }, []);
+  const user = session?.user;
+  const username = user?.name;
+  const avatar = user?.image;
 
   const handleProfileClick = () => {
     setShowDropdown(false);
@@ -52,15 +34,13 @@ const TeacherHome = () => {
   };
 
   const handleLogoutConfirm = async () => {
+    setShowLogoutConfirm(false);
     try {
-      const res = await fetch('/api/perform_logout', { method: 'POST', credentials: 'include' });
-      // Consider logout successful if request completes
+      await signOut({ callbackUrl: '/' });
       toast.success('Đăng xuất thành công');
-      router.push('/');
     } catch (error) {
       console.error('Logout error:', error);
       toast.error('Có lỗi khi đăng xuất');
-      router.push('/');
     }
   };
 

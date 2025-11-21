@@ -4,6 +4,8 @@ import React from 'react';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import toast from 'react-hot-toast';
+import { useSession, signOut } from 'next-auth/react';
+import { fetchApi } from '@/lib/apiClient';
 
 // Eye Icon Component
 const EyeIcon = () => (
@@ -71,31 +73,24 @@ function ChangePasswordForm() {
     setIsLoading(true);
 
     try {
-      const response = await fetch("/api/change-password", {
+      // Use the refactored fetchApi which handles JWT authentication
+      await fetchApi("/profile/change-password", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
+        body: {
           currentPassword,
           newPassword,
-        }),
-        credentials: "include",
+        },
       });
 
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.message || "Đã xảy ra lỗi khi đổi mật khẩu");
-      }
-
       setSuccess("Đổi mật khẩu thành công!");
+      toast.success("Đổi mật khẩu thành công!");
       setCurrentPassword("");
       setNewPassword("");
       setConfirmPassword("");
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : "Đã xảy ra lỗi khi đổi mật khẩu";
       setError(message);
+      toast.error(message);
     } finally {
       setIsLoading(false);
     }
@@ -225,6 +220,7 @@ function ChangePasswordForm() {
 
 const StudentChangePasswordPage = () => {
   const router = useRouter();
+  const { data: session } = useSession();
   const [showDropdown, setShowDropdown] = useState(false);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
 
@@ -234,15 +230,13 @@ const StudentChangePasswordPage = () => {
   };
 
   const handleLogoutConfirm = async () => {
+    setShowLogoutConfirm(false);
     try {
-      const res = await fetch('/api/perform_logout', { method: 'POST', credentials: 'include' });
-      // Consider logout successful if request completes
+      await signOut({ callbackUrl: '/' });
       toast.success('Đăng xuất thành công');
-      router.push('/');
     } catch (error) {
       console.error('Logout error:', error);
       toast.error('Có lỗi khi đăng xuất');
-      router.push('/');
     }
   };
 
@@ -268,7 +262,7 @@ const StudentChangePasswordPage = () => {
             </a>
           </nav>
           <div className="flex shrink-0 items-center gap-3 relative" onClick={(e) => e.stopPropagation()}>
-            <span className="text-sm text-zinc-600">Xin chào, Student</span>
+            <span className="text-sm text-zinc-600">{`Xin chào, ${session?.user?.name || 'Student'}`}</span>
             <button
               onClick={(e) => {
                 e.stopPropagation();

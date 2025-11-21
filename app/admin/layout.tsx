@@ -1,7 +1,7 @@
 "use client";
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { useUser } from "@/lib/user";
+import { useSession, signOut } from "next-auth/react";
 import { toast } from "react-toastify";
 
 const PRIMARY_COLOR = "#6A1B9A";
@@ -13,8 +13,10 @@ const contentPaddingClass = "ml-64";
 
 /** @type {React.FC<{ children: React.ReactNode }>} */
 const AdminAuthGuard = ({ children }) => {
-  const { user, isLoading, error } = useUser();
-  const router = useRouter(); // Sử dụng mock router
+  const { data: session, status } = useSession();
+  const router = useRouter();
+  const isLoading = status === 'loading';
+  const user = session?.user;
 
   const [isRedirecting, setIsRedirecting] = useState(false);
 
@@ -26,11 +28,10 @@ const AdminAuthGuard = ({ children }) => {
     let redirectPath = null;
     let toastMessage = null;
 
-    if (error || !user) {
+    if (status === 'unauthenticated') {
       redirectPath = "/login";
       toastMessage = "Bạn cần đăng nhập để truy cập trang này.";
-    }
-    else if (user.role !== "ADMIN") {
+    } else if (user?.role !== "ADMIN") {
       redirectPath = "/";
       toastMessage = "Bạn không có quyền truy cập vào khu vực quản trị.";
     }
@@ -43,9 +44,9 @@ const AdminAuthGuard = ({ children }) => {
         router.push(redirectPath);
     }
 
-  }, [user, isLoading, error, router, isRedirecting]);
+  }, [session, status, isLoading, router, isRedirecting, user]);
 
-  if (isLoading || isRedirecting) {
+  if (isLoading || isRedirecting || status !== 'authenticated') {
     return (
       <div className="flex h-screen w-full items-center justify-center bg-gray-50">
         <div className="text-center">
@@ -101,13 +102,13 @@ const ChevronDownIcon = ({ isOpen }) => (
 /** @type {React.FC} */
 const ProfileDropdown = () => {
   const router = useRouter();
-  const { user, mutate } = useUser();
+  const { data: session } = useSession();
   const [isOpen, setIsOpen] = useState(false);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
 
-  const role = user?.role || null;
-  const username = user?.username || 'Admin';
-  const avatar = user?.avatar || null;
+  const user = session?.user;
+  const username = user?.name || 'Admin';
+  const avatar = user?.image || null; // Using 'image' which is a standard NextAuth field
 
   const getProfileUrl = () => {
     return '/admin/profile';
@@ -134,10 +135,9 @@ const ProfileDropdown = () => {
   };
 
   const handleLogoutConfirm = async () => {
-    console.log("Đang gọi API ĐĂNG XUẤT (Mocked)...");
+    setShowLogoutConfirm(false);
+    await signOut({ callbackUrl: "/" });
     toast.success("Đăng xuất thành công");
-    mutate();
-    router.push("/");
   };
 
   const handleLogoutCancel = () => {
