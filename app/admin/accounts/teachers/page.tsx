@@ -2,14 +2,8 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { MagnifyingGlassIcon, ChevronLeftIcon, ChevronRightIcon, UserIcon } from '@heroicons/react/24/outline';
-import Swal from 'sweetalert2';
 import toast from 'react-hot-toast';
 
-// =========================================================
-// API CLIENT UTILITIES (Added JWT logic for Admin access)
-// =========================================================
-
-/** Custom error class for API errors */
 class ApiError extends Error {
   constructor(message, status, payload) {
     super(message);
@@ -20,9 +14,7 @@ class ApiError extends Error {
 }
 
 /**
- * Utility function to retrieve the JWT token from localStorage.
- * Assumes the token is stored under the key 'jwtToken'.
- * @returns {string | null} The JWT token or null if not found.
+ * @returns {string | null}
  */
 const getAuthToken = () => {
   if (typeof window !== 'undefined') {
@@ -32,8 +24,6 @@ const getAuthToken = () => {
 };
 
 /**
- * A wrapper around the global fetch function for handling JSON requests/responses
- * and error handling in a structured way, including Authorization header.
  * @param {string} url The API endpoint URL.
  * @param {object} options Fetch options including method, headers, and body.
  * @returns {Promise<any>} The parsed JSON data from the successful response.
@@ -43,7 +33,6 @@ async function fetchApi(url, options = {}) {
 
   const defaultHeaders = {
     'Content-Type': 'application/json',
-    // Đính kèm token JWT vào header
     ...(token && { 'Authorization': `Bearer ${token}` }),
   };
 
@@ -72,18 +61,12 @@ async function fetchApi(url, options = {}) {
   return data;
 }
 
-// =========================================================
-// CONSTANTS AND UTILITIES
-// =========================================================
-
-// Màu sắc theo layout
 const PRIMARY_COLOR = "#6A1B9A";
 const LOGO_TEXT_COLOR = "#E33AEC";
 const MAIN_CONTENT_BG = "#6D0446";
 const SEARCH_BAR_BG = "#E33AEC";
 const BUTTON_COLOR = "#9453C9";
 
-// Interface cho Teacher
 interface Teacher {
   teacherId: number;
   username: string;
@@ -93,37 +76,33 @@ interface Teacher {
   status: 'PENDING' | 'APPROVED' | 'REJECTED' | 'LOCKED';
 }
 
-// Hàm lấy danh sách giáo viên từ backend
 async function fetchTeachersFromBackend(params: {
   username?: string;
   email?: string;
   page?: number;
   size?: number;
 }) {
-  const queryParams = new URLSearchParams();
-  if (params.username) queryParams.append('username', params.username);
-  if (params.email) queryParams.append('email', params.email);
-  queryParams.append('page', String(params.page || 0));
-  queryParams.append('size', String(params.size || 20));
-  queryParams.append('sort', 'createdAt');
-  queryParams.append('direction', 'desc');
+     const queryParams = new URLSearchParams();
+     if (params.email) queryParams.append('email', params.email);
+     if (params.username) queryParams.append('username', params.username);
+     if (params.status && params.status !== 'all') queryParams.append('status', params.status);
 
-  // Đã sửa endpoint để phù hợp với quy tắc bảo mật Admin
-  const data = await fetchApi(`/api/admin/accounts/teachers?${queryParams.toString()}`);
-  return data;
-}
+     queryParams.append('page', String(params.page || 0));
+     queryParams.append('size', String(params.size || 20));
+     queryParams.append('sort', 'createdAt,desc');
 
-// Hàm xóa giáo viên
+     const url = `/api/admin/accounts/teachers?${queryParams.toString()}`;
+       const data = await fetchApi(url);
+       return data;
+   }
+
 async function deleteTeacherInBackend(id: number) {
-  // Đã sửa endpoint để phù hợp với quy tắc bảo mật Admin
   await fetchApi(`/api/admin/accounts/teachers/${id}`, {
     method: 'DELETE',
   });
 }
 
-// Hàm format ngày
 const formatDate = (dateString: string | null | undefined) => {
-  // Kiểm tra xem trường lastVisit có tồn tại trong dữ liệu không
   if (dateString === undefined) {
     console.warn('Trường lastVisit không tồn tại trong dữ liệu trả về');
     return 'Chưa kích hoạt';
@@ -141,26 +120,21 @@ const formatDate = (dateString: string | null | undefined) => {
   try {
     let date: Date;
 
-    // Xử lý timestamp (số nguyên dạng chuỗi)
     if (/^\d+$/.test(dateString)) {
       date = new Date(parseInt(dateString));
     }
-    // Xử lý định dạng ISO 8601 (có chứa 'T')
     else if (dateString.includes('T')) {
       date = new Date(dateString);
     }
-    // Thử parse bình thường
     else {
       date = new Date(dateString);
     }
 
-    // Kiểm tra ngày hợp lệ
     if (isNaN(date.getTime())) {
       console.warn('Chuỗi ngày không hợp lệ:', dateString);
       return 'Ngày không hợp lệ';
     }
 
-    // Định dạng ngày tháng theo tiếng Việt
     return date.toLocaleString('vi-VN', {
       year: 'numeric',
       month: '2-digit',
@@ -175,7 +149,6 @@ const formatDate = (dateString: string | null | undefined) => {
   }
 };
 
-// Hàm format trạng thái
 const getStatusDisplay = (status: string) => {
   const statusMap: Record<string, string> = {
     'PENDING': 'Chờ duyệt',
@@ -186,7 +159,6 @@ const getStatusDisplay = (status: string) => {
   return statusMap[status] || status;
 };
 
-// Hàm lấy màu trạng thái
 const getStatusColor = (status: string) => {
   const colorMap: Record<string, string> = {
     'PENDING': 'bg-yellow-100 text-yellow-700',
@@ -198,12 +170,10 @@ const getStatusColor = (status: string) => {
 };
 
 const TeacherAccountsPage = () => {
-  // Input states (giá trị trong ô input)
   const [searchEmail, setSearchEmail] = useState('');
   const [searchName, setSearchName] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
 
-  // Applied search states (giá trị thực tế dùng để tìm kiếm)
   const [appliedEmail, setAppliedEmail] = useState('');
   const [appliedName, setAppliedName] = useState('');
   const [appliedStatus, setAppliedStatus] = useState('all');
@@ -216,7 +186,6 @@ const TeacherAccountsPage = () => {
 
   const itemsPerPage = 20;
 
-  // Fetch giáo viên từ backend
   const fetchTeachers = useCallback(async () => {
     setLoading(true);
     try {
@@ -227,14 +196,10 @@ const TeacherAccountsPage = () => {
         size: itemsPerPage,
       });
 
-      console.log('API Response:', data); // Log the API response
+      console.log('API Response:', data);
 
-      // Filter by status if needed
       let filteredContent = data.content || [];
-      // LƯU Ý: Nếu backend không hỗ trợ filter status, chúng ta phải filter thủ công ở đây
-      // Hiện tại code chỉ tìm kiếm theo username/email, nên ta cần filter trạng thái:
       if (appliedStatus !== 'all') {
-        // Chuyển đổi trạng thái hiển thị (Hoạt động, Tạm khóa) sang giá trị API (APPROVED, LOCKED) để filter
         const apiStatus = Object.keys(getStatusDisplay).find(key => getStatusDisplay[key as keyof typeof getStatusDisplay] === appliedStatus);
 
         filteredContent = filteredContent.filter(
@@ -247,7 +212,6 @@ const TeacherAccountsPage = () => {
       setTotalElements(data.totalElements || 0);
     } catch (error: any) {
       console.error('Error fetching teachers:', error);
-      // Xử lý lỗi 403 cụ thể hơn
       if (error.status === 403 || error.status === 401) {
           toast.error("Truy cập bị từ chối. Vui lòng đăng nhập lại với tài khoản Admin.");
       } else {
@@ -261,29 +225,23 @@ const TeacherAccountsPage = () => {
     }
   }, [appliedEmail, appliedName, appliedStatus, currentPage]);
 
-  // Load data khi component mount hoặc khi currentPage thay đổi
   useEffect(() => {
     fetchTeachers();
   }, [fetchTeachers]);
 
-  // Hàm xử lý khi ấn nút tìm kiếm
   const handleSearch = () => {
-    // Cập nhật giá trị tìm kiếm thực tế
     setAppliedEmail(searchEmail);
     setAppliedName(searchName);
     setAppliedStatus(statusFilter);
-    // Reset về trang đầu
     setCurrentPage(0);
   };
 
-  // Hàm xử lý khi ấn Enter trong ô input
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter') {
       handleSearch();
     }
   };
 
-  // Hàm xóa bộ lọc
   const handleClearFilter = () => {
     setSearchEmail('');
     setSearchName('');
@@ -317,7 +275,6 @@ const TeacherAccountsPage = () => {
         setLoading(true);
         await deleteTeacherInBackend(id);
         toast.success('Đã xóa giáo viên thành công!');
-        // Sau khi xóa, fetch lại data, nếu trang hiện tại hết học sinh thì quay lại trang trước
         if (teachers.length === 1 && currentPage > 0) {
             setCurrentPage(p => p - 1);
         } else {

@@ -43,7 +43,6 @@ async function fetchApi(url, options = {}) {
 
   const defaultHeaders = {
     'Content-Type': 'application/json',
-    // Đính kèm token JWT vào header
     ...(token && { 'Authorization': `Bearer ${token}` }),
   };
 
@@ -72,17 +71,11 @@ async function fetchApi(url, options = {}) {
   return data;
 }
 
-// =========================================================
-// CONSTANTS AND UTILITIES
-// =========================================================
-
-// Màu sắc theo layout
 const PRIMARY_COLOR = "#6A1B9A";
 const LOGO_TEXT_COLOR = "#E33AEC";
 const MAIN_CONTENT_BG = "#6D0446";
 const BUTTON_COLOR = "#9453C9";
 
-// Interface cho Student
 interface Student {
   studentId: number;
   username: string;
@@ -92,11 +85,10 @@ interface Student {
   status: 'ACTIVE' | 'LOCKED';
 }
 
-// Hàm lấy danh sách học sinh từ backend
 async function fetchStudentsFromBackend(params: {
   email?: string;
   username?: string;
-  status?: string; // 'ACTIVE', 'LOCKED', hoặc undefined/null
+  status?: string;
   page?: number;
   size?: number;
 }) {
@@ -109,15 +101,12 @@ async function fetchStudentsFromBackend(params: {
   queryParams.append('size', String(params.size || 20));
   queryParams.append('sort', 'createdAt,desc');
 
-  // URL đã đúng: /api/admin/accounts/students
   const url = `/api/admin/accounts/students?${queryParams.toString()}`;
   const data = await fetchApi(url);
   return data;
 }
 
-// Hàm xóa học sinh
 async function deleteStudentInBackend(id: number) {
-  // URL đã đúng: /api/admin/accounts/students/{id}
   await fetchApi(`/api/admin/accounts/students/${id}`, {
     method: 'DELETE',
   });
