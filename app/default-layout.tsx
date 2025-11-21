@@ -1,6 +1,6 @@
 // app/default-layout.tsx
 import Link from "next/link";
-import Footer from "./components/Footer"; // Giả định đường dẫn
+import Footer from "@/components/Footer"; // Giả định đường dẫn
 
 export default function DefaultLayout({
   children,
@@ -11,7 +11,7 @@ export default function DefaultLayout({
     const DefaultActions = (
         <>
             <Link 
-                href="/login" 
+                href="/auth/login" 
                 className="rounded-lg px-4 py-2 font-medium shadow-md hover:shadow-lg transition duration-200 text-lg" 
                 style={{ backgroundColor: '#0000002E', color: 'black' }} 
             >
@@ -64,4 +64,3 @@ export default function DefaultLayout({
     );
 }
 
-// Giờ bạn phải import DefaultLayout này vào app/page.tsx, app/login/page.tsx, app/register/page.tsx, v.v.

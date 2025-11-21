@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Search as SearchIcon } from 'lucide-react';
+import toast from 'react-hot-toast';
 
 // Định nghĩa màu sắc theo cấu trúc layout
 const MAIN_BANNER_BG = '#6D0446'; // Màu tím sẫm (PRIMARY_COLOR từ layout)
@@ -13,25 +13,6 @@ export default function AdminPage() {
     const router = useRouter();
     const [roomCode, setRoomCode] = useState('');
     const [isSearching, setIsSearching] = useState(false);
-    const [showDropdown, setShowDropdown] = useState(false);
-
-    const handleLogout = async () => {
-        try {
-            const response = await fetch('/api/auth/logout', { 
-                method: 'POST',
-                credentials: 'include' 
-            });
-            
-            if (response.ok) {
-                router.push('/login');
-            } else {
-                console.error('Logout failed');
-            }
-        } catch (error) {
-            console.error('Logout error:', error);
-            router.push('/login');
-        }
-    };
 
     const handleSearch = () => {
         const cleanedCode = roomCode.trim().replace(/\s/g, ''); 
@@ -45,13 +26,14 @@ export default function AdminPage() {
                 setIsSearching(false);
                 // Xử lý logic tìm kiếm
                 console.log('Đã hoàn thành tìm kiếm.');
+                toast.info(`Tìm kiếm hoàn tất cho mã: ${cleanedCode}`);
             }, 1500);
         } else {
-            console.error('Mã phòng phải có ít nhất 6 ký tự.');
+            toast.error('Mã phòng phải có ít nhất 6 ký tự.');
         }
     };
     
-    const handleKeyDown = (e) => {
+    const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
         if (e.key === 'Enter') {
             handleSearch();
         }

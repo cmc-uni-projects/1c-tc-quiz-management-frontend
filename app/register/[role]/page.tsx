@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { use, useState } from "react";
 import { useRouter } from "next/navigation";
+import toast from "react-hot-toast";
 
 // Inline icons to avoid external dependency issues
 const EyeIcon = (props: React.SVGProps<SVGSVGElement>) => (
@@ -72,13 +73,19 @@ export default function RegisterFormPage({ params }: { params: Promise<{ role: s
         }),
       });
 
-      const text = await res.text();
       if (!res.ok) {
-        throw new Error(text || "Đăng ký thất bại");
+        const text = await res.text();
+        setError(text || "Đăng ký thất bại");
+        setLoading(false);
+        return;
       }
 
-      setSuccess(text || "Đăng ký thành công!");
-      setTimeout(() => router.push("/login"), 1200);
+      toast.success("Đăng ký thành công!");
+      if (isTeacher) {
+        setTimeout(() => router.push("/register/pending-approval"), 1200);
+      } else {
+        setTimeout(() => router.push("/auth/login"), 1200);
+      }
     } catch (err: any) {
       setError(err.message || "Có lỗi xảy ra, vui lòng thử lại.");
     } finally {
@@ -185,7 +192,7 @@ export default function RegisterFormPage({ params }: { params: Promise<{ role: s
 
           <div className="flex items-center justify-between text-sm">
             <p className="text-zinc-600">
-              Bạn đã có tài khoản? <Link href="/login" className="font-medium text-[#E33AEC] hover:underline">Đăng nhập</Link>
+              Bạn đã có tài khoản? <Link href="/auth/login" className="font-medium text-[#E33AEC] hover:underline">Đăng nhập</Link>
             </p>
           </div>
 

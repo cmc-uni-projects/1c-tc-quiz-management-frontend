@@ -1,16 +1,68 @@
-// app/admin/layout.tsx
 "use client";
-
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { useUser } from "@/lib/user";
+import { toast } from "react-toastify";
 
-// Màu tím chính và màu sắc theo yêu cầu
 const PRIMARY_COLOR = "#6A1B9A";
 const LOGO_TEXT_COLOR = "#E33AEC";
-// Màu nền nội dung chính theo yêu cầu của user
 const MAIN_CONTENT_BG = "#6D0446";
+const contentPaddingClass = "ml-64";
 
-// Icon người dùng
+/** @typedef {{ name: string, href: string, submenu?: NavItem[] }} NavItem */
+
+/** @type {React.FC<{ children: React.ReactNode }>} */
+const AdminAuthGuard = ({ children }) => {
+  const { user, isLoading, isAuthenticated } = useUser();
+  const router = useRouter();
+  
+  const [isRedirecting, setIsRedirecting] = useState(false);
+
+  useEffect(() => {
+    if (isLoading || isRedirecting) {
+      return;
+    }
+
+    let redirectPath = null;
+    let toastMessage = null;
+
+    if (!isAuthenticated) {
+      redirectPath = "/auth/login";
+      toastMessage = "Bạn cần đăng nhập để truy cập trang này.";
+    } else if (user?.role !== "ADMIN") {
+      redirectPath = "/";
+      toastMessage = "Bạn không có quyền truy cập vào khu vực quản trị.";
+    }
+
+    if (redirectPath) {
+        setIsRedirecting(true);
+        if (toastMessage) {
+            toast.error(toastMessage);
+        }
+        router.push(redirectPath);
+    }
+
+  }, [user, isLoading, isAuthenticated, router, isRedirecting]);
+
+  if (isLoading || isRedirecting || !isAuthenticated) {
+    return (
+      <div className="flex h-screen w-full items-center justify-center bg-gray-50">
+        <div className="text-center">
+          <div className="mx-auto h-12 w-12 animate-spin rounded-full border-b-2 border-purple-600"></div>
+          <p className="mt-4 text-lg font-semibold text-gray-700">Đang xác thực quyền truy cập...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (user?.role === "ADMIN") {
+      return <>{children}</>;
+  }
+
+  return null;
+};
+
+
 const UserIcon = () => (
   <svg
     xmlns="http://www.w3.org/2000/svg"
@@ -28,12 +80,8 @@ const UserIcon = () => (
 );
 
 
-// Icon mũi tên (dùng cho Submenu)
-interface ChevronDownIconProps {
-  isOpen: boolean;
-}
-
-const ChevronDownIcon = ({ isOpen }: ChevronDownIconProps) => (
+/** @type {React.FC<ChevronDownIconProps>} */
+const ChevronDownIcon = ({ isOpen }) => (
   <svg
     xmlns="http://www.w3.org/2000/svg"
     className={`w-4 h-4 ml-auto transition-transform duration-200 ${
@@ -48,38 +96,54 @@ const ChevronDownIcon = ({ isOpen }: ChevronDownIconProps) => (
   </svg>
 );
 
-// ProfileDropdown component with TypeScript types
-const ProfileDropdown: React.FC = () => {
-  const router = useRouter();
-  const [isOpen, setIsOpen] = useState<boolean>(false);
-  const [showLogoutConfirm, setShowLogoutConfirm] = useState<boolean>(false);
 
-  const handleLogoutClick = (e: React.MouseEvent) => {
+/** @type {React.FC} */
+const ProfileDropdown = () => {
+  const router = useRouter();
+  const { user } = useUser();
+  const [isOpen, setIsOpen] = useState(false);
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+
+  const username = user?.name || 'Admin';
+  const avatar = user?.avatarUrl || null; // Using 'avatarUrl' from custom user hook
+
+  const getProfileUrl = () => {
+    return '/admin/profile';
+  };
+
+  const getChangePasswordUrl = () => {
+    return '/admin/change-password';
+  };
+
+  const handleProfileClick = () => {
+    setIsOpen(false);
+    router.push(getProfileUrl());
+  };
+
+  const handleChangePasswordClick = () => {
+    setIsOpen(false);
+    router.push(getChangePasswordUrl());
+  };
+
+  const handleLogoutClick = (e) => {
     e.preventDefault();
     setShowLogoutConfirm(true);
     setIsOpen(false);
   };
 
-  const handleLogoutConfirm = async (): Promise<void> => {
-    try {
-      await fetch("/api/auth/logout", { 
-        method: "POST", 
-        credentials: "include" 
-      });
-      router.push("/");
-    } catch (error) {
-      console.error("Logout error:", error);
-      router.push("/");
-    }
+  const handleLogoutConfirm = async () => {
+    setShowLogoutConfirm(false);
+    localStorage.removeItem('jwt'); // Clear JWT from localStorage
+    router.push('/auth/login'); // Redirect to login page
+    toast.success("Đăng xuất thành công");
   };
 
-  const handleLogoutCancel = (): void => {
+  const handleLogoutCancel = () => {
     setShowLogoutConfirm(false);
   };
 
-  // Style for the profile button
   const profileStyle = {
-    backgroundColor: "#f3e8ff", // purple-100
+    backgroundColor: "#f3e8ff",
   };
 
   return (
@@ -90,30 +154,32 @@ const ProfileDropdown: React.FC = () => {
         style={profileStyle}
         aria-expanded={isOpen}
       >
-        {/* User Icon */}
-        <div className="w-8 h-8 rounded-full bg-purple-300 flex items-center justify-center text-purple-800">
-          <UserIcon />
+        <div className="w-8 h-8 rounded-full bg-purple-300 flex items-center justify-center text-purple-800 overflow-hidden">
+          {avatar ? (
+            <img src={avatar} alt="avatar" className="w-full h-full object-cover" />
+          ) : (
+            <UserIcon />
+          )}
         </div>
-        {/* Text "Xin chào, Admin" */}
         <span className="font-semibold text-purple-800 text-sm hidden sm:inline">
-          Xin chào, Admin
+          {`Xin chào, ${username}`}
         </span>
       </button>
 
       {isOpen && (
         <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-xl py-1 border border-zinc-200 z-10">
-          <a
-            href="/admin/profile"
-            className="block px-4 py-2 text-sm text-gray-700 hover:bg-purple-50 hover:text-purple-600"
+          <button
+            onClick={handleProfileClick}
+            className="w-full text-left block px-4 py-2 text-sm text-gray-700 hover:bg-purple-50 hover:text-purple-600"
           >
             Cập nhật thông tin
-          </a>
-          <a
-            href="/admin/change-password"
-            className="block px-4 py-2 text-sm text-gray-700 hover:bg-purple-50 hover:text-purple-600"
+          </button>
+          <button
+            onClick={handleChangePasswordClick}
+            className="w-full text-left block px-4 py-2 text-sm text-gray-700 hover:bg-purple-50 hover:text-purple-600"
           >
             Đổi mật khẩu
-          </a>
+          </button>
           <div className="border-t border-zinc-100 my-1"></div>
           <button
             onClick={handleLogoutClick}
@@ -125,51 +191,19 @@ const ProfileDropdown: React.FC = () => {
       )}
 
       {/* Logout Confirmation Modal */}
-      {showLogoutConfirm && (
-        <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 max-w-sm w-full mx-4 shadow-xl">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">
-              Xác nhận đăng xuất
-            </h3>
-            <p className="text-gray-600 mb-6">
-              Bạn có chắc chắn muốn đăng xuất khỏi hệ thống?
-            </p>
-            <div className="flex gap-3 justify-end">
-              <button
-                onClick={handleLogoutCancel}
-                className="px-4 py-2 text-gray-600 hover:text-gray-800 transition"
-              >
-                Hủy
-              </button>
-              <button
-                onClick={handleLogoutConfirm}
-                className="px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700 transition"
-              >
-                Đăng xuất
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <LogoutConfirmationModal
+        isOpen={showLogoutConfirm}
+        onConfirm={handleLogoutConfirm}
+        onCancel={handleLogoutCancel}
+      />
     </div>
   );
 };
 
-// Props for LogoutConfirmationModal component
-interface LogoutConfirmationModalProps {
-  isOpen: boolean;
-  onConfirm: () => void;
-  onCancel: () => void;
-}
 
-// Logout Confirmation Modal Component
-const LogoutConfirmationModal: React.FC<LogoutConfirmationModalProps> = ({ 
-  isOpen, 
-  onConfirm, 
-  onCancel 
-}) => {
+/** @type {React.FC<LogoutConfirmationModalProps>} */
+const LogoutConfirmationModal = ({ isOpen, onConfirm, onCancel }) => {
   if (!isOpen) return null;
-
   return (
     <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50">
       <div className="bg-white rounded-lg p-6 max-w-sm w-full mx-4 shadow-xl">
@@ -200,17 +234,12 @@ const LogoutConfirmationModal: React.FC<LogoutConfirmationModalProps> = ({
   );
 };
 
-// Types for navigation items
-interface NavItem {
-  name: string;
-  href: string;
-  submenu?: NavItem[];
-}
+/** @type {React.FC} */
+const AdminSidebar = () => {
+  const router = useRouter();
+  const currentPathname = router.pathname;
 
-// Sidebar component with TypeScript
-const AdminSidebar: React.FC = () => {
-  // Navigation items with submenus
-  const navItems: NavItem[] = [
+  const navItems = [
     { name: "Trang chủ", href: "/admin" },
     {
       name: "Quản lý tài khoản",
@@ -221,66 +250,73 @@ const AdminSidebar: React.FC = () => {
       ],
     },
     { name: "Duyệt tài khoản giáo viên", href: "/admin/approve-teachers" },
+    { name: "Danh mục", href: "/admin/categories" },
+    {
+      name: "Cài đặt",
+      href: "/admin/settings",
+      submenu: [
+        { name: "Thông tin cá nhân", href: "/admin/profile" },
+        { name: "Đổi mật khẩu", href: "/admin/change-password" },
+      ],
+    },
   ];
 
-  const [currentPathname, setCurrentPathname] = useState<string>("/");
-  const [openSubmenu, setOpenSubmenu] = useState<string | null>(null);
+  const [openSubmenu, setOpenSubmenu] = useState(null);
 
-  // Toggle submenu open/close
-  const handleToggleSubmenu = (name: string) => {
+  const handleToggleSubmenu = (name) => {
     setOpenSubmenu(openSubmenu === name ? null : name);
   };
 
-  // Check if an item or any of its subitems is active
-  const isActive = (item: NavItem): boolean => {
+  const isActive = (item) => {
     if (!item) return false;
-    
-    if (item.href === "/") {
-      return currentPathname === "/";
-    }
+
     if (item.href === "/admin") {
-      return currentPathname === "/admin" || currentPathname.startsWith("/admin/");
+      return currentPathname === "/admin";
     }
 
     let shouldBeActive = currentPathname.startsWith(item.href);
 
-    // Check submenu items if they exist
     if (item.submenu && Array.isArray(item.submenu)) {
-      shouldBeActive = item.submenu.some(subItem => 
+      shouldBeActive = item.submenu.some(subItem =>
         subItem && currentPathname.startsWith(subItem.href)
       ) || shouldBeActive;
     }
-    
+
     return shouldBeActive;
   };
 
-  React.useEffect(() => {
-    if (typeof window !== "undefined") {
-      const pathname = window.location.pathname;
-      setCurrentPathname(pathname);
-
-      // Tự động mở submenu nếu một mục con đang active
-      navItems.forEach((item) => {
-        if (item.submenu) {
-          item.submenu.forEach((subItem) => {
-            if (pathname.startsWith(subItem.href)) {
-              setOpenSubmenu(item.name);
-            }
-          });
+  useEffect(() => {
+    let shouldOpen = false;
+    navItems.forEach((item) => {
+      if (item.submenu) {
+        if (item.submenu.some(subItem => currentPathname.startsWith(subItem.href))) {
+          setOpenSubmenu(item.name);
+          shouldOpen = true;
         }
-      });
+      }
+    });
+
+    if (!shouldOpen && openSubmenu) {
+      const isParentActive = navItems.some(item => isActive(item));
+      if (!isParentActive) {
+         setOpenSubmenu(null);
+      }
     }
-  }, []);
+
+  }, [currentPathname]);
+
+  const handleNavigation = (href, e) => {
+    e.preventDefault();
+    router.push(href);
+  }
 
   return (
     <>
-      {/* Sidebar chính */}
       <aside className="w-64 bg-white border-r border-zinc-200 h-screen fixed top-0 left-0 z-50 shadow-xl overflow-y-auto">
-        {/* Khu vực Logo */}
         <div className="flex items-center space-x-2 px-4 py-3 border-b border-zinc-200 bg-white">
-          {/* Logo/Tên dự án */}
           <a
             href="/"
+            onClick={(e) => handleNavigation("/admin", e)}
             className="text-xl font-black"
             style={{ color: LOGO_TEXT_COLOR }}
           >
@@ -288,56 +324,40 @@ const AdminSidebar: React.FC = () => {
           </a>
         </div>
 
-        {/* Mục Điều hướng */}
-        <nav className="text-xs font-medium text-zinc-700">
-          <div 
-            className="h-1 border-b border-zinc-200"
-            style={{ backgroundColor: "#eee" }}
-          ></div>
+        <nav className="px-4 py-4 text-sm font-medium text-zinc-700 space-y-1">
           {navItems.map((item) => {
             const hasSubmenu = !!item.submenu;
-            const isOpen = openSubmenu === item.name;
-            const isCurrentActive = isActive(item); // Kiểm tra xem mục cha (hoặc con) có active không
+            const isCurrentActive = isActive(item);
+            const isOpen = openSubmenu === item.name || (hasSubmenu && isCurrentActive);
 
             if (hasSubmenu) {
               return (
-                <div key={item.name} className="border-b border-zinc-200">
-                  {/* Mục cha (có submenu) */}
+                <div key={item.name}>
                   <button
                     onClick={() => handleToggleSubmenu(item.name)}
-                    className={`flex items-center w-full px-4 py-2 text-xs transition duration-150 text-left 
-                                            ${
-                                              isCurrentActive
-                                                ? "bg-zinc-100 font-semibold text-purple-700"
-                                                : "hover:bg-zinc-50"
-                                            }
-                                        `}
+                    className={`flex items-center w-full rounded-lg px-3 py-2 text-left transition-colors duration-150
+                      ${isCurrentActive ? "bg-zinc-100 text-purple-700 font-semibold" : "hover:bg-zinc-50"}
+                    `}
                   >
                     <span>{item.name}</span>
                     <ChevronDownIcon isOpen={isOpen} />
                   </button>
 
-                  {/* Submenu */}
                   <div
                     className={`overflow-hidden transition-all duration-300 ease-in-out ${
                       isOpen ? "max-h-40 opacity-100" : "max-h-0 opacity-0"
                     }`}
                   >
                     {item.submenu && item.submenu.map((subItem) => {
-                      const subIsActive = currentPathname.startsWith(
-                        subItem.href
-                      );
+                      const subIsActive = currentPathname.startsWith(subItem.href);
                       return (
                         <a
                           key={subItem.name}
                           href={subItem.href}
-                          className={`flex items-center w-full pl-6 pr-4 py-1.5 text-xs transition duration-150 
-                                                        ${
-                                                          subIsActive
-                                                            ? "bg-zinc-200 font-semibold text-purple-700"
-                                                            : "hover:bg-zinc-100"
-                                                        }
-                                                    `}
+                          onClick={(e) => handleNavigation(subItem.href, e)}
+                          className={`mt-1 ml-4 flex items-center w-full rounded-lg px-3 py-1.5 text-xs transition-colors duration-150
+                            ${subIsActive ? "bg-zinc-100 text-purple-700 font-semibold" : "hover:bg-zinc-50"}
+                          `}
                         >
                           <span>{subItem.name}</span>
                         </a>
@@ -348,20 +368,16 @@ const AdminSidebar: React.FC = () => {
               );
             }
 
-            // Mục không có submenu (giữ nguyên)
             return (
               <a
                 key={item.name}
                 href={item.href}
-                className={`flex items-center w-full px-4 py-2 text-xs transition duration-150 border-b border-zinc-200 
-                                    ${
-                                      isCurrentActive
-                                        ? "bg-zinc-100 font-semibold text-purple-700"
-                                        : "hover:bg-zinc-50"
-                                    }
-                                `}
+                onClick={(e) => handleNavigation(item.href, e)}
+                className={`block rounded-lg px-3 py-2 transition-colors duration-150
+                  ${isCurrentActive ? "bg-zinc-100 text-purple-700 font-semibold" : "hover:bg-zinc-50"}
+                `}
               >
-                <span>{item.name}</span>
+                {item.name}
               </a>
             );
           })}
@@ -371,73 +387,45 @@ const AdminSidebar: React.FC = () => {
   );
 };
 
-// Component Header chứa Logo và Profile
+/** @type {React.FC} */
 const AdminTopBar = () => {
   return (
-    <header className="w-full border-b border-zinc-200 bg-white sticky top-0 z-40 shadow-sm">
+    <header className="w-full border-b border-zinc-200 bg-white shadow-sm">
       <div className="flex items-center justify-between px-4 py-2 md:py-3">
         <div className="flex items-center">
-          {/* Logo QuizzZone */}
-          <a
-            href="/admin"
-            className="text-2xl font-black tracking-tighter"
-            style={{ color: LOGO_TEXT_COLOR }}
-          >
-            QuizzZone
-          </a>
+            <h1 className="text-xl font-semibold text-zinc-800">Bảng điều khiển Admin</h1>
         </div>
-        
+
         <div className="flex-1"></div>
-        
+
         <ProfileDropdown />
       </div>
     </header>
   );
 };
 
-// Component Footer (Giữ nguyên)
-const Footer = () => {
+
+
+
+export default function AdminLayout({ children }) {
   return (
-    // Footer không còn padding cố định
-    <footer className="w-full bg-white border-t border-zinc-100 text-center py-4 mt-auto">
-      <p className="text-sm text-zinc-600">
-        &copy; 2025 QuizzZone. Mọi quyền được bảo lưu.
-      </p>
-    </footer>
-  );
-};
-
-interface AdminLayoutProps {
-  children: React.ReactNode;
-}
-
-export default function AdminLayout({ children }: AdminLayoutProps) {
-  // Sidebar is always visible now, no need for state
-  const contentPaddingClass = "lg:ml-64"; // Adjusted margin to match the sidebar width
-
-  return (
-    // Dùng nền xám nhạt cho toàn bộ trang
-    <div className="flex flex-col min-h-screen bg-gray-50">
-      {/* 1. Sidebar (Menu trái) */}
-      <AdminSidebar />
-
-      {/* 2. Top Bar (Header) */}
-      <AdminTopBar />
-
-      {/* Container cho Nội dung chính */}
-      {/* Điều chỉnh margin-left dựa trên trạng thái Sidebar */}
-      <div
-        className={`${contentPaddingClass} flex flex-col flex-1 transition-[margin-left] duration-300`}
-      >
-        {/* 3. Nội dung Admin Page: Màu nền #6D0446 theo yêu cầu */}
-        <main
-          className="flex-1 p-4 md:p-8 shadow-inner"
-          style={{ backgroundColor: MAIN_CONTENT_BG }}
-        >
-          {children}
-        </main>
-        <Footer />
-      </div>
-    </div>
+    <>
+      <AdminAuthGuard>
+        <div className="flex flex-col min-h-screen bg-gray-50">
+          <AdminSidebar />
+          <div
+            className={`${contentPaddingClass} flex flex-col flex-1 transition-[margin-left] duration-300 w-[calc(100%-16rem)]`}
+          >
+            <AdminTopBar />
+            <main
+              className="flex-1 p-4 md:p-8 shadow-inner"
+              style={{ backgroundColor: MAIN_CONTENT_BG }}
+            >
+              {children}
+            </main>
+          </div>
+        </div>
+      </AdminAuthGuard>
+    </>
   );
 }

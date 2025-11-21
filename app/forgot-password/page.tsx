@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import toast from 'react-hot-toast';
 
 type ForgotPasswordStep = 'email-otp' | 'reset';
 
@@ -49,7 +50,8 @@ export default function ForgotPasswordPage() {
         console.log('Parsed JSON response:', responseData);
       } catch (e) {
         console.error('Failed to parse response as JSON:', text);
-        throw new Error('Invalid response format from server');
+        // Thông báo thân thiện khi phản hồi từ server không đúng định dạng JSON
+        throw new Error('Phản hồi từ máy chủ không đúng định dạng. Vui lòng thử lại sau.');
       }
 
       if (!res.ok) {
@@ -59,17 +61,28 @@ export default function ForgotPasswordPage() {
       const devOtp = responseData.otp;
       console.log('Extracted OTP:', devOtp);
       
-      if (devOtp) {
-        setSuccess(`Mã OTP đã được gửi đến email của bạn. [DEV: ${devOtp}]`);
-      } else {
-        setSuccess('Mã OTP đã được gửi đến email của bạn');
-      }
+      toast.success('Mã OTP đã được gửi đến email của bạn');
       
       setOtpSent(true);
       setResendCountdown(60);
       startResendCountdown();
     } catch (err: any) {
-      setError(err.message || 'Gửi yêu cầu thất bại');
+      let errorMessage;
+      let showToast = false; // Default to no toast
+
+      if (err.message === 'User with this email not found') {
+        errorMessage = 'Email không tồn tại.';
+      } else if (err.message.includes('Failed to fetch')) {
+        errorMessage = 'Lỗi kết nối. Vui lòng kiểm tra lại đường truyền mạng.';
+        showToast = true; // Only show toast for connection errors
+      } else {
+        errorMessage = 'Gửi yêu cầu thất bại. Vui lòng thử lại.';
+      }
+      
+      setError(errorMessage);
+      if (showToast) {
+        toast.error(errorMessage);
+      }
     } finally {
       setLoading(false);
     }
@@ -91,7 +104,7 @@ export default function ForgotPasswordPage() {
         throw new Error(errorData || 'Xác nhận OTP thất bại');
       }
 
-      setSuccess('OTP hợp lệ, vui lòng đặt mật khẩu mới');
+      toast.success('OTP hợp lệ, vui lòng đặt mật khẩu mới');
       setStep('reset');
     } catch (err: any) {
       setError(err.message || 'Xác nhận OTP thất bại');
@@ -129,11 +142,7 @@ export default function ForgotPasswordPage() {
       const responseData = await res.json();
       const devOtp = responseData.otp;
       
-      if (devOtp) {
-        setSuccess(`Mã OTP mới đã được gửi. [DEV: ${devOtp}]`);
-      } else {
-        setSuccess('Mã OTP mới đã được gửi');
-      }
+      toast.success('Mã OTP mới đã được gửi');
       
       setResendCountdown(60);
       startResendCountdown();
@@ -178,8 +187,8 @@ export default function ForgotPasswordPage() {
         throw new Error(errorData || 'Đặt lại mật khẩu thất bại');
       }
 
-      setSuccess('Mật khẩu đã được đặt lại thành công');
-      setTimeout(() => router.push('/login'), 2000);
+      toast.success('Thay đổi mật khẩu thành công');
+      setTimeout(() => router.push('/auth/login'), 2000);
     } catch (err: any) {
       setError(err.message || 'Đặt lại mật khẩu thất bại');
     } finally {
@@ -270,7 +279,7 @@ export default function ForgotPasswordPage() {
             <div className="text-center text-sm">
               <p className="text-zinc-600">
                 Bạn nhớ mật khẩu?{' '}
-                <Link href="/login" className="font-medium text-[#E33AEC] hover:underline">
+                <Link href="/auth/login" className="font-medium text-[#E33AEC] hover:underline">
                   Đăng nhập
                 </Link>
               </p>

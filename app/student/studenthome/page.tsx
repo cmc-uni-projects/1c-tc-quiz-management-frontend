@@ -2,12 +2,28 @@
 
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import toast from 'react-hot-toast';
+import { useUser } from '@/lib/user';
 
 const StudentHome = () => {
   const router = useRouter();
+  const { user } = useUser();
   const [roomCode, setRoomCode] = useState('');
   const [showDropdown, setShowDropdown] = useState(false);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+
+  const username = user?.name;
+  const avatar = user?.avatarUrl;
+
+  const handleProfileClick = () => {
+    setShowDropdown(false);
+    router.push('/student/profile');
+  };
+
+  const handleChangePasswordClick = () => {
+    setShowDropdown(false);
+    router.push('/student/change-password');
+  };
 
   const handleLogoutClick = () => {
     setShowLogoutConfirm(true);
@@ -15,13 +31,10 @@ const StudentHome = () => {
   };
 
   const handleLogoutConfirm = async () => {
-    try {
-      await fetch('/logout', { method: 'POST', credentials: 'include' });
-      router.push('/');
-    } catch (error) {
-      console.error('Logout error:', error);
-      router.push('/');
-    }
+    setShowLogoutConfirm(false);
+    localStorage.removeItem('jwt'); // Clear JWT from localStorage
+    router.push('/auth/login'); // Redirect to login page
+    toast.success('Đăng xuất thành công');
   };
 
   const handleLogoutCancel = () => {
@@ -75,26 +88,30 @@ const StudentHome = () => {
             </a>
           </nav>
           <div className="flex shrink-0 items-center gap-3 relative" onClick={(e) => e.stopPropagation()}>
-            <span className="text-sm text-zinc-600">Xin chào, Student</span>
+            <span className="text-sm text-zinc-600">{`Xin chào, ${username || 'Student'}`}</span>
             <button
               onClick={(e) => {
                 e.stopPropagation();
                 setShowDropdown(!showDropdown);
               }}
-              className="rounded-full bg-purple-100 p-2 text-purple-600 hover:bg-purple-200 transition"
+              className="grid h-8 w-8 place-items-center rounded-full bg-purple-100 text-purple-600 hover:bg-purple-200 transition overflow-hidden"
             >
-              <svg className="h-6 w-6" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" />
-              </svg>
+              {avatar ? (
+                <img src={avatar} alt="avatar" className="h-8 w-8 rounded-full object-cover" />
+              ) : (
+                <svg className="h-6 w-6" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" />
+                </svg>
+              )}
             </button>
             
             {/* Dropdown Menu */}
             {showDropdown && (
               <div className="absolute top-full right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 z-10">
-                <button className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 border-b border-gray-100">
+                <button onClick={handleProfileClick} className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 border-b border-gray-100">
                   Cập nhật thông tin
                 </button>
-                <button className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 border-b border-gray-100">
+                <button onClick={handleChangePasswordClick} className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 border-b border-gray-100">
                   Đổi mật khẩu
                 </button>
                 <button

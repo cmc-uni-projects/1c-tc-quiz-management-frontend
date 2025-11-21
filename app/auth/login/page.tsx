@@ -3,11 +3,15 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import toast from 'react-hot-toast';
+import { fetchApi } from '@/lib/apiClient';
 
 export default function LoginPage() {
   const router = useRouter();
-  const [username, setUsername] = useState('');
+
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -18,45 +22,44 @@ export default function LoginPage() {
     setLoading(true);
 
     try {
-      const form = new URLSearchParams();
-      form.append('email', username);
-      form.append('password', password);
-
-      const res = await fetch('/api/perform_login', {
+      // Step 1: Call the login API
+      const response = await fetchApi('/auth/login', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: form.toString(),
-        credentials: 'include',
-        redirect: 'follow',
+        body: { email, password },
       });
 
-      if (res.ok || res.redirected || res.type === 'opaqueredirect') {
-        try {
-          const finalUrl = res.url || '';
-          if (finalUrl.includes('/student/')) {
-            router.push('/student/studenthome');
-          } else if (finalUrl.includes('/teacher/')) {
-            router.push('/teacher/teacherhome');
-          } else if (finalUrl.includes('/admin')) {
-            router.push('/admin');
-          } else {
-            router.push('/student/studenthome');
-          }
-        } catch (_) {
-          router.push('/student/studenthome');
-        }
-        return;
-      }
+      if (response.token) {
+        // Step 2: Save the JWT to localStorage
+        localStorage.setItem('jwt', response.token);
+        toast.success('Đăng nhập thành công!');
 
-      const text = await res.text();
-      throw new Error(text || 'Đăng nhập thất bại');
+        // Step 3: Fetch user data to get the role for redirection
+        const user = await fetchApi('/me');
+        
+        // Step 4: Redirect based on role
+        const role = user?.role;
+        if (role === 'STUDENT') {
+          router.push('/student/studenthome');
+        } else if (role === 'TEACHER') {
+          router.push('/teacher/teacherhome');
+        } else if (role === 'ADMIN') {
+          router.push('/admin');
+        } else {
+          router.push('/'); // Fallback redirect
+        }
+      } else {
+        throw new Error('Phản hồi đăng nhập không hợp lệ.');
+      }
     } catch (err: any) {
-      setError(err.message || 'Đăng nhập thất bại');
+      const errorMessage = err.message || 'Sai tài khoản hoặc mật khẩu.';
+      setError(errorMessage);
+      toast.error(errorMessage);
     } finally {
       setLoading(false);
     }
   }
 
+  // --- JSX RENDER ---
   return (
     <div className="mx-auto max-w-4xl px-4 py-10">
       <div className="mx-auto w-full rounded-lg border border-zinc-200 bg-white p-8 shadow-sm">
@@ -71,9 +74,9 @@ export default function LoginPage() {
             </label>
             <input
               type="email"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              placeholder="Enter your email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="Nhập email của bạn"
               className="w-full rounded-md border border-zinc-300 bg-white px-4 py-3 text-zinc-900 placeholder:text-zinc-400 focus:border-[#E33AEC] focus:outline-none focus:ring-2 focus:ring-[#E33AEC]/30"
               required
             />
