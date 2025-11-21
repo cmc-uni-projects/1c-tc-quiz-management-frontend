@@ -28,9 +28,9 @@ export default function LoginPage() {
         body: { email, password },
       });
 
-      if (response.jwt) {
+      if (response.token) {
         // Step 2: Save the JWT to localStorage
-        localStorage.setItem('jwt', response.jwt);
+        localStorage.setItem('jwt', response.token);
         toast.success('Đăng nhập thành công!');
 
         // Step 3: Fetch user data to get the role for redirection
