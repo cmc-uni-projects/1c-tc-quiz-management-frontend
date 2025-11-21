@@ -1,6 +1,7 @@
 "use client";
 import Sidebar from "@/components/teacher/Sidebar";
 import React, { useState } from "react";
+import { useRouter } from "next/navigation";
 
 // ===== SVG ICONS =====
 const ClockIcon = () => (
@@ -61,7 +62,7 @@ const mockExams = [
 export default function TeacherExamListPage() {
   const [exams, setExams] = useState(mockExams);
   const [openMenu, setOpenMenu] = useState<number | null>(null);
-
+  const router = useRouter();
   // Sắp xếp từ mới nhất → cũ nhất (để sau này em có nhiều bài thi)
   const sortedExams = [...exams].sort(
     (a, b) => Number(new Date(b.startTime)) - Number(new Date(a.startTime))
@@ -135,9 +136,12 @@ export default function TeacherExamListPage() {
                     >
                       Xóa bài thi
                     </button>
-                    <button className="block w-full text-left px-4 py-2 hover:bg-gray-100">
-                      Cập nhật
-                    </button>
+                   <button
+                   onClick={() => router.push("/teacher/update-exam")}
+                   className="block w-full text-left px-4 py-2 hover:bg-gray-100"
+                   >
+                   Cập nhật
+                   </button>
                   </div>
                 )}
               </div>
