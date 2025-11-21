@@ -1,9 +1,38 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import toast from "react-hot-toast";
+import { useEffect, useMemo, useState, useRef } from "react";
+import toast, { Toast } from "react-hot-toast";
 import Swal from "sweetalert2";
-import Sidebar from "@/components/teacher/Sidebar";
+
+// Custom toast hook to prevent duplicate toasts
+const useToast = () => {
+  const toastRef = useRef(null);
+
+  const showError = (message) => {
+    if (toastRef.current) {
+      toast.dismiss(toastRef.current);
+    }
+    toastRef.current = toast.error(message);
+    return toastRef.current;
+  };
+
+  const showSuccess = (message) => {
+    if (toastRef.current) {
+      toast.dismiss(toastRef.current);
+    }
+    toastRef.current = toast.success(message);
+    return toastRef.current;
+  };
+
+  const dismiss = () => {
+    if (toastRef.current) {
+      toast.dismiss(toastRef.current);
+      toastRef.current = null;
+    }
+  };
+
+  return { showError, showSuccess, dismiss };
+};
 
 // Màu tím nhạt giống các trang Admin/Teacher
 const PRIMARY_PURPLE_BG = "#E33AEC7A";
@@ -100,6 +129,7 @@ export default function TeacherCategoriesPage() {
   const [form, setForm] = useState({ name: "", description: "" });
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const { showError, showSuccess } = useToast();
 
   // Chuẩn hóa thông báo lỗi từ backend sang dạng thân thiện, tiếng Việt
   const extractErrorMessage = async (res, fallback = "Có lỗi xảy ra") => {
@@ -132,7 +162,7 @@ export default function TeacherCategoriesPage() {
   };
 
   // Fetch categories from backend with pagination + optional search
-  const fetchCategories = async (pageParam = page, keywordParam = keyword) => {
+  const fetchCategories = async (pageParam = page, keywordParam = keyword, showError = true) => {
     try {
       setLoading(true);
       const q = keywordParam.trim();
@@ -154,7 +184,11 @@ export default function TeacherCategoriesPage() {
         url = `/categories/search?${params.toString()}`;
       }
       const res = await fetch(url, { credentials: "include" });
-      if (!res.ok) throw new Error("Không thể tải danh sách danh mục");
+      if (!res.ok) {
+        const error = new Error("Không thể tải danh sách danh mục");
+        error.status = res.status;
+        throw error;
+      }
       const data = await res.json();
       const content = Array.isArray(data?.content)
         ? data.content
@@ -164,9 +198,13 @@ export default function TeacherCategoriesPage() {
       setCategories(content);
       if (typeof data.totalPages === "number") setTotalPages(data.totalPages || 1);
       if (typeof data.totalElements === "number") setTotalElements(data.totalElements || content.length);
+      return { success: true };
     } catch (e) {
-      console.error(e);
-      toast.error(e?.message || "Không thể tải danh sách danh mục");
+      console.error('Fetch categories error:', e);
+      if (showError) {
+        showError(e?.message || "Không thể tải danh sách danh mục");
+      }
+      return { success: false, error: e };
     } finally {
       setLoading(false);
     }
@@ -174,14 +212,39 @@ export default function TeacherCategoriesPage() {
 
   // Load khi page thay đổi
   useEffect(() => {
-    fetchCategories();
+    let isMounted = true;
+    let toastId;
+    
+    const loadCategories = async () => {
+      const { success, error } = await fetchCategories(page, keyword, false);
+      if (!success && error && isMounted) {
+        // Dismiss any existing error toast before showing a new one
+        if (toastId) {
+          toast.dismiss(toastId);
+        }
+        toastId = toast.error(error?.message || "Không thể tải danh sách danh mục");
+      }
+    };
+    
+    loadCategories();
+    
+    return () => {
+      isMounted = false;
+      // Clean up any pending toasts when component unmounts
+      if (toastId) {
+        toast.dismiss(toastId);
+      }
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [page]);
 
   // Tìm kiếm: reset về trang 0 và gọi lại fetchCategories với keyword hiện tại
   const handleSearch = async () => {
     setPage(0);
-    await fetchCategories(0, keyword);
+    const { success, error } = await fetchCategories(0, keyword, true);
+    if (!success && error) {
+      console.error('Search error:', error);
+    }
   };
 
   const filtered = useMemo(() => {
@@ -252,7 +315,7 @@ export default function TeacherCategoriesPage() {
         }
         const updated = await res.json();
         setCategories((prev) => prev.map((c) => (c.id === updated.id ? updated : c)));
-        toast.success("Cập nhật danh mục thành công");
+        showSuccess("Cập nhật danh mục thành công");
       } else {
         // Create
         const body = { name: form.name.trim(), description: form.description?.trim() || "" };
@@ -267,7 +330,7 @@ export default function TeacherCategoriesPage() {
           throw new Error(msg);
         }
         await res.json();
-        toast.success("Tạo danh mục thành công");
+        showSuccess("Tạo danh mục thành công");
         setModalOpen(false);
         setPage(0);
         await fetchCategories(0, keyword);
@@ -285,27 +348,25 @@ export default function TeacherCategoriesPage() {
   const handleDelete = async (id) => {
     const cat = categories.find((c) => c.id === id);
 
+    if (!cat) {
+        showError("Không tìm thấy danh mục để xóa.");
+        return;
+    }
+
     if ((cat?.createdByRole || "").toLowerCase() === "admin") {
-      toast.error("Bạn không có quyền xóa danh mục này");
+      showError("Bạn không có quyền xóa danh mục này");
       return;
     }
 
     const result = await Swal.fire({
       title: "Xác nhận xóa",
-      text: cat
-        ? `Bạn có chắc chắn muốn xóa danh mục "${cat.name}"?`
-        : "Bạn có chắc chắn muốn xóa danh mục này?",
-      icon: "warning",
+      text: `Bạn có chắc chắn muốn xóa danh mục "${cat.name}" không?`,
+      icon: 'warning',
       showCancelButton: true,
-      confirmButtonColor: "#3085d6",
-      cancelButtonColor: "#d33",
-      confirmButtonText: "Xóa",
-      cancelButtonText: "Hủy",
-      background: "#fff",
-      customClass: {
-        confirmButton: "px-4 py-2 rounded-md",
-        cancelButton: "px-4 py-2 rounded-md",
-      },
+      confirmButtonColor: '#d33',
+      cancelButtonColor: '#3085d6',
+      confirmButtonText: 'Xóa',
+      cancelButtonText: 'Hủy'
     });
 
     if (!result.isConfirmed) return;
@@ -321,19 +382,17 @@ export default function TeacherCategoriesPage() {
         throw new Error(msg);
       }
       setCategories((prev) => prev.filter((c) => c.id !== id));
-      toast.success("Đã xóa danh mục thành công");
+      showSuccess("Đã xóa danh mục thành công");
     } catch (e) {
       console.error(e);
-      toast.error(e?.message || "Không thể xóa danh mục");
+      showError(e?.message || "Không thể xóa danh mục");
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 flex">
-      <Sidebar />
-      <main className="flex-1 p-4 sm:p-8 font-sans">
+    <div className="min-h-screen bg-gray-50 flex-1 p-4 sm:p-8 font-sans">
         {/* Thanh tiêu đề + tìm kiếm */}
         <div
           className="p-4 sm:p-6 mb-6 rounded-xl shadow-lg"
@@ -564,7 +623,9 @@ className="px-2 py-1 rounded border border-transparent text-gray-400 hover:text-
             </div>
           </div>
         )}
-      </main>
-    </div>
+      </div>
   );
 }
+
+
+

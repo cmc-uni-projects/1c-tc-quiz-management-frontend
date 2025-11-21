@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import toast from 'react-hot-toast';
+import { toastSuccess, toastError } from '@/lib/toast';
 import { fetchApi } from '@/lib/apiClient';
 
 export default function LoginPage() {
@@ -31,7 +31,7 @@ export default function LoginPage() {
       if (response.token) {
         // Step 2: Save the JWT to localStorage
         localStorage.setItem('jwt', response.token);
-        toast.success('Đăng nhập thành công!');
+        toastSuccess('Đăng nhập thành công!');
 
         // Step 3: Fetch user data to get the role for redirection
         const user = await fetchApi('/me');
@@ -53,7 +53,7 @@ export default function LoginPage() {
     } catch (err: any) {
       const errorMessage = err.message || 'Sai tài khoản hoặc mật khẩu.';
       setError(errorMessage);
-      toast.error(errorMessage);
+      toastError(errorMessage);
     } finally {
       setLoading(false);
     }
