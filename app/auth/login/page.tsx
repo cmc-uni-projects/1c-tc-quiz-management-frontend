@@ -22,38 +22,50 @@ export default function LoginPage() {
     setLoading(true);
 
     try {
-      // Step 1: Call the login API
       const response = await fetchApi('/auth/login', {
         method: 'POST',
         body: { email, password },
       });
 
       if (response.token) {
-        // Step 2: Save the JWT to localStorage
         localStorage.setItem('jwt', response.token);
         toastSuccess('Đăng nhập thành công!');
 
-        // Step 3: Fetch user data to get the role for redirection
         const user = await fetchApi('/me');
-        
-        // Step 4: Redirect based on role
-        const role = user?.role;
-        if (role === 'STUDENT') {
+        console.log('LoginPage: User data fetched:', user);
+
+        const rawRole = user?.authorities?.[0]?.authority || '';
+
+        const cleanRole = rawRole.replace('ROLE_', '').toUpperCase();
+
+        console.log('LoginPage: Extracted & Cleaned Role:', cleanRole);
+
+        if (cleanRole === 'STUDENT') {
+          console.log('Redirecting -> Student Home');
           router.push('/student/studenthome');
-        } else if (role === 'TEACHER') {
-          router.push('/teacher/teacherhome');
-        } else if (role === 'ADMIN') {
-          router.push('/admin');
-        } else {
-          router.push('/'); // Fallback redirect
         }
+        else if (cleanRole === 'TEACHER') {
+          console.log('Redirecting -> Teacher Home');
+          router.push('/teacher/teacherhome');
+        }
+        else if (cleanRole === 'ADMIN') {
+          console.log('Redirecting -> Admin Dashboard');
+          router.push('/admin');
+        }
+        else {
+          console.warn('Unknown Role:', cleanRole, 'Redirecting to Home');
+          router.push('/');
+        }
+
       } else {
-        throw new Error('Phản hồi đăng nhập không hợp lệ.');
+        throw new Error('Phản hồi đăng nhập không chứa Token. Vui lòng kiểm tra API.');
       }
     } catch (err: any) {
+      console.error('Login Error:', err);
       const errorMessage = err.message || 'Sai tài khoản hoặc mật khẩu.';
       setError(errorMessage);
       toastError(errorMessage);
+      localStorage.removeItem('jwt');
     } finally {
       setLoading(false);
     }

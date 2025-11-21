@@ -1,12 +1,12 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import toast from "react-hot-toast";
-import { useSession, signOut } from "next-auth/react";
+import { useUser } from "@/lib/user"; // Import useUser hook
+import { logout } from "@/lib/utils"; // Import custom logout function
 
 export default function ProfileDropdown() {
   const router = useRouter();
-  const { data: session } = useSession();
-  const user = session?.user;
+  const { user, isAuthenticated } = useUser(); // Use custom useUser hook
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
@@ -62,14 +62,14 @@ export default function ProfileDropdown() {
     router.push(getChangePasswordUrl());
   };
 
-  const handleLogout = async () => {
+  const handleLogout = () => {
     setOpen(false);
-    await signOut({ callbackUrl: '/auth/login' });
+    logout(); // Call the custom logout function
     toast.success('Đăng xuất thành công');
   };
 
   // Don't render the dropdown if the user is not authenticated
-  if (!user) {
+  if (!isAuthenticated) { // Use isAuthenticated from custom hook
     return null;
   }
 
@@ -82,7 +82,7 @@ export default function ProfileDropdown() {
         <span className="grid h-8 w-8 place-items-center rounded-full bg-gray-300 text-gray-700">
           👤
         </span>
-        <span className="hidden sm:inline">{user.name || 'Menu'}</span>
+        <span className="hidden sm:inline">{user?.name || 'Menu'}</span>
       </button>
 
       {open && (

@@ -17,15 +17,7 @@ const Sidebar = () => {
 
   return (
     <aside className="w-56 border-r border-zinc-200 bg-white flex flex-col">
-      <div className="px-6 py-4 border-b border-zinc-200">
-        <Link
-          href="/"
-          className="text-xl font-black tracking-tight"
-          style={{ color: '#E33AEC' }}
-        >
-          QuizzZone
-        </Link>
-      </div>
+      
       <nav className="flex-1 px-4 py-4 text-sm font-medium text-zinc-700 space-y-1">
         {navItems.map((item) => {
           if (item.disabled) {
