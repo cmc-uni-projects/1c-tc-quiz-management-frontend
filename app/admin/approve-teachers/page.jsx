@@ -47,7 +47,6 @@ async function fetchApi(url, options = {}) {
     try {
         errorText = isJson ? (await response.json()).message : await response.text();
     } catch {
-        // ignore
     }
     const errorMessage = `Lỗi (${response.status}): ${errorText.substring(0, 100)}...`;
     throw new Error(errorMessage);
@@ -88,12 +87,10 @@ async function rejectTeacherInBackend(id) {
 }
 
 
-// === MÀU SẮC CHỦ ĐẠO ===
 const PRIMARY_PURPLE_BG = '#E33AEC7A';
 const BUTTON_RED = '#f04040';
 const BUTTON_BLUE = '#1e90ff';
 
-// --- ICON SVG (Giữ nguyên) ---
 const RefreshCw = (props) => (
   <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
     <path d="M23 4v6h-6"/>
@@ -132,9 +129,7 @@ const XIcon = (props) => (
     <path d="m6 6 12 12"/>
   </svg>
 );
-// --- Hết ICON SVG ---
 
-// Component Toast Notification (Được điều chỉnh để dùng state cục bộ)
 const Toast = ({ message, type, onClose }) => {
   const baseClasses = "fixed bottom-5 right-5 p-4 rounded-xl shadow-2xl z-50 flex items-center";
   let typeClasses = "";
@@ -160,14 +155,12 @@ const Toast = ({ message, type, onClose }) => {
   );
 };
 
-// Ánh xạ Trạng thái (để dùng trong Modal)
 const statusMap = {
     'pending': 'Chờ duyệt',
     'approved': 'Đã duyệt',
     'rejected': 'Đã từ chối',
 };
 
-// Component Modal Chi tiết Giáo viên (Giữ nguyên)
 const TeacherDetailModal = ({ teacher, onClose }) => {
   if (!teacher) return null;
 
@@ -207,7 +200,6 @@ const TeacherDetailModal = ({ teacher, onClose }) => {
             <p className="font-medium text-sm text-gray-500">Ngày đăng ký</p>
             <p className="text-base">{teacher.requestDate}</p>
           </div>
-          {/* Thêm các trường thiếu nếu có: Experience, Phone, ProofDocumentUrl */}
           <div>
             <p className="font-medium text-sm text-gray-500">Kinh nghiệm</p>
             <p className="text-base">{teacher.experience}</p>
@@ -236,31 +228,25 @@ const TeacherDetailModal = ({ teacher, onClose }) => {
 };
 
 
-// --- Component Chính ---
 export default function AdminReviewTeachersPage() {
     const [allTeachers, setAllTeachers] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
 
-    // Sử dụng Toast state thay vì thư viện bên ngoài
     const [toastState, setToastState] = useState(null);
     const [selectedTeacher, setSelectedTeacher] = useState(null);
 
-    // Lấy danh sách Giáo viên
     const fetchTeachers = useCallback(async () => {
         setLoading(true);
         setError(null);
         try {
-            // GỌI HÀM LẤY DỮ LIỆU THẬT
             let fetchedTeachers = await fetchTeachersFromBackend();
 
-            // Sắp xếp theo timestamp giảm dần (để yêu cầu mới nhất lên đầu)
             fetchedTeachers.sort((a, b) => (b.requestTimestamp || 0) - (a.requestTimestamp || 0));
 
             setAllTeachers(fetchedTeachers);
         } catch (e) {
             console.error("Error fetching teachers:", e);
-            // Xử lý nếu hàm fetchTeachersFromBackend ném lỗi (kể cả lỗi 401/403)
             setError(`Lỗi khi tải danh sách: ${e.message}`);
             setToastState({ message: e.message, type: 'error' });
         } finally {
@@ -269,17 +255,14 @@ export default function AdminReviewTeachersPage() {
     }, []);
 
     useEffect(() => {
-        // Bắt đầu tải ngay khi component mount
         fetchTeachers();
     }, [fetchTeachers]);
 
 
-    // Xử lý Cập nhật trạng thái
     const handleReview = async (teacherId, newStatus) => {
         const teacher = allTeachers.find(t => t.id === teacherId);
         if (!teacher) return;
 
-        // Thêm một lớp bảo vệ UI (ngăn người dùng click liên tục)
         setLoading(true);
 
         try {
@@ -289,7 +272,6 @@ export default function AdminReviewTeachersPage() {
                 await rejectTeacherInBackend(teacherId);
             }
 
-            // Cập nhật trạng thái trong state local và xóa khỏi danh sách đang hiển thị
             setAllTeachers(prev => prev.filter(t => t.id !== teacherId));
 
             let toastMessage = (newStatus === 'approved')
@@ -304,11 +286,10 @@ export default function AdminReviewTeachersPage() {
             console.error(`Error updating status for ${teacherId}:`, e);
             setToastState({ message: `Lỗi khi cập nhật trạng thái: ${e.message}.`, type: 'error' });
         } finally {
-             setLoading(false); // Kết thúc trạng thái loading
+             setLoading(false);
         }
     };
 
-    // Hành động: Đồng ý -> approved, Từ chối -> rejected
     const handleApprove = (e, teacherId) => {
         if (e && typeof e.stopPropagation === 'function') {
             e.stopPropagation();
@@ -322,7 +303,6 @@ export default function AdminReviewTeachersPage() {
         handleReview(teacherId, 'rejected');
     };
 
-    // Ánh xạ màu sắc cho Trạng thái
     const statusColorMap = (status) => {
         switch (status) {
             case 'pending': return 'bg-yellow-100 text-yellow-800';
@@ -333,12 +313,9 @@ export default function AdminReviewTeachersPage() {
     }
 
 
-    // Lọc danh sách giáo viên: CHỈ GIỮ LẠI PENDING (Giữ nguyên)
     const filteredTeachers = useMemo(() => {
         return allTeachers.filter(t => t.status === 'pending');
     }, [allTeachers]);
-
-    // --- UI Rendering ---
 
     if (loading && filteredTeachers.length === 0) {
         return (
@@ -443,7 +420,6 @@ export default function AdminReviewTeachersPage() {
                 </div>
             )}
 
-            {/* Component Modal Chi tiết */}
             {selectedTeacher && (
                 <TeacherDetailModal teacher={selectedTeacher} onClose={() => setSelectedTeacher(null)} />
             )}

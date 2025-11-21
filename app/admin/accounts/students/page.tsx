@@ -4,11 +4,6 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { MagnifyingGlassIcon, ChevronLeftIcon, ChevronRightIcon, UserIcon } from '@heroicons/react/24/outline';
 import toast from 'react-hot-toast';
 
-// =========================================================
-// API CLIENT UTILITIES (Copied from CategoriesPage for completeness)
-// =========================================================
-
-/** Custom error class for API errors */
 class ApiError extends Error {
   constructor(message, status, payload) {
     super(message);
@@ -19,9 +14,7 @@ class ApiError extends Error {
 }
 
 /**
- * Utility function to retrieve the JWT token from localStorage.
- * Assumes the token is stored under the key 'jwtToken'.
- * @returns {string | null} The JWT token or null if not found.
+ * @returns {string | null}
  */
 const getAuthToken = () => {
   if (typeof window !== 'undefined') {
@@ -31,9 +24,6 @@ const getAuthToken = () => {
 };
 
 /**
- * A wrapper around the global fetch function for handling JSON requests/responses
- * and error handling in a structured way.
- * * FIX: Added logic to retrieve JWT and attach it to the Authorization header.
  * * @param {string} url The API endpoint URL.
  * @param {object} options Fetch options including method, headers, and body.
  * @returns {Promise<any>} The parsed JSON data from the successful response.
@@ -112,7 +102,6 @@ async function deleteStudentInBackend(id: number) {
   });
 }
 
-// Hàm format ngày
 const formatDate = (dateString: string | null) => {
   if (!dateString) return 'Chưa có';
   try {
@@ -129,7 +118,6 @@ const formatDate = (dateString: string | null) => {
   }
 };
 
-// Hàm format trạng thái
 const getStatusDisplay = (status: string) => {
   const statusMap: Record<string, string> = {
     'ACTIVE': 'Hoạt động',
@@ -138,7 +126,6 @@ const getStatusDisplay = (status: string) => {
   return statusMap[status] || status;
 };
 
-// Hàm lấy màu trạng thái
 const getStatusColor = (status: string) => {
   const colorMap: Record<string, string> = {
     'ACTIVE': 'bg-green-100 text-green-700',
@@ -148,12 +135,10 @@ const getStatusColor = (status: string) => {
 };
 
 const StudentAccountsPage = () => {
-  // Input states (giá trị trong ô input)
   const [searchEmail, setSearchEmail] = useState('');
   const [searchName, setSearchName] = useState('');
-  const [statusFilter, setStatusFilter] = useState('all'); // Giá trị hiển thị: all, Hoạt động, Tạm khóa
+  const [statusFilter, setStatusFilter] = useState('all');
 
-  // Applied search states (giá trị thực tế dùng để tìm kiếm - 'ACTIVE', 'LOCKED', 'all')
   const [appliedEmail, setAppliedEmail] = useState('');
   const [appliedName, setAppliedName] = useState('');
   const [appliedStatus, setAppliedStatus] = useState('all');
@@ -166,10 +151,8 @@ const StudentAccountsPage = () => {
 
   const itemsPerPage = 20;
 
-  // State cho custom confirmation modal
   const [confirmDeleteStudent, setConfirmDeleteStudent] = useState<Student | null>(null);
 
-  // Hàm chuyển đổi trạng thái hiển thị sang giá trị API
   const getApiStatus = (displayStatus: string) => {
       switch(displayStatus) {
           case 'Hoạt động': return 'ACTIVE';
@@ -178,7 +161,6 @@ const StudentAccountsPage = () => {
       }
   }
 
-  // Fetch học sinh từ backend
   const fetchStudents = useCallback(async () => {
     setLoading(true);
     try {
@@ -190,23 +172,19 @@ const StudentAccountsPage = () => {
         size: itemsPerPage,
       });
 
-      // Lấy data từ content hoặc sử dụng data nếu API trả về mảng trực tiếp
       const content = Array.isArray(data?.content) ? data.content : Array.isArray(data) ? data : [];
 
       setStudents(content);
 
-      // Xử lý thông tin phân trang từ response
       if (typeof data.totalPages === "number") setTotalPages(data.totalPages || 1);
       if (typeof data.totalElements === "number") setTotalElements(data.totalElements || content.length);
       else if (content.length > 0 && totalElements === 0) {
-        // Fallback nếu API không trả về totalPages/totalElements
         setTotalPages(1);
         setTotalElements(content.length);
       }
 
     } catch (error: any) {
       console.error('Error fetching students:', error);
-      // Hiển thị toast.error cho các lỗi 403/401/404 cụ thể hơn
       if (error.status === 403 || error.status === 401) {
           toast.error("Truy cập bị từ chối. Vui lòng đăng nhập lại hoặc kiểm tra quyền Admin.");
       } else {
@@ -220,28 +198,23 @@ const StudentAccountsPage = () => {
     }
   }, [appliedEmail, appliedName, appliedStatus, currentPage, totalElements]);
 
-  // Load data khi component mount hoặc khi currentPage thay đổi
   useEffect(() => {
     fetchStudents();
   }, [fetchStudents]);
 
-  // Hàm xử lý khi ấn nút tìm kiếm
   const handleSearch = () => {
     setAppliedEmail(searchEmail);
     setAppliedName(searchName);
-    // Chuyển giá trị hiển thị sang giá trị API
     setAppliedStatus(getApiStatus(statusFilter));
-    setCurrentPage(0); // Reset về trang đầu tiên
+    setCurrentPage(0);
   };
 
-  // Hàm xử lý khi ấn Enter trong ô input
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter') {
       handleSearch();
     }
   };
 
-  // Hàm xóa bộ lọc
   const handleClearFilter = () => {
     setSearchEmail('');
     setSearchName('');
@@ -252,7 +225,6 @@ const StudentAccountsPage = () => {
     setCurrentPage(0);
   };
 
-  // Mở modal xác nhận xóa
   const handleDelete = (id: number) => {
     const student = students.find(s => s.studentId === id);
     if (student) {
@@ -260,24 +232,21 @@ const StudentAccountsPage = () => {
     }
   };
 
-  // Đóng modal xác nhận xóa
   const cancelDelete = () => {
     setConfirmDeleteStudent(null);
   };
 
-  // Xác nhận và thực hiện xóa
   const confirmDelete = async () => {
     if (!confirmDeleteStudent) return;
 
     const idToDelete = confirmDeleteStudent.studentId;
-    setConfirmDeleteStudent(null); // Đóng modal ngay lập tức
+    setConfirmDeleteStudent(null);
 
     try {
       setLoading(true);
       await deleteStudentInBackend(idToDelete);
       toast.success('Đã xóa học sinh thành công!');
 
-      // Sau khi xóa, fetch lại data, nếu trang hiện tại hết học sinh thì quay lại trang trước
       if (students.length === 1 && currentPage > 0) {
         setCurrentPage(p => p - 1);
       } else {
