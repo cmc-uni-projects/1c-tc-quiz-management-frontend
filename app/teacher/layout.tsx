@@ -12,7 +12,6 @@ const LOGO_TEXT_COLOR = "#E33AEC";
 const TeacherAuthGuard = ({ children }) => {
   const { user, isLoading, isAuthenticated } = useUser();
   const router = useRouter();
-  
   const [isRedirecting, setIsRedirecting] = useState(false);
 
   useEffect(() => {

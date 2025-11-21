@@ -34,8 +34,7 @@ export default function ProfileDropdown() {
       case 'STUDENT':
         return '/student/profile';
       default:
-        // Fallback URL if role is not defined, though this shouldn't happen for an authenticated user.
-        return '/'; 
+        return '/';
     }
   };
 
