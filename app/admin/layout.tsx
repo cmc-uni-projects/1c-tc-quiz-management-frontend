@@ -19,7 +19,10 @@ const AdminAuthGuard = ({ children }) => {
   const [isRedirecting, setIsRedirecting] = useState(false);
 
   useEffect(() => {
+    console.log('[AdminAuthGuard] Checking auth state:', { isLoading, isAuthenticated, user });
+
     if (isLoading || isRedirecting) {
+      console.log('[AdminAuthGuard] Still loading or already redirecting, skipping check.');
       return;
     }
 
