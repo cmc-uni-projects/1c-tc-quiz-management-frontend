@@ -1,8 +1,9 @@
 "use client";
 import React, { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import { useUser } from "@/lib/user";
-import { toast } from "react-toastify";
+import toast from "react-hot-toast";
+import ProfileDropdown from "@/components/ProfileDropdown";
 
 const PRIMARY_COLOR = "#6A1B9A";
 const LOGO_TEXT_COLOR = "#E33AEC";
@@ -15,12 +16,19 @@ const contentPaddingClass = "ml-64";
 const AdminAuthGuard = ({ children }) => {
   const { user, isLoading, isAuthenticated } = useUser();
   const router = useRouter();
-  
+
   const [isRedirecting, setIsRedirecting] = useState(false);
 
   useEffect(() => {
+    // console.log('AdminAuthGuard: useEffect triggered.');
+    // console.log('AdminAuthGuard: User:', user, 'isLoading:', isLoading, 'isAuthenticated:', isAuthenticated, 'isRedirecting:', isRedirecting);
+
     if (isLoading || isRedirecting) {
       return;
+    }
+
+    if (!isLoading && !isRedirecting) {
+      console.log('AdminAuthGuard: Loading finished. Final state: User:', user, 'isAuthenticated:', isAuthenticated);
     }
 
     let redirectPath = null;
@@ -44,200 +52,30 @@ const AdminAuthGuard = ({ children }) => {
 
   }, [user, isLoading, isAuthenticated, router, isRedirecting]);
 
-  if (isLoading || isRedirecting || !isAuthenticated) {
+  if (isLoading) {
     return (
       <div className="flex h-screen w-full items-center justify-center bg-gray-50">
         <div className="text-center">
-          <div className="mx-auto h-12 w-12 animate-spin rounded-full border-b-2 border-purple-600"></div>
-          <p className="mt-4 text-lg font-semibold text-gray-700">Đang xác thực quyền truy cập...</p>
+          <div className="mx-auto h-12 w-12 animate-spin rounded-full border-purple-600 border-b-2"></div>
+          <p className="mt-4 text-lg font-semibold text-gray-700">Đang tải dữ liệu người dùng...</p>
         </div>
       </div>
     );
   }
 
-  if (user?.role === "ADMIN") {
-      return <>{children}</>;
+  console.log('AdminAuthGuard: Rendering decision: isAuthenticated:', isAuthenticated, 'user.role:', user?.role);
+
+  if (!isAuthenticated || user?.role !== "ADMIN") {
+    return null;
   }
 
-  return null;
-};
-
-
-const UserIcon = () => (
-  <svg
-    xmlns="http://www.w3.org/2000/svg"
-    className="w-6 h-6"
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="2"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-  >
-    <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"></path>
-    <circle cx="12" cy="7" r="4"></circle>
-  </svg>
-);
-
-
-/** @type {React.FC<ChevronDownIconProps>} */
-const ChevronDownIcon = ({ isOpen }) => (
-  <svg
-    xmlns="http://www.w3.org/2000/svg"
-    className={`w-4 h-4 ml-auto transition-transform duration-200 ${
-      isOpen ? "rotate-180" : "rotate-0"
-    }`}
-    fill="none"
-    viewBox="0 0 24 24"
-    stroke="currentColor"
-    strokeWidth="2"
-  >
-    <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
-  </svg>
-);
-
-
-/** @type {React.FC} */
-const ProfileDropdown = () => {
-  const router = useRouter();
-  const { user } = useUser();
-  const [isOpen, setIsOpen] = useState(false);
-  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
-
-  const username = user?.name || 'Admin';
-  const avatar = user?.avatarUrl || null; // Using 'avatarUrl' from custom user hook
-
-  const getProfileUrl = () => {
-    return '/admin/profile';
-  };
-
-  const getChangePasswordUrl = () => {
-    return '/admin/change-password';
-  };
-
-  const handleProfileClick = () => {
-    setIsOpen(false);
-    router.push(getProfileUrl());
-  };
-
-  const handleChangePasswordClick = () => {
-    setIsOpen(false);
-    router.push(getChangePasswordUrl());
-  };
-
-  const handleLogoutClick = (e) => {
-    e.preventDefault();
-    setShowLogoutConfirm(true);
-    setIsOpen(false);
-  };
-
-  const handleLogoutConfirm = async () => {
-    setShowLogoutConfirm(false);
-    localStorage.removeItem('jwt'); // Clear JWT from localStorage
-    router.push('/auth/login'); // Redirect to login page
-    toast.success("Đăng xuất thành công");
-  };
-
-  const handleLogoutCancel = () => {
-    setShowLogoutConfirm(false);
-  };
-
-  const profileStyle = {
-    backgroundColor: "#f3e8ff",
-  };
-
-  return (
-    <div className="relative">
-      <button
-        onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center space-x-2 p-1 pr-3 rounded-full transition duration-200 hover:bg-purple-200/50"
-        style={profileStyle}
-        aria-expanded={isOpen}
-      >
-        <div className="w-8 h-8 rounded-full bg-purple-300 flex items-center justify-center text-purple-800 overflow-hidden">
-          {avatar ? (
-            <img src={avatar} alt="avatar" className="w-full h-full object-cover" />
-          ) : (
-            <UserIcon />
-          )}
-        </div>
-        <span className="font-semibold text-purple-800 text-sm hidden sm:inline">
-          {`Xin chào, ${username}`}
-        </span>
-      </button>
-
-      {isOpen && (
-        <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-xl py-1 border border-zinc-200 z-10">
-          <button
-            onClick={handleProfileClick}
-            className="w-full text-left block px-4 py-2 text-sm text-gray-700 hover:bg-purple-50 hover:text-purple-600"
-          >
-            Cập nhật thông tin
-          </button>
-          <button
-            onClick={handleChangePasswordClick}
-            className="w-full text-left block px-4 py-2 text-sm text-gray-700 hover:bg-purple-50 hover:text-purple-600"
-          >
-            Đổi mật khẩu
-          </button>
-          <div className="border-t border-zinc-100 my-1"></div>
-          <button
-            onClick={handleLogoutClick}
-            className="w-full text-left block px-4 py-2 text-sm text-red-600 hover:bg-red-50"
-          >
-            ← Đăng xuất
-          </button>
-        </div>
-      )}
-
-      {/* Logout Confirmation Modal */}
-      <LogoutConfirmationModal
-        isOpen={showLogoutConfirm}
-        onConfirm={handleLogoutConfirm}
-        onCancel={handleLogoutCancel}
-      />
-    </div>
-  );
-};
-
-
-/** @type {React.FC<LogoutConfirmationModalProps>} */
-const LogoutConfirmationModal = ({ isOpen, onConfirm, onCancel }) => {
-  if (!isOpen) return null;
-  return (
-    <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg p-6 max-w-sm w-full mx-4 shadow-xl">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">
-          Xác nhận đăng xuất
-        </h3>
-        <p className="text-gray-600 mb-6">
-          Bạn có chắc chắn muốn đăng xuất khỏi hệ thống?
-        </p>
-        <div className="flex gap-3 justify-end">
-          <button
-            type="button"
-            onClick={onCancel}
-            className="px-4 py-2 text-gray-600 hover:text-gray-800 transition"
-          >
-            Hủy
-          </button>
-          <button
-            type="button"
-            onClick={onConfirm}
-            className="px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700 transition"
-          >
-            Đăng xuất
-          </button>
-        </div>
-      </div>
-    </div>
-  );
+  return <>{children}</>;
 };
 
 /** @type {React.FC} */
 const AdminSidebar = () => {
   const router = useRouter();
-  const currentPathname = router.pathname;
+  const currentPathname = usePathname();
 
   const navItems = [
     { name: "Trang chủ", href: "/admin" },
@@ -267,8 +105,14 @@ const AdminSidebar = () => {
     setOpenSubmenu(openSubmenu === name ? null : name);
   };
 
+  /**
+   * @param {NavItem} item
+   * @returns {boolean}
+   */
   const isActive = (item) => {
-    if (!item) return false;
+    if (!item || typeof currentPathname !== 'string' || !item.href || typeof item.href !== 'string') {
+        return false;
+    }
 
     if (item.href === "/admin") {
       return currentPathname === "/admin";
@@ -278,7 +122,7 @@ const AdminSidebar = () => {
 
     if (item.submenu && Array.isArray(item.submenu)) {
       shouldBeActive = item.submenu.some(subItem =>
-        subItem && currentPathname.startsWith(subItem.href)
+        subItem && subItem.href && currentPathname.startsWith(subItem.href)
       ) || shouldBeActive;
     }
 
@@ -287,9 +131,11 @@ const AdminSidebar = () => {
 
   useEffect(() => {
     let shouldOpen = false;
+    if (typeof currentPathname !== 'string') return; // Guard for pathname loading
+
     navItems.forEach((item) => {
       if (item.submenu) {
-        if (item.submenu.some(subItem => currentPathname.startsWith(subItem.href))) {
+        if (item.submenu.some(subItem => subItem && subItem.href && currentPathname.startsWith(subItem.href))) {
           setOpenSubmenu(item.name);
           shouldOpen = true;
         }
@@ -330,6 +176,8 @@ const AdminSidebar = () => {
             const isCurrentActive = isActive(item);
             const isOpen = openSubmenu === item.name || (hasSubmenu && isCurrentActive);
 
+            if (!item.href) return null;
+
             if (hasSubmenu) {
               return (
                 <div key={item.name}>
@@ -340,7 +188,6 @@ const AdminSidebar = () => {
                     `}
                   >
                     <span>{item.name}</span>
-                    <ChevronDownIcon isOpen={isOpen} />
                   </button>
 
                   <div
@@ -349,6 +196,9 @@ const AdminSidebar = () => {
                     }`}
                   >
                     {item.submenu && item.submenu.map((subItem) => {
+                      // Kiểm tra an toàn cho subItem.href
+                      if (!subItem || !subItem.href) return null;
+
                       const subIsActive = currentPathname.startsWith(subItem.href);
                       return (
                         <a
