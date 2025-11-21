@@ -7,7 +7,8 @@ export default function Navbar() {
 
   // Hide navbar on pages that render their own header to prevent duplicates
   const hideOnRoutes = [
-    "/admin",                    // Admin area has its own layout/header
+    "/admin",              
+    "/register",      // Admin area has its own layout/header
     "/student/studenthome",      // Student home renders a local header
     "/teacher/teacherhome",      // Teacher home renders a local header
     "/student/change-password",  // Student change-password has its own header
