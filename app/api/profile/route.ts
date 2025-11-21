@@ -3,14 +3,22 @@ import { NextResponse } from 'next/server';
 // GET - Fetch user profile from backend
 export async function GET(req: Request) {
   try {
-    const cookies = req.headers.get('cookie');
+    // Extract Authorization header (containing JWT)
+    const authorization = req.headers.get('Authorization');
+
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+    };
+
+    // If Authorization header exists, forward it
+    if (authorization) {
+      headers['Authorization'] = authorization;
+    }
+
     const response = await fetch('http://localhost:8082/api/profile', {
       method: 'GET',
-      headers: {
-        'Cookie': cookies || '',
-        'Content-Type': 'application/json',
-      },
-      credentials: 'include',
+      headers: headers,
+      // credentials: 'include', // Not needed when forwarding Authorization header
     });
 
     if (!response.ok) {
@@ -29,16 +37,23 @@ export async function GET(req: Request) {
 export async function PUT(req: Request) {
   try {
     const body = await req.json();
-    const cookies = req.headers.get('cookie');
+    // Extract Authorization header (containing JWT)
+    const authorization = req.headers.get('Authorization');
+
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+    };
+
+    // If Authorization header exists, forward it
+    if (authorization) {
+      headers['Authorization'] = authorization;
+    }
 
     const response = await fetch('http://localhost:8082/api/profile/update', {
       method: 'PUT',
-      headers: {
-        'Cookie': cookies || '',
-        'Content-Type': 'application/json',
-      },
+      headers: headers, // Use the new headers object with Authorization
       body: JSON.stringify(body),
-      credentials: 'include',
+      // credentials: 'include', // Not needed when forwarding Authorization header
     });
 
     if (!response.ok) {
@@ -56,15 +71,22 @@ export async function PUT(req: Request) {
 // DELETE - Delete user avatar
 export async function DELETE(req: Request) {
   try {
-    const cookies = req.headers.get('cookie');
+    // Extract Authorization header (containing JWT)
+    const authorization = req.headers.get('Authorization');
+
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+    };
+
+    // If Authorization header exists, forward it
+    if (authorization) {
+      headers['Authorization'] = authorization;
+    }
 
     const response = await fetch('http://localhost:8082/api/profile/delete-avatar', {
       method: 'DELETE',
-      headers: {
-        'Cookie': cookies || '',
-        'Content-Type': 'application/json',
-      },
-      credentials: 'include',
+      headers: headers,
+      // credentials: 'include', // Not needed when forwarding Authorization header
     });
 
     if (!response.ok) {
