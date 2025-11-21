@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+import {Autocomplete, AutocompleteItem} from "@nextui-org/react";
 
 
 // TYPES
@@ -25,6 +26,7 @@ type Question = {
 
 export default function CreateExamPage() {
   // ======= STATE BÀI THI =======
+  const [examCategory, setExamCategory] = useState("");
   const [examTitle, setExamTitle] = useState("");
   const [questionCount, setQuestionCount] = useState<number | "">("");
   const [examType, setExamType] = useState("");
@@ -217,6 +219,31 @@ export default function CreateExamPage() {
 
             {/* Các input đầu */}
             <div className="space-y-4 mb-6">
+              <div>
+                <label className="block text-sm mb-1">Danh mục bài thi</label>
+                <Autocomplete
+                  allowsCustomValue
+                  placeholder="Nhập hoặc chọn danh mục"
+                  defaultItems={[{label: "Toán", value: "math"}, {label: "Lý", value: "physics"}, {label: "Hóa", value: "chemistry"}]}
+                  onSelectionChange={(key) => setExamCategory(key as string)}
+                  onInputChange={(value) => setExamCategory(value)}
+                  className="w-full"
+                  inputProps={{
+                    classNames: {
+                      base: "h-auto",
+                      inputWrapper: "border px-3 py-2 rounded-md bg-white h-auto",
+                      input: "text-sm",
+                    },
+                  }}
+                  popoverProps={{
+                    classNames: {
+                      content: "bg-white" // Đặt nền trắng cho phần xổ xuống
+                    }
+                  }}
+                >
+                  {(item) => <AutocompleteItem key={item.value}>{item.label}</AutocompleteItem>}
+                </Autocomplete>
+              </div>
               <div>
                 <label className="block text-sm mb-1">Tên bài thi</label>
                 <input
