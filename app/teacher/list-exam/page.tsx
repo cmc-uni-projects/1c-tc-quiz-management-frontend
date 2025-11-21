@@ -1,5 +1,5 @@
 "use client";
-
+import Sidebar from "@/components/teacher/Sidebar";
 import React, { useState } from "react";
 
 // ===== SVG ICONS =====
@@ -74,22 +74,11 @@ export default function TeacherExamListPage() {
   };
 
   return (
-    <div className="flex min-h-screen bg-[#F5F5F5] text-gray-900">
-      {/* ============ SIDEBAR ============ */}
-      <aside className="w-56 bg-[#F8F5FB] border-r border-gray-200 px-6 py-8">
-        {/* Không còn chữ QuizzZone ở đây theo figma */}
-        <ul className="space-y-4 text-sm">
-          <li className="cursor-pointer">Trang chủ</li>
-          <li className="cursor-pointer">Danh mục câu hỏi</li>
-          <li className="cursor-pointer">Quản lý câu hỏi</li>
-          <li className="font-semibold text-[#6D0446] cursor-pointer">
-            Quản lý bài thi
-          </li>
-        </ul>
-      </aside>
+    <div className="flex min-h-screen bg-gray-50">
+      <Sidebar />
 
       {/* ============ MAIN ============ */}
-      <div className="flex-1 flex flex-col bg-white">
+      <div className="flex-1 flex flex-col">
         <main className="flex-1 px-10 py-8">
           {/* TAB DANH SÁCH BÀI THI / LỊCH SỬ */}
           <div className="border-b border-gray-200 mb-6 flex gap-6 text-sm">

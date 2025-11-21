@@ -7,7 +7,7 @@ import Navbar from '@/components/Navbar';
 export function Providers({ children }: { children: React.ReactNode }) {
   return (
     <UserProvider>
-      <Navbar />
+      {/* <Navbar /> */}
       {children}
       <Toaster position="bottom-right" />
     </UserProvider>
