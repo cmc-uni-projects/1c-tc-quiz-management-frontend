@@ -26,7 +26,7 @@ export const authOptions: AuthOptions = {
 
         try {
           // The backend is expected to return an object like { user: { ... }, token: '...' }
-          const response = await fetchApi('/login', {
+          const response = await fetchApi('/auth/login', {
             method: 'POST',
             body: {
               email: credentials.email,
@@ -82,8 +82,8 @@ export const authOptions: AuthOptions = {
   },
 
   pages: {
-    signIn: '/login',
-    error: '/login', // Redirect users to login page on error
+    signIn: '/auth/login',
+    error: '/auth/login', // Redirect users to login page on error
   },
 
   secret: process.env.NEXTAUTH_SECRET,

@@ -11,7 +11,7 @@ export default function DefaultLayout({
     const DefaultActions = (
         <>
             <Link 
-                href="/login" 
+                href="/auth/login" 
                 className="rounded-lg px-4 py-2 font-medium shadow-md hover:shadow-lg transition duration-200 text-lg" 
                 style={{ backgroundColor: '#0000002E', color: 'black' }} 
             >

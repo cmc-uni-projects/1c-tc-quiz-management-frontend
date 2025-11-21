@@ -34,7 +34,7 @@ export default function Navbar() {
         {/* Actions */}
         <div className="flex shrink-0 items-center gap-2">
           <Link
-            href="/login"
+            href="/auth/login"
             className="rounded-lg px-4 py-2 text-lg font-medium shadow-md transition duration-200 hover:shadow-lg"
             style={{ backgroundColor: '#0000002E', color: 'black' }}
           >

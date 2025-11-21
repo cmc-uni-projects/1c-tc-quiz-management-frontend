@@ -188,7 +188,7 @@ export default function ForgotPasswordPage() {
       }
 
       toast.success('Thay đổi mật khẩu thành công');
-      setTimeout(() => router.push('/login'), 2000);
+      setTimeout(() => router.push('/auth/login'), 2000);
     } catch (err: any) {
       setError(err.message || 'Đặt lại mật khẩu thất bại');
     } finally {
@@ -279,7 +279,7 @@ export default function ForgotPasswordPage() {
             <div className="text-center text-sm">
               <p className="text-zinc-600">
                 Bạn nhớ mật khẩu?{' '}
-                <Link href="/login" className="font-medium text-[#E33AEC] hover:underline">
+                <Link href="/auth/login" className="font-medium text-[#E33AEC] hover:underline">
                   Đăng nhập
                 </Link>
               </p>

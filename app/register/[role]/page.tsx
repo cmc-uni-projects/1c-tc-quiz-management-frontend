@@ -84,7 +84,7 @@ export default function RegisterFormPage({ params }: { params: Promise<{ role: s
       if (isTeacher) {
         setTimeout(() => router.push("/register/pending-approval"), 1200);
       } else {
-        setTimeout(() => router.push("/login"), 1200);
+        setTimeout(() => router.push("/auth/login"), 1200);
       }
     } catch (err: any) {
       setError(err.message || "Có lỗi xảy ra, vui lòng thử lại.");
@@ -192,7 +192,7 @@ export default function RegisterFormPage({ params }: { params: Promise<{ role: s
 
           <div className="flex items-center justify-between text-sm">
             <p className="text-zinc-600">
-              Bạn đã có tài khoản? <Link href="/login" className="font-medium text-[#E33AEC] hover:underline">Đăng nhập</Link>
+              Bạn đã có tài khoản? <Link href="/auth/login" className="font-medium text-[#E33AEC] hover:underline">Đăng nhập</Link>
             </p>
           </div>
 

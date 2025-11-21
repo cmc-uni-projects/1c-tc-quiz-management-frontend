@@ -18,7 +18,7 @@ async function fetchTeachersFromBackend() {
 
     if (res.status === 401 || res.status === 403) {
         // Nếu chưa đăng nhập/không có quyền, chuyển hướng đăng nhập
-        window.location.href = '/login';
+        window.location.href = '/auth/login';
         throw new Error(`401/403: Quyền truy cập bị từ chối. Đã chuyển hướng đăng nhập.`);
     }
 

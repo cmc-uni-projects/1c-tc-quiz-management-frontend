@@ -29,7 +29,7 @@ const AdminAuthGuard = ({ children }) => {
     let toastMessage = null;
 
     if (status === 'unauthenticated') {
-      redirectPath = "/login";
+      redirectPath = "/auth/login";
       toastMessage = "Bạn cần đăng nhập để truy cập trang này.";
     } else if (user?.role !== "ADMIN") {
       redirectPath = "/";
