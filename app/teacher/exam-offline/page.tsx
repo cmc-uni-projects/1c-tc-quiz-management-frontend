@@ -394,20 +394,7 @@ export default function CreateExamPage() {
                   </div>
 
                   {/* Danh mục + độ khó */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-4">
-                    <select
-                      value={q.category}
-                      onChange={(e) =>
-                        updateQuestionField(q.id, "category", e.target.value)
-                      }
-                      className="border px-3 py-2 rounded-md bg-white"
-                    >
-                      <option value="">Danh mục câu hỏi</option>
-                      <option value="math">Giải Tích</option>
-                      <option value="english">Triết</option>
-                      <option value="it">Java</option>
-                    </select>
-
+                  <div className="grid grid-cols-1 gap-3 mb-4">
                     <select
                       value={q.difficulty}
                       onChange={(e) =>
