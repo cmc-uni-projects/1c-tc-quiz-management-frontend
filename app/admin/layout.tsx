@@ -13,6 +13,7 @@ const contentPaddingClass = "ml-64";
 
 /** @type {React.FC<{ children: React.ReactNode }>} */
 const AdminAuthGuard = ({ children }) => {
+  console.log('[AdminAuthGuard] Component is rendering.');
   const { user, isLoading, isAuthenticated } = useUser();
   const router = useRouter();
   

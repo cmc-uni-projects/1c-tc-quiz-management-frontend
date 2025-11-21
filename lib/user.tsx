@@ -23,6 +23,10 @@ interface UserContextType {
 const UserContext = createContext<UserContextType | undefined>(undefined);
 
 const fetcher = async (url: string): Promise<User | null> => {
+  // This check ensures the code only runs on the client-side
+  if (typeof window === 'undefined') {
+    return null;
+  }
   try {
     // Check if JWT exists before making the request
     const token = localStorage.getItem('jwt');
