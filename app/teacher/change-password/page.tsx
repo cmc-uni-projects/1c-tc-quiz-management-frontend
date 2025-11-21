@@ -4,7 +4,7 @@ import React from 'react';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import toast from 'react-hot-toast';
-import { useSession, signOut } from 'next-auth/react';
+import { useUser } from '@/lib/user';
 import { fetchApi } from '@/lib/apiClient';
 
 // Eye Icon Component
@@ -219,7 +219,7 @@ function ChangePasswordForm() {
 
 const TeacherChangePasswordPage = () => {
   const router = useRouter();
-  const { data: session } = useSession();
+  const { user } = useUser();
   const [showDropdown, setShowDropdown] = useState(false);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
 
@@ -230,13 +230,9 @@ const TeacherChangePasswordPage = () => {
 
   const handleLogoutConfirm = async () => {
     setShowLogoutConfirm(false);
-    try {
-      await signOut({ callbackUrl: '/' });
-      toast.success('Đăng xuất thành công');
-    } catch (error) {
-      console.error('Logout error:', error);
-      toast.error('Có lỗi khi đăng xuất');
-    }
+    localStorage.removeItem('jwt'); // Clear JWT from localStorage
+    router.push('/auth/login'); // Redirect to login page
+    toast.success('Đăng xuất thành công');
   };
 
   const handleLogoutCancel = () => {
@@ -261,7 +257,7 @@ const TeacherChangePasswordPage = () => {
             </a>
           </nav>
           <div className="flex shrink-0 items-center gap-3 relative" onClick={(e) => e.stopPropagation()}>
-            <span className="text-sm text-zinc-600">{`Xin chào, ${session?.user?.name || 'Teacher'}`}</span>
+            <span className="text-sm text-zinc-600">{`Xin chào, ${user?.name || 'Teacher'}`}</span>
             <button
               onClick={(e) => {
                 e.stopPropagation();

@@ -1,5 +1,3 @@
-import { getSession } from 'next-auth/react';
-
 export class ApiError extends Error {
   status: number;
   constructor(message: string, status: number) {
@@ -21,17 +19,17 @@ interface FetchApiOptions extends RequestInit {
  * @param options Fetch options.
  */
 export async function fetchApi(endpoint: string, options: FetchApiOptions = {}) {
-  // Get the session which contains the backend's JWT in accessToken
-  const session = await getSession();
+  // Get the JWT from localStorage
+  const token = localStorage.getItem('jwt');
 
   const headers: HeadersInit = {
     'Content-Type': 'application/json',
     ...options.headers,
   };
 
-  // If the session and token exist, add the Authorization header
-  if (session?.accessToken) {
-    headers['Authorization'] = `Bearer ${session.accessToken}`;
+  // If a token exists, add the Authorization header
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
   }
 
   let body = options.body;
@@ -52,6 +50,14 @@ export async function fetchApi(endpoint: string, options: FetchApiOptions = {}) 
   });
 
   if (!response.ok) {
+    // Handle 401 Unauthorized or 403 Forbidden errors
+    if (response.status === 401 || response.status === 403) {
+      localStorage.removeItem('jwt'); // Clear invalid token
+      window.location.href = '/auth/login'; // Redirect to login page
+      // Throw an error to stop further processing in the calling function
+      throw new ApiError('Phiên đăng nhập đã hết hạn hoặc không hợp lệ. Vui lòng đăng nhập lại.', response.status);
+    }
+
     const errorData = await response.json().catch(() => ({ message: `Request failed with status ${response.status}` }));
     throw new ApiError(errorData.message || `Request failed with status ${response.status}`, response.status);
   }

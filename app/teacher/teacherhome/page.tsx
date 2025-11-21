@@ -3,20 +3,19 @@
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
-import { useSession, signOut } from 'next-auth/react';
+import { useUser } from '@/lib/user';
 
 import Sidebar from '@/components/teacher/Sidebar';
 
 const TeacherHome = () => {
   const router = useRouter();
-  const { data: session } = useSession();
+  const { user } = useUser();
   const [roomCode, setRoomCode] = useState('');
   const [showDropdown, setShowDropdown] = useState(false);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
 
-  const user = session?.user;
   const username = user?.name;
-  const avatar = user?.image;
+  const avatar = user?.avatarUrl;
 
   const handleProfileClick = () => {
     setShowDropdown(false);
@@ -35,13 +34,9 @@ const TeacherHome = () => {
 
   const handleLogoutConfirm = async () => {
     setShowLogoutConfirm(false);
-    try {
-      await signOut({ callbackUrl: '/' });
-      toast.success('Đăng xuất thành công');
-    } catch (error) {
-      console.error('Logout error:', error);
-      toast.error('Có lỗi khi đăng xuất');
-    }
+    localStorage.removeItem('jwt'); // Clear JWT from localStorage
+    router.push('/auth/login'); // Redirect to login page
+    toast.success('Đăng xuất thành công');
   };
 
   const handleLogoutCancel = () => {
