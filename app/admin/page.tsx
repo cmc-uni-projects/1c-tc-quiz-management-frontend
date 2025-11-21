@@ -13,24 +13,6 @@ export default function AdminPage() {
     const router = useRouter();
     const [roomCode, setRoomCode] = useState('');
     const [isSearching, setIsSearching] = useState(false);
-    const [showDropdown, setShowDropdown] = useState(false);
-
-    const handleLogout = async () => {
-        try {
-      const response = await fetch('/api/logout', {
-                method: 'POST',
-                credentials: 'include' 
-            });
-            
-        // Treat as success if request completes; server API normalizes redirects
-        toast.success('Đăng xuất thành công');
-        router.push('/login');
-    } catch (error) {
-            console.error('Logout error:', error);
-            toast.error('Có lỗi khi đăng xuất');
-            router.push('/login');
-        }
-    };
 
     const handleSearch = () => {
         const cleanedCode = roomCode.trim().replace(/\s/g, ''); 
@@ -44,9 +26,10 @@ export default function AdminPage() {
                 setIsSearching(false);
                 // Xử lý logic tìm kiếm
                 console.log('Đã hoàn thành tìm kiếm.');
+                toast.info(`Tìm kiếm hoàn tất cho mã: ${cleanedCode}`);
             }, 1500);
         } else {
-            console.error('Mã phòng phải có ít nhất 6 ký tự.');
+            toast.error('Mã phòng phải có ít nhất 6 ký tự.');
         }
     };
     

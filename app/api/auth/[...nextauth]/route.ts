@@ -1,13 +1,14 @@
 import NextAuth, { AuthOptions } from 'next-auth';
-import { JWT } from 'next-auth/jwt';
 import CredentialsProvider from 'next-auth/providers/credentials';
 import { fetchApi } from '@/lib/apiClient';
 
-interface User {
+// Extends the default User model to include role and the backend token
+interface IUser {
   id: string;
   email: string;
   name: string;
   role: 'ADMIN' | 'TEACHER' | 'STUDENT';
+  token: string; // To hold the JWT from the backend
 }
 
 export const authOptions: AuthOptions = {
@@ -19,61 +20,58 @@ export const authOptions: AuthOptions = {
         password: { label: 'Password', type: 'password' },
       },
       async authorize(credentials) {
-        console.log('[NextAuth] Authorize function called.');
-
         if (!credentials?.email || !credentials?.password) {
-          console.error('[NextAuth] Missing email or password.');
           throw new Error('Vui lòng nhập email và mật khẩu.');
         }
-        
-        console.log('[NextAuth] Credentials received:', { email: credentials.email });
 
         try {
-            const user = await loginApi(credentials.email, credentials.password);
-          console.log('[NextAuth] Calling backend API at /login...');
-          const user = await fetchApi('/login', {
+          // The backend is expected to return an object like { user: { ... }, token: '...' }
+          const response = await fetchApi('/login', {
             method: 'POST',
             body: {
               email: credentials.email,
               password: credentials.password,
             },
           });
-          
-          console.log('[NextAuth] Backend response (user object):', user);
 
-          if (user && user.role) {
-            console.log('[NextAuth] User authenticated successfully. Returning user object.');
+          // If the response contains the user and a token, combine them for the callback
+          if (response.user && response.token) {
             return {
-              id: user.id,
-              email: user.email,
-              name: user.name,
-              role: user.role,
+              ...response.user,
+              token: response.token, // Pass the backend token along
             };
-          } else {
-            console.error('[NextAuth] Authentication failed: Backend did not return a valid user object with a role.');
-            throw new Error('Sai tài khoản hoặc mật khẩu.');
           }
+          
+          throw new Error(response.message || 'Sai tài khoản hoặc mật khẩu.');
         } catch (error: any) {
           console.error('[NextAuth] Error during authorization:', error);
-          const errorMessage = error.message || 'Đăng nhập thất bại.';
-          throw new Error(errorMessage);
+          // Rethrow the error message from the backend or a generic one
+          throw new Error(error.message || 'Đăng nhập thất bại.');
         }
       },
     }),
   ],
 
   callbacks: {
+    // This callback is called whenever a JWT is created or updated.
     async jwt({ token, user }) {
+      // The 'user' object is only passed on the initial sign-in.
       if (user) {
-        token.role = (user as User).role;
-        token.id = (user as User).id;
+        const customUser = user as IUser;
+        // Persist the backend token and user role into the NextAuth JWT.
+        token.accessToken = customUser.token;
+        token.role = customUser.role;
+        token.id = customUser.id;
       }
       return token;
     },
+    // This callback is called whenever a session is checked.
     async session({ session, token }) {
+      // Expose the data from the JWT to the client-side session object.
       if (session.user) {
-        session.user.role = token.role as User['role'];
+        session.user.role = token.role as IUser['role'];
         session.user.id = token.id as string;
+        session.accessToken = token.accessToken as string; // Expose the backend token
       }
       return session;
     },
@@ -85,7 +83,7 @@ export const authOptions: AuthOptions = {
 
   pages: {
     signIn: '/login',
-    error: '/login',
+    error: '/login', // Redirect users to login page on error
   },
 
   secret: process.env.NEXTAUTH_SECRET,
@@ -94,3 +92,22 @@ export const authOptions: AuthOptions = {
 const handler = NextAuth(authOptions);
 
 export { handler as GET, handler as POST };
+
+// Add this to a `next-auth.d.ts` file in your project root to get type-safety
+declare module 'next-auth' {
+  interface Session {
+    accessToken?: string;
+    user?: {
+      id?: string;
+      role?: 'ADMIN' | 'TEACHER' | 'STUDENT';
+    } & DefaultSession['user'];
+  }
+}
+
+declare module 'next-auth/jwt' {
+  interface JWT {
+    accessToken?: string;
+    role?: 'ADMIN' | 'TEACHER' | 'STUDENT';
+    id?: string;
+  }
+}

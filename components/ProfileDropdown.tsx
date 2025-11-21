@@ -1,12 +1,12 @@
-import { fetchApi } from "@/lib/apiClient";
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import toast from "react-hot-toast";
-import { useUser } from "@/lib/user"; // Import useUser
+import { useSession, signOut } from "next-auth/react";
 
 export default function ProfileDropdown() {
   const router = useRouter();
-  const { user, mutate } = useUser(); // Sử dụng hook để lấy user và hàm mutate
+  const { data: session } = useSession();
+  const user = session?.user;
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
@@ -34,7 +34,8 @@ export default function ProfileDropdown() {
       case 'STUDENT':
         return '/student/profile';
       default:
-        return '/student/profile';
+        // Fallback URL if role is not defined, though this shouldn't happen for an authenticated user.
+        return '/'; 
     }
   };
 
@@ -47,7 +48,7 @@ export default function ProfileDropdown() {
       case 'STUDENT':
         return '/student/change-password';
       default:
-        return '/student/change-password';
+        return '/';
     }
   };
 
@@ -62,21 +63,15 @@ export default function ProfileDropdown() {
   };
 
   const handleLogout = async () => {
-    try {
-      await fetchApi('/logout', { // Sửa endpoint thành /logout
-        method: 'POST',
-      });
-      toast.success('Đăng xuất thành công');
-    } catch (error) {
-      console.error('Logout error:', error);
-      toast.error('Có lỗi khi đăng xuất');
-    } finally {
-      // Dù thành công hay thất bại, xóa state user và chuyển hướng
-      await mutate(); // Xóa cache SWR và trigger re-fetch (sẽ trả về lỗi 401)
-      setOpen(false);
-      router.push('/login');
-    }
+    setOpen(false);
+    await signOut({ callbackUrl: '/login' });
+    toast.success('Đăng xuất thành công');
   };
+
+  // Don't render the dropdown if the user is not authenticated
+  if (!user) {
+    return null;
+  }
 
   return (
     <div className="relative" ref={ref}>
@@ -87,7 +82,7 @@ export default function ProfileDropdown() {
         <span className="grid h-8 w-8 place-items-center rounded-full bg-gray-300 text-gray-700">
           👤
         </span>
-        <span className="hidden sm:inline">Menu</span>
+        <span className="hidden sm:inline">{user.name || 'Menu'}</span>
       </button>
 
       {open && (

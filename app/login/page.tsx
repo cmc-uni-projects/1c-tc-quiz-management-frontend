@@ -4,14 +4,13 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
+import { signIn } from 'next-auth/react';
 import { fetchApi } from '@/lib/apiClient';
-import { useUser } from '@/lib/user';
 
 export default function LoginPage() {
   const router = useRouter();
-  const { mutate } = useUser();
 
-  const [username, setUsername] = useState('');
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
 
   const [showPassword, setShowPassword] = useState(false);
@@ -24,45 +23,39 @@ export default function LoginPage() {
     setLoading(true);
 
     try {
-      const formData = new URLSearchParams();
-      formData.append('username', username);
-      formData.append('password', password);
-
-      // Gọi API login
-      const loginData = await fetchApi('/login', {
-        method: 'POST',
-        // 💡 Bước 1: Chỉ định Content-Type
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
-        },
-        // 💡 Bước 2: BẮT BUỘC chuyển body sang dạng chuỗi string
-        body: formData.toString(),
-
-        credentials: 'include',
+      // Step 1: Authenticate with NextAuth using the 'credentials' provider
+      const result = await signIn('credentials', {
+        redirect: false, // Prevent automatic redirect to handle the response here
+        email: email,
+        password: password,
       });
 
-      mutate(loginData, { revalidate: true });
+      if (result?.error) {
+        // If NextAuth returns an error (e.g., from the authorize function), display it
+        setError(result.error);
+        toast.error('Đăng nhập thất bại!');
+      } else if (result?.ok) {
+        // Step 2: If authentication is successful, fetch user data to get the role
+        toast.success('Đăng nhập thành công!');
+        
+        const user = await fetchApi('/api/me');
 
-      toast.success('Đăng nhập thành công!');
-
-      // Chuyển hướng dựa trên vai trò từ response của /login
-      const role = loginData?.role;
-      if (role === 'STUDENT') {
-        router.push('/student/studenthome');
-      } else if (role === 'TEACHER') {
-        router.push('/teacher/teacherhome');
-      } else if (role === 'ADMIN') {
-        router.push('/admin');
-      } else {
-        router.push('/');
+        // Step 3: Redirect based on the user's role
+        const role = user?.role;
+        if (role === 'STUDENT') {
+          router.push('/student/studenthome');
+        } else if (role === 'TEACHER') {
+          router.push('/teacher/teacherhome');
+        } else if (role === 'ADMIN') {
+          router.push('/admin');
+        } else {
+          // Fallback redirect if role is not defined
+          router.push('/');
+        }
       }
-
     } catch (err: any) {
-      if (err.message && err.message.includes('403')) {
-        setError('Phiên của bạn không hợp lệ. Vui lòng làm mới trang và thử lại.');
-      } else {
-        setError(err.message || 'Sai tài khoản hoặc mật khẩu.');
-      }
+      // Catch any unexpected errors during the process
+      setError(err.message || 'Đã xảy ra lỗi không mong muốn.');
     } finally {
       setLoading(false);
     }
@@ -83,8 +76,8 @@ export default function LoginPage() {
             </label>
             <input
               type="email"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
               placeholder="Nhập email của bạn"
               className="w-full rounded-md border border-zinc-300 bg-white px-4 py-3 text-zinc-900 placeholder:text-zinc-400 focus:border-[#E33AEC] focus:outline-none focus:ring-2 focus:ring-[#E33AEC]/30"
               required
