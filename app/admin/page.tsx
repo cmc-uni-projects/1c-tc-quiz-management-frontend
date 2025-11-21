@@ -10,6 +10,7 @@ const BUTTON_BG = '#9453C9'; // Màu tím cho nút Tìm
 const INPUT_BG = 'white'; // Màu trắng cho ô nhập liệu
 
 export default function AdminPage() {
+    console.log('[AdminPage] Page component is rendering.');
     const router = useRouter();
     const [roomCode, setRoomCode] = useState('');
     const [isSearching, setIsSearching] = useState(false);
