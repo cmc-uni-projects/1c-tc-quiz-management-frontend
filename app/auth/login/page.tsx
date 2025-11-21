@@ -4,7 +4,6 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
-import { signIn } from 'next-auth/react';
 import { fetchApi } from '@/lib/apiClient';
 
 export default function LoginPage() {
@@ -23,24 +22,21 @@ export default function LoginPage() {
     setLoading(true);
 
     try {
-      // Step 1: Authenticate with NextAuth using the 'credentials' provider
-      const result = await signIn('credentials', {
-        redirect: false, // Prevent automatic redirect to handle the response here
-        email: email,
-        password: password,
+      // Step 1: Call the login API
+      const response = await fetchApi('/auth/login', {
+        method: 'POST',
+        body: { email, password },
       });
 
-      if (result?.error) {
-        // If NextAuth returns an error (e.g., from the authorize function), display it
-        setError(result.error);
-        toast.error('Đăng nhập thất bại!');
-      } else if (result?.ok) {
-        // Step 2: If authentication is successful, fetch user data to get the role
+      if (response.jwt) {
+        // Step 2: Save the JWT to localStorage
+        localStorage.setItem('jwt', response.jwt);
         toast.success('Đăng nhập thành công!');
-        
-        const user = await fetchApi('/api/me');
 
-        // Step 3: Redirect based on the user's role
+        // Step 3: Fetch user data to get the role for redirection
+        const user = await fetchApi('/me');
+        
+        // Step 4: Redirect based on role
         const role = user?.role;
         if (role === 'STUDENT') {
           router.push('/student/studenthome');
@@ -49,13 +45,15 @@ export default function LoginPage() {
         } else if (role === 'ADMIN') {
           router.push('/admin');
         } else {
-          // Fallback redirect if role is not defined
-          router.push('/');
+          router.push('/'); // Fallback redirect
         }
+      } else {
+        throw new Error('Phản hồi đăng nhập không hợp lệ.');
       }
     } catch (err: any) {
-      // Catch any unexpected errors during the process
-      setError(err.message || 'Đã xảy ra lỗi không mong muốn.');
+      const errorMessage = err.message || 'Sai tài khoản hoặc mật khẩu.';
+      setError(errorMessage);
+      toast.error(errorMessage);
     } finally {
       setLoading(false);
     }
