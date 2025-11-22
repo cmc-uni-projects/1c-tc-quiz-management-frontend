@@ -5,8 +5,21 @@ import { MagnifyingGlassIcon, ChevronLeftIcon, ChevronRightIcon, UserIcon } from
 import toast from 'react-hot-toast';
 import Swal from 'sweetalert2';
 
+const TrashIcon = (props: React.SVGAttributes<SVGSVGElement>) => (
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+    <polyline points="3 6 5 6 21 6"/>
+    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/>
+    <path d="M10 11v6"/>
+    <path d="M14 11v6"/>
+    <path d="M9 6V4a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2"/>
+  </svg>
+);
+
 class ApiError extends Error {
-  constructor(message, status, payload) {
+  status: number;
+  payload: any;
+  
+  constructor(message: string, status: number, payload: any) {
     super(message);
     this.name = "ApiError";
     this.status = status;
@@ -29,7 +42,7 @@ const getAuthToken = () => {
  * @param {object} options Fetch options including method, headers, and body.
  * @returns {Promise<any>} The parsed JSON data from the successful response.
  */
-async function fetchApi(url, options = {}) {
+async function fetchApi(url: string, options: any = {}) {
   const token = getAuthToken();
 
   const defaultHeaders = {
@@ -37,7 +50,7 @@ async function fetchApi(url, options = {}) {
     ...(token && { 'Authorization': `Bearer ${token}` }),
   };
 
-  const config = {
+  const config: any = {
     method: options.method || 'GET',
     headers: {
       ...defaultHeaders,
@@ -288,7 +301,7 @@ const TeacherAccountsPage = () => {
     const teacher = teachers.find(t => t.teacherId === id);
     const result = await Swal.fire({
       title: 'Xác nhận xóa',
-      text: `Bạn có chắc chắn muốn xóa giáo viên "${teacher?.username}"?`,
+      text: `Bạn có chắc chắn muốn xóa giáo viên "${teacher?.username} với email "${teacher?.email}"?`,
       icon: 'warning',
       showCancelButton: true,
       confirmButtonColor: '#3085d6',
@@ -521,7 +534,7 @@ const TeacherAccountsPage = () => {
                             className="px-4 py-1.5 rounded-full text-xs font-semibold bg-rose-500 text-white shadow hover:bg-rose-600 transition disabled:opacity-50"
                             disabled={loading}
                           >
-                            Xóa
+                            <TrashIcon /> Xóa
                           </button>
                         </div>
                       </td>

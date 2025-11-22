@@ -1,9 +1,17 @@
 "use client";
 
 import React, { useEffect, useMemo, useState, useCallback } from "react";
+import Swal from "sweetalert2";
 
 const API_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "/api";
-const PRIMARY_PURPLE_BG = "#E33AEC7A";
+const PRIMARY_COLOR = "#6A1B9A";
+const LOGO_TEXT_COLOR = "#E33AEC";
+const MAIN_CONTENT_BG = "#6D0446";
+const SEARCH_BAR_BG = "#E33AEC";
+const BUTTON_COLOR = "#9453C9";
+const PAGE_BG = "#F4F2FF";
+const HERO_GRADIENT = "linear-gradient(135deg, #FFB6FF 0%, #8A46FF 100%)";
+const TABLE_SHADOW = "0 25px 60px rgba(126, 62, 255, 0.18)";
 
 
 const getAuthToken = () => {
@@ -39,7 +47,7 @@ async function fetchApi(url, options = {}) {
   if (!response.ok) {
     let errorText = "Lỗi không xác định";
     try {
-        errorText = isJson ? (await response.json()).message || (await response.json()).error : await response.text();
+      errorText = isJson ? (await response.json()).message || (await response.json()).error : await response.text();
     } catch {
     }
     const errorMessage = errorText.substring(0, 200) || `Lỗi (${response.status}): Không thể thực hiện thao tác.`;
@@ -47,9 +55,9 @@ async function fetchApi(url, options = {}) {
   }
 
   try {
-      return isJson ? await response.json() : await response.text();
+    return isJson ? await response.json() : await response.text();
   } catch (e) {
-      return options.method === 'DELETE' || options.method === 'PUT' ? "Success" : null;
+    return options.method === 'DELETE' || options.method === 'PUT' ? "Success" : null;
   }
 }
 
@@ -135,45 +143,6 @@ const Toast = ({ message, type, onClose }) => {
   );
 };
 
-// Component Confirmation Modal (Thay thế sweetalert2)
-const ConfirmationModal = ({ title, message, onConfirm, onCancel, confirmText = "Xóa", cancelText = "Hủy" }) => {
-    return (
-        <div
-            className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-[99]"
-            onClick={onCancel}
-        >
-            <div
-                className="bg-white rounded-xl p-6 w-full max-w-sm shadow-2xl transition-all duration-300 transform scale-100"
-                onClick={(e) => e.stopPropagation()}
-            >
-                <div className="text-center mb-4">
-                    <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100">
-                        <TrashIcon className="h-6 w-6 text-red-600" />
-                    </div>
-                    <h3 className="mt-3 text-lg font-bold text-gray-900">{title}</h3>
-                    <p className="mt-2 text-sm text-gray-500">{message}</p>
-                </div>
-                <div className="mt-5 sm:mt-6 sm:flex sm:flex-row-reverse gap-3">
-                    <button
-                        type="button"
-                        className="inline-flex justify-center w-full rounded-lg border border-transparent px-4 py-2 bg-red-600 text-base font-medium text-white shadow-sm hover:bg-red-700 sm:ml-3 sm:w-auto sm:text-sm transition"
-                        onClick={onConfirm}
-                    >
-                        {confirmText}
-                    </button>
-                    <button
-                        type="button"
-                        className="mt-3 inline-flex justify-center w-full rounded-lg border border-gray-300 px-4 py-2 bg-white text-base font-medium text-gray-700 shadow-sm hover:bg-gray-50 sm:mt-0 sm:w-auto sm:text-sm transition"
-                        onClick={onCancel}
-                    >
-                        {cancelText}
-                    </button>
-                </div>
-            </div>
-        </div>
-    );
-};
-
 
 // --- Component Chính ---
 export default function CategoriesPage() {
@@ -184,11 +153,6 @@ export default function CategoriesPage() {
   // State cho Modal Thêm/Sửa
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState(null);
-
-  // State cho Confirmation Modal
-  const [isConfirmingDelete, setIsConfirmingDelete] = useState(false);
-  const [itemToDelete, setItemToDelete] = useState(null);
-
 
   // Phân trang phía backend
   const PAGE_SIZE = 10;
@@ -264,12 +228,12 @@ export default function CategoriesPage() {
       if (typeof data.totalPages === "number") setTotalPages(data.totalPages || 1);
       if (typeof data.totalElements === "number") setTotalElements(data.totalElements || content.length);
       else if (content.length > 0 && typeof data.totalPages !== "number") {
-          // Fallback cho API không trả về totalPages/totalElements (coi như 1 trang)
-          setTotalPages(1);
-          setTotalElements(content.length);
+        // Fallback cho API không trả về totalPages/totalElements (coi như 1 trang)
+        setTotalPages(1);
+        setTotalElements(content.length);
       } else {
-          setTotalPages(1);
-          setTotalElements(0);
+        setTotalPages(1);
+        setTotalElements(0);
       }
       setPage(pageParam); // Set lại trang hiện tại (đã được fetch)
 
@@ -289,9 +253,9 @@ export default function CategoriesPage() {
   // Tìm kiếm: reset về trang 0 và gọi lại fetchCategories với keyword hiện tại
   const handleSearch = () => {
     if (page === 0) {
-        fetchCategories(0, keyword); // Nếu đang ở trang 0 thì fetch luôn
+      fetchCategories(0, keyword); // Nếu đang ở trang 0 thì fetch luôn
     } else {
-        setPage(0); // Nếu không ở trang 0 thì setPage(0), useEffect sẽ trigger fetchCategories
+      setPage(0); // Nếu không ở trang 0 thì setPage(0), useEffect sẽ trigger fetchCategories
     }
   };
 
@@ -356,10 +320,10 @@ export default function CategoriesPage() {
 
         // Cập nhật local state sau khi thành công
         setCategories((prev) => prev.map((c) =>
-            (c.id === editing.id
-                ? { ...c, name: form.name.trim(), description: form.description?.trim() || "" }
-                : c
-            )
+          (c.id === editing.id
+            ? { ...c, name: form.name.trim(), description: form.description?.trim() || "" }
+            : c
+          )
         ));
         setToastState({ message: "Cập nhật danh mục thành công", type: 'success' });
       } else {
@@ -392,204 +356,240 @@ export default function CategoriesPage() {
     const cat = categories.find((c) => c.id === id);
     if (!cat) return;
 
-    setItemToDelete(cat);
-    setIsConfirmingDelete(true);
-  };
+    Swal.fire({
+      title: 'Xác nhận xóa',
+      text: `Bạn có chắc chắn muốn xóa danh mục "${cat.name}"?`,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#3085d6',
+      cancelButtonColor: '#d33',
+      confirmButtonText: 'Xóa',
+      cancelButtonText: 'Hủy',
+      background: '#fff',
+      customClass: {
+        confirmButton: 'px-4 py-2 rounded-md',
+        cancelButton: 'px-4 py-2 rounded-md'
+      }
+    }).then((result) => {
+      if (result.isConfirmed) {
+        try {
+          setLoading(true);
+          fetchApi(`${API_URL}/categories/delete/${id}`, { method: "DELETE" });
 
-  const confirmDelete = async () => {
-    if (!itemToDelete) return;
-
-    const id = itemToDelete.id;
-    setIsConfirmingDelete(false);
-
-    try {
-      setLoading(true);
-      await fetchApi(`${API_URL}/categories/delete/${id}`, { method: "DELETE" });
-
-      // Xóa khỏi local state
-      setCategories((prev) => prev.filter((c) => c.id !== id));
-      setToastState({ message: "Đã xóa danh mục thành công", type: 'success' });
-    } catch (e) {
-      console.error(e);
-      setToastState({ message: e?.message || "Không thể xóa danh mục", type: 'error' });
-    } finally {
-      setItemToDelete(null);
-      setLoading(false);
-    }
+          // Xóa khỏi local state
+          setCategories((prev) => prev.filter((c) => c.id !== id));
+          setToastState({ message: "Đã xóa danh mục thành công", type: 'success' });
+        } catch (e) {
+          console.error(e);
+          setToastState({ message: e?.message || "Không thể xóa danh mục", type: 'error' });
+        } finally {
+          setLoading(false);
+        }
+      }
+    });
   };
 
 
   return (
-    <div className="p-4 sm:p-8 font-sans min-h-screen bg-gray-100">
+    <div className="w-full min-h-screen py-6 sm:py-10 px-4 sm:px-8" style={{ backgroundColor: PAGE_BG }}>
+      <div className="max-w-6xl mx-auto space-y-6">
+        {/* Hero + tìm kiếm */}
+        <div
+          className="rounded-2xl shadow-2xl p-6 sm:p-8 text-white relative overflow-hidden"
+          style={{ background: HERO_GRADIENT }}
+        >
+          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+            <div>
+              <h1 className="text-3xl font-extrabold drop-shadow">Quản lý Danh mục</h1>
+              <p className="text-white/80 mt-1 text-sm">Quản lý danh mục môn học và nội dung quiz</p>
+            </div>
 
-      {/* Thanh tiêu đề + tìm kiếm */}
-      <div className="p-4 sm:p-6 mb-6 rounded-xl shadow-lg" style={{ backgroundColor: PRIMARY_PURPLE_BG }}>
-        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
-          <div>
-            <h1 className="text-3xl font-extrabold text-white">Quản lý Danh mục</h1>
-            <p className="text-white/80 mt-1 text-sm">Quản lý danh mục môn học/nội dung</p>
+            <div className="flex items-center gap-2 text-sm font-semibold">
+              <span className="px-4 py-1 rounded-full bg-white/25 backdrop-blur">Tổng {totalElements} danh mục</span>
+            </div>
           </div>
 
-          <div className="flex flex-col sm:flex-row gap-3 w-full lg:w-auto">
-            <input
-              value={keyword}
-              onChange={(e) => setKeyword(e.target.value)}
-              placeholder="Tìm theo tên danh mục..."
-              className="w-full sm:w-72 px-4 py-2 bg-white rounded-lg shadow-inner text-gray-800 focus:outline-none focus:ring-2 focus:ring-purple-400"
-              onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
-            />
-            <div className="flex gap-2">
-              <button
-                onClick={handleSearch}
-                className="px-4 py-2 bg-white text-purple-700 font-semibold rounded-lg shadow-md hover:bg-purple-50 transition duration-150"
-                disabled={loading}
-              >
-                Tìm kiếm
-              </button>
-              <button
-                onClick={openAdd}
-                className="px-4 py-2 bg-purple-700 text-white font-semibold rounded-lg shadow-md hover:bg-purple-800 flex items-center gap-2 transition duration-150"
-                disabled={loading}
-              >
-                <PlusIcon /> Thêm danh mục
-              </button>
+          <div className="mt-6 bg-white/95 rounded-2xl p-4 shadow-inner">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-end">
+              {/* Tìm kiếm */}
+              <div>
+                <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1 block">Tìm kiếm danh mục</label>
+                <input
+                  value={keyword}
+                  onChange={(e) => setKeyword(e.target.value)}
+                  placeholder="Nhập tên danh mục..."
+                  className="w-full px-4 py-2 rounded-xl border border-gray-200 bg-white text-gray-800 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-purple-400"
+                  onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+                />
+              </div>
+
+              {/* Nút tìm kiếm và thêm mới */}
+              <div className="flex justify-end gap-2">
+                <button
+                  onClick={openAdd}
+                  className="px-6 py-2 rounded-xl text-white text-sm font-semibold shadow-lg hover:brightness-110 transition whitespace-nowrap"
+                  style={{ backgroundColor: BUTTON_COLOR }}
+                  disabled={loading}
+                >
+                  <PlusIcon /> Thêm danh mục
+                </button>
+                <button
+                  onClick={handleSearch}
+                  className="px-6 py-2 rounded-xl text-white text-sm font-semibold shadow-lg hover:brightness-110 transition whitespace-nowrap"
+                  style={{ backgroundColor: SEARCH_BAR_BG }}
+                  disabled={loading}
+                >
+                  Tìm kiếm
+                </button>
+              </div>
             </div>
           </div>
         </div>
-      </div>
 
-      {/* Bảng danh mục */}
-      <div className="bg-white rounded-xl shadow-xl border border-gray-200 overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="min-w-full text-sm">
-            <thead className="bg-gray-50 text-gray-700 uppercase tracking-wider">
-              <tr>
-                <th className="px-4 py-3 text-left w-16">STT</th>
-                <th className="px-4 py-3 text-left">Tên danh mục</th>
-                <th className="px-4 py-3 text-left hidden sm:table-cell">Mô tả</th>
-                <th className="px-4 py-3 text-left w-32 hidden md:table-cell">Người tạo</th>
-                <th className="px-4 py-3 text-center w-40">Thao tác</th>
-              </tr>
-            </thead>
-            <tbody>
-              {loading && filtered.length === 0 ? (
+        {/* Bảng danh sách */}
+        <div
+          className="bg-white rounded-2xl border border-white/60 shadow-[0_25px_60px_rgba(131,56,236,0.12)] overflow-hidden"
+          style={{ boxShadow: TABLE_SHADOW }}
+        >
+          {/* Tiêu đề bảng */}
+          <div className="p-5 border-b border-gray-100 bg-gradient-to-r from-white to-purple-50/60">
+            <p className="text-sm text-gray-600 font-medium flex flex-wrap items-center gap-2">
+              Hiển thị <span className="font-semibold text-gray-900">{filtered.length}</span> danh mục / Tổng: {totalElements}
+              <span className="text-xs px-3 py-1 rounded-full bg-white shadow-inner">
+                Trang {page + 1}/{totalPages}
+              </span>
+            </p>
+          </div>
+
+          {/* Bảng */}
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[760px] text-sm text-gray-700">
+              <thead className="bg-[#F7F4FF] border-b border-gray-100 uppercase text-[0.65rem] tracking-wide text-gray-600">
                 <tr>
-                  <td colSpan={5} className="px-4 py-10 text-center text-gray-500">Đang tải dữ liệu...</td>
+                  <th className="px-4 py-3 text-left w-16">STT</th>
+                  <th className="px-4 py-3 text-left">Tên danh mục</th>
+                  <th className="px-4 py-3 text-left hidden sm:table-cell">Mô tả</th>
+                  <th className="px-4 py-3 text-left w-32 hidden md:table-cell">Người tạo</th>
+                  <th className="px-4 py-3 text-center w-40">Thao tác</th>
                 </tr>
-              ) : filtered.length === 0 ? (
-                <tr>
-                  <td colSpan={5} className="px-4 py-10 text-center text-gray-500">
-                    Không tìm thấy danh mục phù hợp
-                  </td>
-                </tr>
-              ) : (
-                filtered.map((c, idx) => (
-                  <tr key={c.id} className="border-t border-gray-100 hover:bg-purple-50/50 transition duration-100">
-                    <td className="px-4 py-3">{page * PAGE_SIZE + idx + 1}</td>
-                    <td className="px-4 py-3 font-medium text-gray-900">{c.name}</td>
-                    <td className="px-4 py-3 text-gray-700 hidden sm:table-cell max-w-xs overflow-hidden text-ellipsis whitespace-nowrap">
-                        {c.description}
-                    </td>
-                    <td className="px-4 py-3 hidden md:table-cell">
-                      {(() => {
-                        // Thử lấy role từ object, nếu không thì tính toán
-                        const role = ((c.createdByRole || (currentUser && ((c.createdBy||"").toLowerCase()===((currentUser.email||"").toLowerCase()) || (c.createdBy||"").toLowerCase()===((currentUser.username||"").toLowerCase())) ? (currentUser.role||"").toLowerCase() : null)) || getCreatorBadgeRole(c.createdBy, currentUser));
-                        return (
-                          <span
-                            title={c.createdBy}
-                            className={`px-2 py-1 rounded-full text-xs font-semibold inline-block ${creatorBadgeClass(role)}`}
-                          >
-                            {sentenceCase(role) || "N/A"}
-                          </span>
-                        );
-                      })()}
-                    </td>
-                    <td className="px-4 py-3">
-                      <div className="flex items-center justify-center gap-2">
-                        <button
-                          onClick={() => openEdit(c)}
-                          className="px-3 py-1.5 rounded-lg bg-blue-600 text-white text-xs font-semibold hover:bg-blue-700 flex items-center gap-1 transition shadow-md"
-                          disabled={loading}
-                        >
-                          <EditIcon /> Sửa
-                        </button>
-                        <button
-                          onClick={() => handleDelete(c.id)}
-                          className="px-3 py-1.5 rounded-lg bg-red-500 text-white text-xs font-semibold hover:bg-red-600 flex items-center gap-1 transition shadow-md"
-                          disabled={loading}
-                        >
-                          <TrashIcon /> Xóa
-                        </button>
-                      </div>
+              </thead>
+              <tbody className="divide-y divide-gray-100">
+                {loading && filtered.length === 0 ? (
+                  <tr>
+                    <td colSpan={5} className="px-4 py-10 text-center text-gray-500">Đang tải dữ liệu...</td>
+                  </tr>
+                ) : filtered.length === 0 ? (
+                  <tr>
+                    <td colSpan={5} className="px-4 py-10 text-center text-gray-500">
+                      Không tìm thấy danh mục phù hợp
                     </td>
                   </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
+                ) : (
+                  filtered.map((c, idx) => (
+                    <tr key={c.id} className="hover:bg-purple-50/50 transition">
+                      <td className="px-4 py-3">{page * PAGE_SIZE + idx + 1}</td>
+                      <td className="px-4 py-3 font-medium text-gray-900">{c.name}</td>
+                      <td className="px-4 py-3 text-gray-700 hidden sm:table-cell max-w-xs overflow-hidden text-ellipsis whitespace-nowrap">
+                        {c.description}
+                      </td>
+                      <td className="px-4 py-3 hidden md:table-cell">
+                        {(() => {
+                          const role = ((c.createdByRole || (currentUser && ((c.createdBy || "").toLowerCase() === ((currentUser.email || "").toLowerCase()) || (c.createdBy || "").toLowerCase() === ((currentUser.username || "").toLowerCase())) ? (currentUser.role || "").toLowerCase() : null)) || getCreatorBadgeRole(c.createdBy, currentUser));
+                          return (
+                            <span
+                              title={c.createdBy}
+                              className={`px-3 py-1.5 rounded-full text-[0.7rem] font-semibold inline-flex items-center justify-center ${creatorBadgeClass(role)}`}
+                            >
+                              {sentenceCase(role) || "N/A"}
+                            </span>
+                          );
+                        })()}
+                      </td>
+                      <td className="px-4 py-3">
+                        <div className="flex flex-wrap items-center justify-center gap-2">
+                          <button
+                            onClick={() => openEdit(c)}
+                            className="px-4 py-1.5 rounded-full text-xs font-semibold bg-blue-100 text-blue-800 border border-blue-200 hover:bg-blue-200 transition disabled:opacity-50"
+                            disabled={loading}
+                          >
+                            <EditIcon /> Sửa
+                          </button>
+                          <button
+                            onClick={() => handleDelete(c.id)}
+                            className="px-4 py-1.5 rounded-full text-xs font-semibold bg-rose-500 text-white shadow hover:bg-rose-600 transition disabled:opacity-50"
+                            disabled={loading}
+                          >
+                            <TrashIcon /> Xóa
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
 
-        {/* Phân trang thực (backend) - luôn hiển thị khi có ít nhất 1 mục */}
-        {totalElements > 0 && (
-            <div className="flex items-center justify-center gap-1 py-4 border-t border-gray-100 text-sm text-gray-600">
-
-            {/* Về trang đầu */}
-            <button
-                className="px-2 py-1 rounded-full border border-transparent text-gray-400 hover:text-gray-600 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed"
+          {/* Phân trang */}
+          {totalElements > 0 && (
+            <div className="p-5 border-t border-gray-100 flex justify-center items-center gap-2 text-sm text-gray-500 bg-white">
+              <button
                 onClick={() => setPage(0)}
                 disabled={page === 0 || loading}
-            >
+                className="px-3 py-1 rounded-full text-gray-400 hover:text-purple-700 hover:bg-purple-50 disabled:opacity-40 disabled:cursor-not-allowed transition"
+              >
                 «
-            </button>
-            {/* Trang trước */}
-            <button
-                className="px-2 py-1 rounded-full border border-transparent text-gray-400 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed"
+              </button>
+
+              <button
                 onClick={() => setPage((p) => Math.max(0, p - 1))}
                 disabled={page === 0 || loading}
-            >
+                className="px-3 py-1 rounded-full text-gray-400 hover:text-purple-700 hover:bg-purple-50 disabled:opacity-40 disabled:cursor-not-allowed transition"
+              >
                 ‹
-            </button>
-            {/* Số trang */}
-            {Array.from({ length: totalPages }, (_, i) => (
+              </button>
+
+              {Array.from({ length: totalPages }, (_, i) => (
                 <button
-                key={i}
-                onClick={() => setPage(i)}
-                className={`px-3 py-1 rounded-full text-sm font-medium transition-colors
+                  key={i}
+                  onClick={() => setPage(i)}
+                  disabled={loading}
+                  className={`w-8 h-8 flex items-center justify-center rounded-full text-sm font-semibold transition-colors
                     ${
-                    i === page
-                        ? "bg-purple-600 text-white shadow-md"
-                        : "text-gray-700 hover:bg-gray-200"
+                      page === i
+                        ? 'bg-purple-700 text-white shadow-lg'
+                        : 'text-gray-600 hover:bg-purple-50'
                     }
-                `}
-                disabled={loading}
+                  `}
                 >
-                {i + 1}
+                  {i + 1}
                 </button>
-            ))}
-            {/* Trang tiếp */}
-            <button
-                className="px-2 py-1 rounded-full border border-transparent text-gray-400 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed"
+              ))}
+
+              <button
                 onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))}
                 disabled={page === totalPages - 1 || loading}
-            >
+                className="px-3 py-1 rounded-full text-gray-400 hover:text-purple-700 hover:bg-purple-50 disabled:opacity-40 disabled:cursor-not-allowed transition"
+              >
                 ›
-            </button>
-            {/* Về trang cuối */}
-            <button
-                className="px-2 py-1 rounded-full border border-transparent text-gray-400 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed"
+              </button>
+
+              <button
                 onClick={() => setPage(totalPages - 1)}
                 disabled={page === totalPages - 1 || loading}
-            >
+                className="px-3 py-1 rounded-full text-gray-400 hover:text-purple-700 hover:bg-purple-50 disabled:opacity-40 disabled:cursor-not-allowed transition"
+              >
                 »
-            </button>
+              </button>
             </div>
-        )}
+          )}
+        </div>
       </div>
 
       {/* Modal Thêm/Sửa */}
       {modalOpen && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50" onClick={closeModal}>
-          <div className="bg-white rounded-xl p-6 w-full max-w-lg shadow-2xl transform transition-all duration-300 scale-100" onClick={(e) => e.stopPropagation()}>
+          <div className="bg-white rounded-2xl p-6 w-full max-w-lg shadow-2xl transform transition-all duration-300 scale-100" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-start justify-between mb-4 border-b pb-3">
               <h2 className="text-xl font-bold text-gray-900">{editing ? "Sửa danh mục" : "Thêm danh mục"}</h2>
               <button onClick={closeModal} className="text-gray-500 hover:text-gray-700">
@@ -604,7 +604,7 @@ export default function CategoriesPage() {
                   value={form.name}
                   onChange={onChangeName}
                   placeholder="Nhập tên danh mục..."
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-400 transition"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-400 transition"
                   disabled={loading}
                 />
               </div>
@@ -615,7 +615,7 @@ export default function CategoriesPage() {
                   onChange={onChangeDesc}
                   rows={3}
                   placeholder="Mô tả ngắn gọn..."
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-400 transition"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-400 transition"
                   disabled={loading}
                 />
               </div>
@@ -623,12 +623,12 @@ export default function CategoriesPage() {
               {formError && <p className="text-sm text-red-600 font-medium">{formError}</p>}
 
               <div className="flex justify-end gap-3 pt-2">
-                <button onClick={closeModal} className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-100 transition" disabled={loading}>
+                <button onClick={closeModal} className="px-4 py-2 border border-gray-300 rounded-xl hover:bg-gray-100 transition" disabled={loading}>
                     Hủy
                 </button>
                 <button
                     onClick={handleSave}
-                    className="px-4 py-2 bg-purple-700 text-white rounded-lg hover:bg-purple-800 font-semibold transition shadow-md disabled:opacity-50"
+                    className="px-4 py-2 bg-purple-700 text-white rounded-xl hover:bg-purple-800 font-semibold transition shadow-md disabled:opacity-50"
                     disabled={loading}
                 >
                   {loading ? (editing ? "Đang cập nhật..." : "Đang tạo...") : (editing ? "Lưu thay đổi" : "Thêm mới")}
@@ -639,18 +639,6 @@ export default function CategoriesPage() {
         </div>
       )}
 
-      {/* Confirmation Modal */}
-      {isConfirmingDelete && itemToDelete && (
-          <ConfirmationModal
-              title="Xác nhận xóa danh mục"
-              message={`Bạn có chắc chắn muốn xóa danh mục "${itemToDelete.name}"? Thao tác này không thể hoàn tác.`}
-              onConfirm={confirmDelete}
-              onCancel={() => { setIsConfirmingDelete(false); setItemToDelete(null); }}
-              confirmText="Xóa vĩnh viễn"
-              cancelText="Giữ lại"
-          />
-      )}
-
       {/* Toast Notification */}
       {toastState && (
           <Toast
@@ -659,7 +647,6 @@ export default function CategoriesPage() {
               onClose={() => setToastState(null)}
           />
       )}
-
     </div>
   );
 }
