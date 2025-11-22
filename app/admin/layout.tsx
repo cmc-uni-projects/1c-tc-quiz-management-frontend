@@ -5,15 +5,27 @@ import { useUser } from "@/lib/user";
 import toast from "react-hot-toast";
 import ProfileDropdown from "@/components/ProfileDropdown";
 
+interface NavItem {
+  name: string;
+  href: string;
+  submenu?: NavItem[];
+}
+
+interface AdminAuthGuardProps {
+  children: React.ReactNode;
+}
+
+interface AdminLayoutProps {
+  children: React.ReactNode;
+}
+
 const PRIMARY_COLOR = "#6A1B9A";
 const LOGO_TEXT_COLOR = "#E33AEC";
 const MAIN_CONTENT_BG = "#6D0446";
 const contentPaddingClass = "ml-64";
 
-/** @typedef {{ name: string, href: string, submenu?: NavItem[] }} NavItem */
-
-/** @type {React.FC<{ children: React.ReactNode }>} */
-const AdminAuthGuard = ({ children }) => {
+/** @type {React.FC<AdminAuthGuardProps>} */
+const AdminAuthGuard = ({ children }: AdminAuthGuardProps) => {
   const { user, isLoading, isAuthenticated } = useUser();
   const router = useRouter();
 
@@ -77,7 +89,7 @@ const AdminSidebar = () => {
   const router = useRouter();
   const currentPathname = usePathname();
 
-  const navItems = [
+  const navItems: NavItem[] = [
     { name: "Trang chủ", href: "/admin" },
     {
       name: "Quản lý tài khoản",
@@ -89,19 +101,11 @@ const AdminSidebar = () => {
     },
     { name: "Duyệt tài khoản giáo viên", href: "/admin/approve-teachers" },
     { name: "Danh mục", href: "/admin/categories" },
-    {
-      name: "Cài đặt",
-      href: "/admin/settings",
-      submenu: [
-        { name: "Thông tin cá nhân", href: "/admin/profile" },
-        { name: "Đổi mật khẩu", href: "/admin/change-password" },
-      ],
-    },
   ];
 
-  const [openSubmenu, setOpenSubmenu] = useState(null);
+  const [openSubmenu, setOpenSubmenu] = useState<string | null>(null);
 
-  const handleToggleSubmenu = (name) => {
+  const handleToggleSubmenu = (name: string) => {
     setOpenSubmenu(openSubmenu === name ? null : name);
   };
 
@@ -109,7 +113,7 @@ const AdminSidebar = () => {
    * @param {NavItem} item
    * @returns {boolean}
    */
-  const isActive = (item) => {
+  const isActive = (item: NavItem): boolean => {
     if (!item || typeof currentPathname !== 'string' || !item.href || typeof item.href !== 'string') {
         return false;
     }
@@ -121,7 +125,7 @@ const AdminSidebar = () => {
     let shouldBeActive = currentPathname.startsWith(item.href);
 
     if (item.submenu && Array.isArray(item.submenu)) {
-      shouldBeActive = item.submenu.some(subItem =>
+      shouldBeActive = item.submenu.some((subItem: NavItem) =>
         subItem && subItem.href && currentPathname.startsWith(subItem.href)
       ) || shouldBeActive;
     }
@@ -151,7 +155,7 @@ const AdminSidebar = () => {
 
   }, [currentPathname]);
 
-  const handleNavigation = (href, e) => {
+  const handleNavigation = (href: string, e: React.MouseEvent) => {
     e.preventDefault();
     router.push(href);
   }
@@ -257,7 +261,7 @@ const AdminTopBar = () => {
 
 
 
-export default function AdminLayout({ children }) {
+export default function AdminLayout({ children }: AdminLayoutProps) {
   return (
     <>
       <AdminAuthGuard>
