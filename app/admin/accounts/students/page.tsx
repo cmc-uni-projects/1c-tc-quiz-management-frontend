@@ -198,6 +198,13 @@ const StudentAccountsPage = () => {
 
       const content = Array.isArray(data?.content) ? data.content : Array.isArray(data) ? data : [];
 
+      // Sort by newest first (createdAt or lastVisit)
+      content.sort((a: Student, b: Student) => {
+        const dateA = new Date(a.createdAt || a.lastVisit || 0).getTime();
+        const dateB = new Date(b.createdAt || b.lastVisit || 0).getTime();
+        return dateB - dateA; // Newest first
+      });
+
       setStudents(content);
 
       if (typeof data.totalPages === "number") setTotalPages(data.totalPages || 1);

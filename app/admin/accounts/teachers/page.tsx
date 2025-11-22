@@ -242,6 +242,13 @@ const TeacherAccountsPage = () => {
         }
       }
 
+      // Sort by newest first (createdAt or lastVisit)
+      filteredContent.sort((a: Teacher, b: Teacher) => {
+        const dateA = new Date(a.createdAt || a.lastVisit || 0).getTime();
+        const dateB = new Date(b.createdAt || b.lastVisit || 0).getTime();
+        return dateB - dateA; // Newest first
+      });
+
       setTeachers(filteredContent);
 
       if (typeof (data as any)?.totalPages === 'number') {

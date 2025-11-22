@@ -372,6 +372,7 @@ export default function AdminReviewTeachersPage() {
                             <table className="w-full min-w-[760px] text-sm text-gray-700">
                                 <thead className="bg-[#F7F4FF] border-b border-gray-100 uppercase text-[0.65rem] tracking-wide text-gray-600">
                                     <tr>
+                                        <th className="px-4 py-3 text-left w-16">STT</th>
                                         <th className="px-4 py-3 text-left">Email</th>
                                         <th className="px-4 py-3 text-left">Họ tên</th>
                                         <th className="px-4 py-3 text-left">Ngày đăng ký</th>
@@ -380,12 +381,13 @@ export default function AdminReviewTeachersPage() {
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-gray-100">
-                                    {filteredTeachers.map((teacher) => (
+                                    {filteredTeachers.map((teacher, index) => (
                                         <tr
                                             key={teacher.id}
                                             className="hover:bg-purple-50/50 transition cursor-pointer"
                                             onClick={() => setSelectedTeacher(teacher)}
                                         >
+                                            <td className="px-4 py-3 font-medium">{index + 1}</td>
                                             <td className="px-4 py-3 font-medium break-all">{teacher.email}</td>
                                             <td className="px-4 py-3">{teacher.fullName}</td>
                                             <td className="px-4 py-3">{teacher.requestDate}</td>
