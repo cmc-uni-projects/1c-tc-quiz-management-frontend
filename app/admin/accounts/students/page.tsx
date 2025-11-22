@@ -66,6 +66,9 @@ const PRIMARY_COLOR = "#6A1B9A";
 const LOGO_TEXT_COLOR = "#E33AEC";
 const MAIN_CONTENT_BG = "#6D0446";
 const BUTTON_COLOR = "#9453C9";
+const PAGE_BG = "#F4F2FF";
+const HERO_GRADIENT = "linear-gradient(135deg, #FFB6FF 0%, #8A46FF 100%)";
+const TABLE_SHADOW = "0 25px 60px rgba(126, 62, 255, 0.18)";
 
 interface Student {
   studentId: number;
@@ -137,10 +140,10 @@ const getStatusDisplay = (status: string) => {
 
 const getStatusColor = (status: string) => {
   const colorMap: Record<string, string> = {
-    'ACTIVE': 'bg-green-100 text-green-700',
-    'LOCKED': 'bg-red-100 text-red-700',
+    'ACTIVE': 'bg-emerald-100 text-emerald-700 border border-emerald-200 shadow-sm',
+    'LOCKED': 'bg-amber-50 text-amber-700 border border-amber-200 shadow-sm',
   };
-  return colorMap[status] || 'bg-gray-100 text-gray-700';
+  return colorMap[status] || 'bg-gray-100 text-gray-700 border border-gray-200 shadow-sm';
 };
 
 const StudentAccountsPage = () => {
@@ -319,242 +322,263 @@ const StudentAccountsPage = () => {
 
   if (loading && students.length === 0) {
     return (
-      <div className="flex-1 p-6 flex items-center justify-center min-h-screen" style={{ backgroundColor: MAIN_CONTENT_BG }}>
-        <div className="text-white text-xl">Đang tải danh sách học sinh...</div>
+      <div className="flex-1 p-6 flex items-center justify-center min-h-screen" style={{ backgroundColor: PAGE_BG }}>
+        <div className="text-gray-800 text-xl font-semibold">Đang tải danh sách học sinh...</div>
       </div>
     );
   }
 
   return (
-    <div className="flex-1 p-6 min-h-screen" style={{ backgroundColor: MAIN_CONTENT_BG }}>
-      {/* Thanh tìm kiếm */}
-      <div className="bg-white rounded-xl p-6 mb-6 shadow-2xl">
-        <h2 className="text-gray-800 text-xl font-bold mb-4">Tìm kiếm học sinh</h2>
-
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
-          {/* Tìm kiếm Email */}
-          <div>
-            <input
-              type="text"
-              placeholder="Nhập email..."
-              value={searchEmail}
-              onChange={(e) => setSearchEmail(e.target.value)}
-              onKeyPress={handleKeyPress}
-              className="w-full px-4 py-2 rounded-full border border-gray-300 bg-white text-gray-800 text-sm focus:outline-none focus:ring-2 focus:ring-purple-400"
-            />
+    <div className="w-full min-h-screen py-6 sm:py-10 px-4 sm:px-8" style={{ backgroundColor: PAGE_BG }}>
+      <div className="max-w-6xl mx-auto space-y-6">
+        {/* Hero + tìm kiếm */}
+        <div
+          className="rounded-2xl shadow-2xl p-6 sm:p-8 text-white relative overflow-hidden"
+          style={{ background: HERO_GRADIENT }}
+        >
+          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+            <div>
+              <h1 className="text-3xl font-extrabold drop-shadow">Quản lý tài khoản học sinh</h1>
+              <p className="text-white/80 mt-1 text-sm">Theo dõi, tìm kiếm và kiểm soát tình trạng hoạt động của học sinh.</p>
+            </div>
+            <div className="flex items-center gap-2 text-sm font-semibold">
+              <span className="px-4 py-1 rounded-full bg-white/25 backdrop-blur">Tổng {totalElements} học sinh</span>
+            </div>
           </div>
 
-          {/* Tìm kiếm Tên */}
-          <div>
-            <input
-              type="text"
-              placeholder="Nhập tên hiển thị..."
-              value={searchName}
-              onChange={(e) => setSearchName(e.target.value)}
-              onKeyPress={handleKeyPress}
-              className="w-full px-4 py-2 rounded-full border border-gray-300 bg-white text-gray-800 text-sm focus:outline-none focus:ring-2 focus:ring-purple-400"
-            />
-          </div>
+          <div className="mt-6 bg-white/95 rounded-2xl p-4 shadow-inner">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
+              {/* Tìm kiếm Email */}
+              <div>
+                <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1 block">Email</label>
+                <input
+                  type="text"
+                  placeholder="Nhập email..."
+                  value={searchEmail}
+                  onChange={(e) => setSearchEmail(e.target.value)}
+                  onKeyPress={handleKeyPress}
+                  className="w-full px-4 py-2 rounded-xl border border-gray-200 bg-white text-gray-800 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-purple-400"
+                />
+              </div>
 
-          {/* Chọn trạng thái */}
-          <div>
-            <select
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
-              className="w-full px-4 py-2 rounded-full border border-gray-300 bg-white text-gray-800 text-sm focus:outline-none focus:ring-2 focus:ring-purple-400"
-            >
-              <option value="all">Tất cả trạng thái</option>
-              <option value="Hoạt động">Hoạt động</option>
-              <option value="Tạm khóa">Tạm khóa</option>
-            </select>
-          </div>
+              {/* Tìm kiếm Tên */}
+              <div>
+                <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1 block">Tên hiển thị</label>
+                <input
+                  type="text"
+                  placeholder="Nhập tên hiển thị..."
+                  value={searchName}
+                  onChange={(e) => setSearchName(e.target.value)}
+                  onKeyPress={handleKeyPress}
+                  className="w-full px-4 py-2 rounded-xl border border-gray-200 bg-white text-gray-800 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-purple-400"
+                />
+              </div>
 
-          {/* Nút tìm kiếm và xóa bộ lọc */}
-          <div className="flex justify-end gap-2">
-            <button
-              onClick={handleClearFilter}
-              className="px-4 py-1.5 rounded-full text-gray-700 bg-gray-200 text-sm font-semibold hover:bg-gray-300 transition whitespace-nowrap"
-              disabled={loading}
-            >
-              Xóa bộ lọc
-            </button>
-            <button
-              onClick={handleSearch}
-              className="px-6 py-1.5 rounded-full text-white text-sm font-semibold hover:brightness-110 transition whitespace-nowrap disabled:opacity-50"
-              style={{ backgroundColor: BUTTON_COLOR }}
-              disabled={loading}
-            >
-              Tìm kiếm
-            </button>
+              {/* Chọn trạng thái */}
+              <div>
+                <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1 block">Trạng thái</label>
+                <select
+                  value={statusFilter}
+                  onChange={(e) => setStatusFilter(e.target.value)}
+                  className="w-full px-4 py-2 rounded-xl border border-gray-200 bg-white text-gray-800 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-purple-400"
+                >
+                  <option value="all">Tất cả trạng thái</option>
+                  <option value="Hoạt động">Hoạt động</option>
+                  <option value="Tạm khóa">Tạm khóa</option>
+                </select>
+              </div>
+
+              {/* Nút tìm kiếm và xóa bộ lọc */}
+              <div className="flex justify-end gap-2">
+                <button
+                  onClick={handleClearFilter}
+                  className="px-4 py-2 rounded-xl bg-white text-purple-700 text-sm font-semibold shadow-sm hover:bg-purple-50 transition whitespace-nowrap"
+                  disabled={loading}
+                >
+                  Xóa bộ lọc
+                </button>
+                <button
+                  onClick={handleSearch}
+                  className="px-6 py-2 rounded-xl text-white text-sm font-semibold shadow-lg hover:brightness-110 transition whitespace-nowrap disabled:opacity-50"
+                  style={{ backgroundColor: BUTTON_COLOR }}
+                  disabled={loading}
+                >
+                  Tìm kiếm
+                </button>
+              </div>
+            </div>
           </div>
         </div>
-      </div>
 
-      {/* Bảng danh sách */}
-      <div className="bg-white rounded-xl shadow-lg overflow-hidden">
-        {/* Tiêu đề bảng */}
-        <div className="p-4 border-b border-gray-200">
-          <p className="text-sm text-gray-600 font-medium">
-            Hiển thị {students.length} học sinh / Tổng: {totalElements} (Trang {currentPage + 1}/{totalPages})
-          </p>
-        </div>
+        {/* Bảng danh sách */}
+        <div
+          className="bg-white rounded-2xl border border-white/60 shadow-[0_25px_60px_rgba(131,56,236,0.12)] overflow-hidden"
+          style={{ boxShadow: TABLE_SHADOW }}
+        >
+          {/* Tiêu đề bảng */}
+          <div className="p-5 border-b border-gray-100 bg-gradient-to-r from-white to-purple-50/60">
+            <p className="text-sm text-gray-600 font-medium flex flex-wrap items-center gap-2">
+              Hiển thị <span className="font-semibold text-gray-900">{students.length}</span> học sinh / Tổng: {totalElements}
+              <span className="text-xs px-3 py-1 rounded-full bg-white shadow-inner">
+                Trang {currentPage + 1}/{totalPages}
+              </span>
+            </p>
+          </div>
 
-        {/* Bảng */}
-        <div className="overflow-x-auto">
-          <table className="w-full min-w-[700px]">
-            <thead className="bg-gray-50 border-b border-gray-200">
-              <tr>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase">STT</th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase">ID</th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase">Email</th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase">Tên hiển thị</th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase">Ngày tạo TK</th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase">Truy cập cuối</th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase">Trạng thái</th>
-                <th className="px-4 py-3 text-center text-xs font-semibold text-gray-700 uppercase">Thao tác</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-200">
-              {students.length === 0 && !loading ? (
+          {/* Bảng */}
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[760px] text-sm text-gray-700">
+              <thead className="bg-[#F7F4FF] border-b border-gray-100 uppercase text-[0.65rem] tracking-wide text-gray-600">
                 <tr>
-                  <td colSpan={8} className="px-4 py-8 text-center text-gray-500">
-                    Không tìm thấy học sinh nào
-                  </td>
+                  <th className="px-4 py-3 text-left">STT</th>
+                  <th className="px-4 py-3 text-left">ID</th>
+                  <th className="px-4 py-3 text-left">Email</th>
+                  <th className="px-4 py-3 text-left">Tên hiển thị</th>
+                  <th className="px-4 py-3 text-left">Ngày tạo TK</th>
+                  <th className="px-4 py-3 text-left">Truy cập cuối</th>
+                  <th className="px-4 py-3 text-left">Trạng thái</th>
+                  <th className="px-4 py-3 text-center">Thao tác</th>
                 </tr>
-              ) : (
-                students.map((student, index) => (
-                  <tr key={student.studentId} className="hover:bg-gray-50 transition">
-                    <td className="px-4 py-3 text-sm text-gray-700">{currentPage * itemsPerPage + index + 1}</td>
-                    <td className="px-4 py-3 text-sm text-gray-700">{student.studentId}</td>
-                    <td className="px-4 py-3 text-sm text-gray-700 font-medium">{student.email}</td>
-                    <td className="px-4 py-3 text-sm text-gray-700">{student.username}</td>
-                    <td className="px-4 py-3 text-sm text-gray-700">{formatDate(student.createdAt)}</td>
-                    <td className="px-4 py-3 text-sm text-gray-700">{formatDate(student.lastVisit)}</td>
-                    <td className="px-4 py-3 text-sm">
-                      <span className={`px-3 py-1 rounded-full text-xs font-semibold ${getStatusColor(student.status)}`}>
-                        {getStatusDisplay(student.status)}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3 text-center text-sm space-x-2">
-                      <button
-                        onClick={() => handleToggleLock(student)}
-                        className="px-3 py-1 bg-yellow-500 text-white rounded-lg text-xs font-semibold hover:bg-yellow-600 transition disabled:opacity-50"
-                        disabled={loading || (student.status !== 'ACTIVE' && student.status !== 'LOCKED')}
-                      >
-                        {student.status === 'LOCKED' ? 'Mở khóa' : 'Tạm khóa'}
-                      </button>
-                      <button
-                        onClick={() => handleDelete(student.studentId)}
-                        className="px-3 py-1 bg-red-500 text-white rounded-lg text-xs font-semibold hover:bg-red-600 transition disabled:opacity-50"
-                        disabled={loading}
-                      >
-                        Xóa
-                      </button>
+              </thead>
+              <tbody className="divide-y divide-gray-100">
+                {students.length === 0 && !loading ? (
+                  <tr>
+                    <td colSpan={8} className="px-4 py-10 text-center text-gray-500">
+                      Không tìm thấy học sinh nào
                     </td>
                   </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
+                ) : (
+                  students.map((student, index) => (
+                    <tr key={student.studentId} className="hover:bg-purple-50/50 transition">
+                      <td className="px-4 py-3">{currentPage * itemsPerPage + index + 1}</td>
+                      <td className="px-4 py-3">{student.studentId}</td>
+                      <td className="px-4 py-3 font-medium">{student.email}</td>
+                      <td className="px-4 py-3">{student.username}</td>
+                      <td className="px-4 py-3">{formatDate(student.createdAt)}</td>
+                      <td className="px-4 py-3">{formatDate(student.lastVisit)}</td>
+                      <td className="px-4 py-3">
+                        <span className={`px-3 py-1.5 rounded-full text-[0.7rem] font-semibold inline-flex items-center justify-center ${getStatusColor(student.status)}`}>
+                          {getStatusDisplay(student.status)}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3">
+                        <div className="flex flex-wrap items-center justify-center gap-2">
+                          <button
+                            onClick={() => handleToggleLock(student)}
+                            className="px-4 py-1.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-800 border border-amber-200 hover:bg-amber-200 transition disabled:opacity-50"
+                            disabled={loading || (student.status !== 'ACTIVE' && student.status !== 'LOCKED')}
+                          >
+                            {student.status === 'LOCKED' ? 'Mở khóa' : 'Tạm khóa'}
+                          </button>
+                          <button
+                            onClick={() => handleDelete(student.studentId)}
+                            className="px-4 py-1.5 rounded-full text-xs font-semibold bg-rose-500 text-white shadow hover:bg-rose-600 transition disabled:opacity-50"
+                            disabled={loading}
+                          >
+                            Xóa
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
 
-        {/* Phân trang */}
-        <div className="p-4 border-t border-gray-200 flex justify-center items-center gap-2 text-xs text-gray-500">
-          {/* Nút về trang đầu */}
-          <button
-            onClick={() => setCurrentPage(0)}
-            disabled={currentPage === 0 || loading}
-            className="px-2 py-1 rounded-full text-gray-400 hover:text-gray-600 disabled:opacity-40 disabled:cursor-not-allowed transition"
-          >
-            «
-          </button>
-
-          {/* Nút trang trước */}
-          <button
-            onClick={() => setCurrentPage(prev => Math.max(0, prev - 1))}
-            disabled={currentPage === 0 || loading}
-            className="px-2 py-1 rounded-full text-gray-400 hover:text-gray-600 disabled:opacity-40 disabled:cursor-not-allowed transition"
-          >
-            ‹
-          </button>
-
-          {/* Các nút số trang */}
-          {Array.from({ length: totalPages }, (_, i) => (
+          {/* Phân trang */}
+          <div className="p-5 border-t border-gray-100 flex justify-center items-center gap-2 text-sm text-gray-500 bg-white">
             <button
-              key={i}
-              onClick={() => setCurrentPage(i)}
-              disabled={loading}
-              className={`mx-1 w-8 h-8 flex items-center justify-center rounded-full text-sm font-semibold transition-colors
-                ${
-                  currentPage === i
-                    ? 'bg-purple-700 text-white shadow-md'
-                    : 'text-gray-600 hover:bg-gray-100'
-                }
-              `}
+              onClick={() => setCurrentPage(0)}
+              disabled={currentPage === 0 || loading}
+              className="px-3 py-1 rounded-full text-gray-400 hover:text-purple-700 hover:bg-purple-50 disabled:opacity-40 disabled:cursor-not-allowed transition"
             >
-              {i + 1}
+              «
             </button>
-          ))}
 
-          {/* Nút trang sau */}
-          <button
-            onClick={() => setCurrentPage(prev => Math.min(totalPages - 1, prev + 1))}
-            disabled={currentPage === totalPages - 1 || loading}
-            className="px-2 py-1 rounded-full text-gray-400 hover:text-gray-600 disabled:opacity-40 disabled:cursor-not-allowed transition"
-          >
-            ›
-          </button>
+            <button
+              onClick={() => setCurrentPage(prev => Math.max(0, prev - 1))}
+              disabled={currentPage === 0 || loading}
+              className="px-3 py-1 rounded-full text-gray-400 hover:text-purple-700 hover:bg-purple-50 disabled:opacity-40 disabled:cursor-not-allowed transition"
+            >
+              ‹
+            </button>
 
-          {/* Nút về trang cuối */}
-          <button
-            onClick={() => setCurrentPage(totalPages - 1)}
-            disabled={currentPage === totalPages - 1 || loading}
-            className="px-2 py-1 rounded-full text-gray-400 hover:text-gray-600 disabled:opacity-40 disabled:cursor-not-allowed transition"
-          >
-            »
-          </button>
-        </div>
-      </div>
-
-      {/* Custom Confirmation Modal Xóa */}
-      {confirmDeleteStudent && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50 transition-opacity duration-300" onClick={cancelDelete}>
-          <div className="bg-white rounded-xl p-6 w-full max-w-sm shadow-2xl scale-100 transition-transform duration-300" onClick={(e) => e.stopPropagation()}>
-            <div className="flex items-start justify-between mb-4">
-              <h2 className="text-xl font-bold text-red-600 flex items-center gap-2">
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-6 h-6 stroke-red-600"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a2 2 0 0 1 2-2h2a2 0 0 1 2 2v2"/></svg>
-                 Xác nhận xóa
-              </h2>
-              <button onClick={cancelDelete} className="text-gray-500 hover:text-gray-700">✕</button>
-            </div>
-
-            <p className="text-gray-700 mb-6">
-              Bạn có chắc chắn muốn xóa tài khoản học sinh
-              <span className="font-semibold text-gray-900 mx-1">"{confirmDeleteStudent.username}"</span>
-              với email
-              <span className="font-semibold text-gray-900 mx-1">"{confirmDeleteStudent.email}"</span>?
-              Hành động này không thể hoàn tác.
-            </p>
-
-            <div className="flex justify-end gap-3 pt-2">
+            {Array.from({ length: totalPages }, (_, i) => (
               <button
-                onClick={cancelDelete}
-                className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-100 transition duration-150"
+                key={i}
+                onClick={() => setCurrentPage(i)}
                 disabled={loading}
+                className={`w-8 h-8 flex items-center justify-center rounded-full text-sm font-semibold transition-colors
+                  ${
+                    currentPage === i
+                      ? 'bg-purple-700 text-white shadow-lg'
+                      : 'text-gray-600 hover:bg-purple-50'
+                  }
+                `}
               >
-                Hủy
+                {i + 1}
               </button>
-              <button
-                onClick={confirmDelete}
-                className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 font-semibold transition duration-150 disabled:bg-red-300"
-                disabled={loading}
-              >
-                {loading ? "Đang xóa..." : "Xóa"}
-              </button>
-            </div>
+            ))}
+
+            <button
+              onClick={() => setCurrentPage(prev => Math.min(totalPages - 1, prev + 1))}
+              disabled={currentPage === totalPages - 1 || loading}
+              className="px-3 py-1 rounded-full text-gray-400 hover:text-purple-700 hover:bg-purple-50 disabled:opacity-40 disabled:cursor-not-allowed transition"
+            >
+              ›
+            </button>
+
+            <button
+              onClick={() => setCurrentPage(totalPages - 1)}
+              disabled={currentPage === totalPages - 1 || loading}
+              className="px-3 py-1 rounded-full text-gray-400 hover:text-purple-700 hover:bg-purple-50 disabled:opacity-40 disabled:cursor-not-allowed transition"
+            >
+              »
+            </button>
           </div>
         </div>
-      )}
+
+        {/* Custom Confirmation Modal Xóa */}
+        {confirmDeleteStudent && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50 transition-opacity duration-300" onClick={cancelDelete}>
+            <div className="bg-white rounded-xl p-6 w-full max-w-sm shadow-2xl scale-100 transition-transform duration-300" onClick={(e) => e.stopPropagation()}>
+              <div className="flex items-start justify-between mb-4">
+                <h2 className="text-xl font-bold text-red-600 flex items-center gap-2">
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-6 h-6 stroke-red-600"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2"/></svg>
+                   Xác nhận xóa
+                </h2>
+                <button onClick={cancelDelete} className="text-gray-500 hover:text-gray-700">✕</button>
+              </div>
+
+              <p className="text-gray-700 mb-6">
+                Bạn có chắc chắn muốn xóa tài khoản học sinh
+                <span className="font-semibold text-gray-900 mx-1">"{confirmDeleteStudent.username}"</span>
+                với email
+                <span className="font-semibold text-gray-900 mx-1">"{confirmDeleteStudent.email}"</span>?
+                Hành động này không thể hoàn tác.
+              </p>
+
+              <div className="flex justify-end gap-3 pt-2">
+                <button
+                  onClick={cancelDelete}
+                  className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-100 transition duration-150"
+                  disabled={loading}
+                >
+                  Hủy
+                </button>
+                <button
+                  onClick={confirmDelete}
+                  className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 font-semibold transition duration-150 disabled:bg-red-300"
+                  disabled={loading}
+                >
+                  {loading ? "Đang xóa..." : "Xóa"}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
 };
