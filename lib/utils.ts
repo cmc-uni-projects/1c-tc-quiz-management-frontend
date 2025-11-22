@@ -23,6 +23,6 @@ export function getCookie(name: string): string | null {
 export function logout() {
   if (typeof window !== 'undefined') {
     localStorage.removeItem('jwt');
-    window.location.href = '/auth/login'; // Redirect to login page
+    window.location.replace('/auth/login'); // Use replace instead of href to prevent back navigation
   }
 }

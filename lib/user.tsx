@@ -9,6 +9,7 @@ interface User {
   username: string;
   firstName?: string;
   lastName?: string;
+  fullName?: string;
   email: string;
   role: 'ADMIN' | 'TEACHER' | 'STUDENT' | 'UNKNOWN';
   avatarUrl?: string;
@@ -44,6 +45,7 @@ const fetcher = async (url: string): Promise<User | null> => {
             ...rawUserData,
             id: rawUserData.id,
             email: rawUserData.username,
+            fullName: rawUserData.user_name,
             role: cleanRole as User['role'],
         };
 

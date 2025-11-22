@@ -10,9 +10,6 @@ export default function ProfileDropdown() {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
-  // Debug: Log user data to see what's available
-  console.log('ProfileDropdown - User data:', user);
-
   useEffect(() => {
     function onClick(e: MouseEvent) {
       if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
@@ -84,7 +81,7 @@ export default function ProfileDropdown() {
         <span className="grid h-8 w-8 place-items-center rounded-full bg-gray-300 text-gray-700">
           👤
         </span>
-        <span className="hidden sm:inline">Xin chào, {user?.firstName || user?.lastName ? `${user?.firstName || ''} ${user?.lastName || ''}`.trim() : user?.username?.split('@')[0] || 'User'}</span>
+        <span className="hidden sm:inline">Xin chào, {user?.fullName || user?.firstName && user?.lastName ? `${user.firstName} ${user.lastName}` : (user?.username || user?.email || 'User')?.split('@')[0]}</span>
       </button>
 
       {open && (

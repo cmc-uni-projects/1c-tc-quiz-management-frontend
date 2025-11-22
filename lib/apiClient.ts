@@ -10,6 +10,7 @@ const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8082/a
 
 interface FetchApiOptions extends RequestInit {
   body?: any;
+  headers?: Record<string, string>;
 }
 
 const isClient = typeof window !== 'undefined';
@@ -25,7 +26,7 @@ export async function fetchApi(endpoint: string, options: FetchApiOptions = {}) 
     token = localStorage.getItem('jwt');
   }
 
-  const headers: HeadersInit = {
+  const headers: Record<string, string> = {
     'Content-Type': 'application/json',
     ...options.headers,
   };
@@ -53,7 +54,7 @@ export async function fetchApi(endpoint: string, options: FetchApiOptions = {}) 
     if (response.status === 401 || response.status === 403) {
       if (isClient) {
         localStorage.removeItem('jwt');
-        window.location.href = '/auth/login';
+        window.location.replace('/auth/login');
       }
 
       throw new ApiError('Phiên đăng nhập đã hết hạn hoặc không hợp lệ. Vui lòng đăng nhập lại.', response.status);

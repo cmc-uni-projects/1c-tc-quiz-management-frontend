@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import useSWR, { mutate } from 'swr';
 import { toastSuccess, toastError } from '@/lib/toast';
 import { fetchApi } from '@/lib/apiClient';
 
@@ -28,8 +29,16 @@ export default function LoginPage() {
       });
 
       if (response.token) {
+        // Validate token format (JWT tokens start with eyJ)
+        if (!response.token.startsWith('eyJ')) {
+          throw new Error('Token không hợp lệ. Vui lòng thử lại.');
+        }
+        
         localStorage.setItem('jwt', response.token);
         toastSuccess('Đăng nhập thành công!');
+
+        // Force SWR to revalidate immediately to prevent race condition
+        mutate('/me', undefined, { revalidate: true });
 
         const user = await fetchApi('/me');
         console.log('LoginPage: User data fetched:', user);
