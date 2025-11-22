@@ -5,8 +5,21 @@ import { MagnifyingGlassIcon, ChevronLeftIcon, ChevronRightIcon, UserIcon } from
 import toast from 'react-hot-toast';
 import Swal from 'sweetalert2';
 
+const TrashIcon = (props: React.SVGAttributes<SVGSVGElement>) => (
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+    <polyline points="3 6 5 6 21 6"/>
+    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/>
+    <path d="M10 11v6"/>
+    <path d="M14 11v6"/>
+    <path d="M9 6V4a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2"/>
+  </svg>
+);
+
 class ApiError extends Error {
-  constructor(message, status, payload) {
+  status: number;
+  payload: any;
+  
+  constructor(message: string, status: number, payload: any) {
     super(message);
     this.name = "ApiError";
     this.status = status;
@@ -29,7 +42,7 @@ const getAuthToken = () => {
  * @param {object} options Fetch options including method, headers, and body.
  * @returns {Promise<any>} The parsed JSON data from the successful response.
  */
-async function fetchApi(url, options = {}) {
+async function fetchApi(url: string, options: any = {}) {
   const token = getAuthToken();
 
   const defaultHeaders = {
@@ -37,7 +50,7 @@ async function fetchApi(url, options = {}) {
     ...(token && { 'Authorization': `Bearer ${token}` }),
   };
 
-  const config = {
+  const config: any = {
     method: options.method || 'GET',
     headers: {
       ...defaultHeaders,
@@ -157,13 +170,12 @@ const StudentAccountsPage = () => {
 
   const [currentPage, setCurrentPage] = useState(0);
   const [students, setStudents] = useState<Student[]>([]);
-  const [loading, setLoading] = useState(false);
   const [totalPages, setTotalPages] = useState(1);
   const [totalElements, setTotalElements] = useState(0);
 
   const itemsPerPage = 20;
 
-  const [confirmDeleteStudent, setConfirmDeleteStudent] = useState<Student | null>(null);
+  const [loading, setLoading] = useState(false);
 
   const getApiStatus = (displayStatus: string) => {
       switch(displayStatus) {
@@ -238,10 +250,42 @@ const StudentAccountsPage = () => {
   };
 
   const handleDelete = (id: number) => {
-    const student = students.find(s => s.studentId === id);
-    if (student) {
-      setConfirmDeleteStudent(student);
-    }
+    const student = students.find((s: Student) => s.studentId === id);
+    if (!student) return;
+
+    Swal.fire({
+      title: 'Xác nhận xóa',
+      text: `Bạn có chắc chắn muốn xóa Học sinh "${student.username}" với email "${student.email}"?`,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#3085d6',
+      cancelButtonColor: '#d33',
+      confirmButtonText: 'Xóa',
+      cancelButtonText: 'Hủy',
+      background: '#fff',
+      customClass: {
+        confirmButton: 'px-4 py-2 rounded-md',
+        cancelButton: 'px-4 py-2 rounded-md'
+      }
+    }).then((result) => {
+      if (result.isConfirmed) {
+        deleteStudentInBackend(id).then(() => {
+          toast.success('Đã xóa học sinh thành công!');
+          if (students.length === 1 && currentPage > 0) {
+            setCurrentPage(p => p - 1);
+          } else {
+            fetchStudents();
+          }
+        }).catch((error: any) => {
+          console.error('Error deleting student:', error);
+          if (error.status === 403 || error.status === 401) {
+            toast.error("Truy cập bị từ chối. Vui lòng đăng nhập lại hoặc kiểm tra quyền Admin.");
+          } else {
+            toast.error(error.message || 'Không thể xóa học sinh');
+          }
+        });
+      }
+    });
   };
 
   const handleToggleLock = async (student: Student) => {
@@ -282,38 +326,6 @@ const StudentAccountsPage = () => {
         toast.error('Truy cập bị từ chối. Vui lòng đăng nhập lại hoặc kiểm tra quyền Admin.');
       } else {
         toast.error(error.message || 'Không thể cập nhật trạng thái học sinh');
-      }
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const cancelDelete = () => {
-    setConfirmDeleteStudent(null);
-  };
-
-  const confirmDelete = async () => {
-    if (!confirmDeleteStudent) return;
-
-    const idToDelete = confirmDeleteStudent.studentId;
-    setConfirmDeleteStudent(null);
-
-    try {
-      setLoading(true);
-      await deleteStudentInBackend(idToDelete);
-      toast.success('Đã xóa học sinh thành công!');
-
-      if (students.length === 1 && currentPage > 0) {
-        setCurrentPage(p => p - 1);
-      } else {
-        await fetchStudents();
-      }
-    } catch (error: any) {
-      console.error('Error deleting student:', error);
-      if (error.status === 403 || error.status === 401) {
-          toast.error("Truy cập bị từ chối. Vui lòng đăng nhập lại hoặc kiểm tra quyền Admin.");
-      } else {
-          toast.error(error.message || 'Không thể xóa học sinh');
       }
     } finally {
       setLoading(false);
@@ -448,7 +460,7 @@ const StudentAccountsPage = () => {
                     </td>
                   </tr>
                 ) : (
-                  students.map((student, index) => (
+                  students.map((student: Student, index: number) => (
                     <tr key={student.studentId} className="hover:bg-purple-50/50 transition">
                       <td className="px-4 py-3">{currentPage * itemsPerPage + index + 1}</td>
                       <td className="px-4 py-3">{student.studentId}</td>
@@ -475,7 +487,7 @@ const StudentAccountsPage = () => {
                             className="px-4 py-1.5 rounded-full text-xs font-semibold bg-rose-500 text-white shadow hover:bg-rose-600 transition disabled:opacity-50"
                             disabled={loading}
                           >
-                            Xóa
+                            <TrashIcon /> Xóa
                           </button>
                         </div>
                       </td>
@@ -538,46 +550,6 @@ const StudentAccountsPage = () => {
             </button>
           </div>
         </div>
-
-        {/* Custom Confirmation Modal Xóa */}
-        {confirmDeleteStudent && (
-          <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50 transition-opacity duration-300" onClick={cancelDelete}>
-            <div className="bg-white rounded-xl p-6 w-full max-w-sm shadow-2xl scale-100 transition-transform duration-300" onClick={(e) => e.stopPropagation()}>
-              <div className="flex items-start justify-between mb-4">
-                <h2 className="text-xl font-bold text-red-600 flex items-center gap-2">
-                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-6 h-6 stroke-red-600"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2"/></svg>
-                   Xác nhận xóa
-                </h2>
-                <button onClick={cancelDelete} className="text-gray-500 hover:text-gray-700">✕</button>
-              </div>
-
-              <p className="text-gray-700 mb-6">
-                Bạn có chắc chắn muốn xóa tài khoản học sinh
-                <span className="font-semibold text-gray-900 mx-1">"{confirmDeleteStudent.username}"</span>
-                với email
-                <span className="font-semibold text-gray-900 mx-1">"{confirmDeleteStudent.email}"</span>?
-                Hành động này không thể hoàn tác.
-              </p>
-
-              <div className="flex justify-end gap-3 pt-2">
-                <button
-                  onClick={cancelDelete}
-                  className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-100 transition duration-150"
-                  disabled={loading}
-                >
-                  Hủy
-                </button>
-                <button
-                  onClick={confirmDelete}
-                  className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 font-semibold transition duration-150 disabled:bg-red-300"
-                  disabled={loading}
-                >
-                  {loading ? "Đang xóa..." : "Xóa"}
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
       </div>
     </div>
   );

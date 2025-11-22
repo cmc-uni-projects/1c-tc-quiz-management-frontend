@@ -424,7 +424,7 @@ export default function AdminReviewTeachersPage() {
                                                     <button
                                                         type="button"
                                                         onClick={(e) => handleReject(e, teacher.id)}
-                                                        className="px-4 py-1.5 rounded-full text-xs font-semibold text-white shadow hover:brightness-110 transition flex items-center gap-1"
+                                                        className="px-4 py-1.5 rounded-full text-xs font-semibold text-white shadow hover:brightness-110 transition flex items-center gap-1 inline-flex"
                                                         style={{ backgroundColor: BUTTON_RED }}
                                                         disabled={loading}
                                                     >
@@ -433,7 +433,7 @@ export default function AdminReviewTeachersPage() {
                                                     <button
                                                         type="button"
                                                         onClick={(e) => handleApprove(e, teacher.id)}
-                                                        className="px-4 py-1.5 rounded-full text-xs font-semibold text-white shadow hover:brightness-110 transition flex items-center gap-1"
+                                                        className="px-4 py-1.5 rounded-full text-xs font-semibold text-white shadow hover:brightness-110 transition flex items-center gap-1 inline-flex"
                                                         style={{ backgroundColor: BUTTON_BLUE }}
                                                         disabled={loading}
                                                     >
