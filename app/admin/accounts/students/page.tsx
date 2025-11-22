@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { MagnifyingGlassIcon, ChevronLeftIcon, ChevronRightIcon, UserIcon } from '@heroicons/react/24/outline';
 import toast from 'react-hot-toast';
+import Swal from 'sweetalert2';
 
 class ApiError extends Error {
   constructor(message, status, payload) {
@@ -100,6 +101,14 @@ async function deleteStudentInBackend(id: number) {
   await fetchApi(`/api/admin/accounts/students/${id}`, {
     method: 'DELETE',
   });
+}
+
+async function toggleStudentLockStatusInBackend(id: number, currentStatus: Student['status']) {
+  if (currentStatus === 'ACTIVE') {
+    await fetchApi(`/api/admin/accounts/students/${id}/lock`, { method: 'POST' });
+  } else if (currentStatus === 'LOCKED') {
+    await fetchApi(`/api/admin/accounts/students/${id}/unlock`, { method: 'POST' });
+  }
 }
 
 const formatDate = (dateString: string | null) => {
@@ -229,6 +238,50 @@ const StudentAccountsPage = () => {
     const student = students.find(s => s.studentId === id);
     if (student) {
       setConfirmDeleteStudent(student);
+    }
+  };
+
+  const handleToggleLock = async (student: Student) => {
+    if (student.status !== 'ACTIVE' && student.status !== 'LOCKED') {
+      toast.error('Chỉ có thể đổi trạng thái giữa Hoạt động và Tạm khóa.');
+      return;
+    }
+
+    const isLocking = student.status === 'ACTIVE';
+    const actionText = isLocking ? 'tạm khóa' : 'mở khóa';
+
+    const result = await Swal.fire({
+      title: `Xác nhận ${isLocking ? 'tạm khóa' : 'mở khóa'} tài khoản`,
+      text: `Bạn có chắc chắn muốn ${actionText} tài khoản học sinh "${student.username}"?`,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#3085d6',
+      cancelButtonColor: '#d33',
+      confirmButtonText: 'Xác nhận',
+      cancelButtonText: 'Hủy',
+      background: '#fff',
+      customClass: {
+        confirmButton: 'px-4 py-2 rounded-md',
+        cancelButton: 'px-4 py-2 rounded-md',
+      },
+    });
+
+    if (!result.isConfirmed) return;
+
+    try {
+      setLoading(true);
+      await toggleStudentLockStatusInBackend(student.studentId, student.status);
+      toast.success(isLocking ? 'Đã tạm khóa tài khoản học sinh.' : 'Đã mở khóa tài khoản học sinh.');
+      await fetchStudents();
+    } catch (error: any) {
+      console.error('Error toggling student lock status:', error);
+      if (error.status === 403 || error.status === 401) {
+        toast.error('Truy cập bị từ chối. Vui lòng đăng nhập lại hoặc kiểm tra quyền Admin.');
+      } else {
+        toast.error(error.message || 'Không thể cập nhật trạng thái học sinh');
+      }
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -382,7 +435,14 @@ const StudentAccountsPage = () => {
                         {getStatusDisplay(student.status)}
                       </span>
                     </td>
-                    <td className="px-4 py-3 text-center text-sm">
+                    <td className="px-4 py-3 text-center text-sm space-x-2">
+                      <button
+                        onClick={() => handleToggleLock(student)}
+                        className="px-3 py-1 bg-yellow-500 text-white rounded-lg text-xs font-semibold hover:bg-yellow-600 transition disabled:opacity-50"
+                        disabled={loading || (student.status !== 'ACTIVE' && student.status !== 'LOCKED')}
+                      >
+                        {student.status === 'LOCKED' ? 'Mở khóa' : 'Tạm khóa'}
+                      </button>
                       <button
                         onClick={() => handleDelete(student.studentId)}
                         className="px-3 py-1 bg-red-500 text-white rounded-lg text-xs font-semibold hover:bg-red-600 transition disabled:opacity-50"
