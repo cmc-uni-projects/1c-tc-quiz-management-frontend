@@ -391,11 +391,11 @@ export default function CategoriesPage() {
               <div className="flex justify-end gap-2">
                 <button
                   onClick={openAdd}
-                  className="px-6 py-2 rounded-xl text-white text-sm font-semibold shadow-lg hover:brightness-110 transition whitespace-nowrap"
+                  className="px-6 py-2 rounded-xl text-white text-sm font-semibold shadow-lg hover:brightness-110 transition whitespace-nowrap flex items-center gap-2"
                   style={{ backgroundColor: BUTTON_COLOR }}
                   disabled={loading}
                 >
-                  <PlusIcon /> Thêm danh mục
+                  <PlusIcon className="w-4 h-4" /> Thêm danh mục
                 </button>
                 <button
                   onClick={handleSearch}
@@ -469,20 +469,20 @@ export default function CategoriesPage() {
                         })()}
                       </td>
                       <td className="px-4 py-3">
-                        <div className="flex flex-wrap items-center justify-center gap-2">
+                        <div className="flex items-center justify-center gap-2">
                           <button
                             onClick={() => openEdit(c)}
-                            className="px-4 py-1.5 rounded-full text-xs font-semibold bg-blue-100 text-blue-800 border border-blue-200 hover:bg-blue-200 transition disabled:opacity-50"
+                            className="px-3 py-1.5 rounded-full text-xs font-semibold bg-blue-100 text-blue-800 border border-blue-200 hover:bg-blue-200 transition disabled:opacity-50 flex items-center gap-1"
                             disabled={loading}
                           >
-                            <EditIcon /> Sửa
+                            <EditIcon className="w-3 h-3 flex-shrink-0" /> Sửa
                           </button>
                           <button
                             onClick={() => handleDelete(c.id)}
-                            className="px-4 py-1.5 rounded-full text-xs font-semibold bg-rose-500 text-white shadow hover:bg-rose-600 transition disabled:opacity-50"
+                            className="px-3 py-1.5 rounded-full text-xs font-semibold bg-rose-500 text-white shadow hover:bg-rose-600 transition disabled:opacity-50 flex items-center gap-1"
                             disabled={loading}
                           >
-                            <TrashIcon /> Xóa
+                            <TrashIcon className="w-3 h-3 flex-shrink-0" /> Xóa
                           </button>
                         </div>
                       </td>

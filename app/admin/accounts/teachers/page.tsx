@@ -537,10 +537,10 @@ const TeacherAccountsPage = () => {
                           </button>
                           <button
                             onClick={() => handleDelete(teacher.teacherId)}
-                            className="px-4 py-1.5 rounded-full text-xs font-semibold bg-rose-500 text-white shadow hover:bg-rose-600 transition disabled:opacity-50"
+                            className="px-3 py-1.5 rounded-full text-xs font-semibold bg-rose-500 text-white shadow hover:bg-rose-600 transition disabled:opacity-50 flex items-center gap-1"
                             disabled={loading}
                           >
-                            <TrashIcon /> Xóa
+                            <TrashIcon className="w-3 h-3 flex-shrink-0" /> Xóa
                           </button>
                         </div>
                       </td>
