@@ -529,8 +529,8 @@ export default function CategoriesPage() {
           </table>
         </div>
 
-        {/* Phân trang thực (backend) */}
-        {totalPages > 1 && (
+        {/* Phân trang thực (backend) - luôn hiển thị khi có ít nhất 1 mục */}
+        {totalElements > 0 && (
             <div className="flex items-center justify-center gap-1 py-4 border-t border-gray-100 text-sm text-gray-600">
 
             {/* Về trang đầu */}
@@ -582,9 +582,6 @@ export default function CategoriesPage() {
             >
                 »
             </button>
-            <span className="ml-4 text-xs font-medium text-gray-500">
-                ({totalElements} mục)
-            </span>
             </div>
         )}
       </div>
