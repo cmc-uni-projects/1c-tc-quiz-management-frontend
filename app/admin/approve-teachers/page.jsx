@@ -1,5 +1,6 @@
 "use client";
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import toast from 'react-hot-toast';
 const API_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "/api";
 
 
@@ -132,31 +133,6 @@ const XIcon = (props) => (
   </svg>
 );
 
-const Toast = ({ message, type, onClose }) => {
-  const baseClasses = "fixed bottom-5 right-5 p-4 rounded-xl shadow-2xl z-50 flex items-center";
-  let typeClasses = "";
-
-  switch (type) {
-    case 'success':
-      typeClasses = "bg-green-600 text-white";
-      break;
-    case 'error':
-      typeClasses = "bg-red-600 text-white";
-      break;
-    default:
-      typeClasses = "bg-gray-700 text-white";
-  }
-
-  return (
-    <div className={`${baseClasses} ${typeClasses} transition-all duration-300 transform translate-y-0 opacity-100`}>
-      <p className="mr-4 font-semibold">{message}</p>
-      <button onClick={onClose} className="ml-4 opacity-75 hover:opacity-100 transition">
-        <XIcon className="w-5 h-5" />
-      </button>
-    </div>
-  );
-};
-
 const statusMap = {
     'pending': 'Chờ duyệt',
     'approved': 'Đã duyệt',
@@ -235,7 +211,6 @@ export default function AdminReviewTeachersPage() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
 
-    const [toastState, setToastState] = useState(null);
     const [selectedTeacher, setSelectedTeacher] = useState(null);
 
     const fetchTeachers = useCallback(async () => {
@@ -250,7 +225,7 @@ export default function AdminReviewTeachersPage() {
         } catch (e) {
             console.error("Error fetching teachers:", e);
             setError(`Lỗi khi tải danh sách: ${e.message}`);
-            setToastState({ message: e.message, type: 'error' });
+            toast.error(e.message);
         } finally {
             setLoading(false);
         }
@@ -280,13 +255,13 @@ export default function AdminReviewTeachersPage() {
                 ? `Đã duyệt thành công: ${teacher.fullName} (${teacher.email})`
                 : `Đã từ chối thành công: ${teacher.fullName} (${teacher.email})`;
 
-            setToastState({ message: toastMessage, type: 'success' });
+            toast.success(toastMessage);
 
             setSelectedTeacher(null);
 
         } catch (e) {
             console.error(`Error updating status for ${teacherId}:`, e);
-            setToastState({ message: `Lỗi khi cập nhật trạng thái: ${e.message}.`, type: 'error' });
+            toast.error(`Lỗi khi cập nhật trạng thái: ${e.message}.`);
         } finally {
              setLoading(false);
         }
@@ -397,6 +372,7 @@ export default function AdminReviewTeachersPage() {
                             <table className="w-full min-w-[760px] text-sm text-gray-700">
                                 <thead className="bg-[#F7F4FF] border-b border-gray-100 uppercase text-[0.65rem] tracking-wide text-gray-600">
                                     <tr>
+                                        <th className="px-4 py-3 text-left w-16">STT</th>
                                         <th className="px-4 py-3 text-left">Email</th>
                                         <th className="px-4 py-3 text-left">Họ tên</th>
                                         <th className="px-4 py-3 text-left">Ngày đăng ký</th>
@@ -405,12 +381,13 @@ export default function AdminReviewTeachersPage() {
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-gray-100">
-                                    {filteredTeachers.map((teacher) => (
+                                    {filteredTeachers.map((teacher, index) => (
                                         <tr
                                             key={teacher.id}
                                             className="hover:bg-purple-50/50 transition cursor-pointer"
                                             onClick={() => setSelectedTeacher(teacher)}
                                         >
+                                            <td className="px-4 py-3 font-medium">{index + 1}</td>
                                             <td className="px-4 py-3 font-medium break-all">{teacher.email}</td>
                                             <td className="px-4 py-3">{teacher.fullName}</td>
                                             <td className="px-4 py-3">{teacher.requestDate}</td>
@@ -453,14 +430,6 @@ export default function AdminReviewTeachersPage() {
                     <TeacherDetailModal teacher={selectedTeacher} onClose={() => setSelectedTeacher(null)} />
                 )}
 
-                {/* Component Toast Notification */}
-                {toastState && (
-                    <Toast
-                        message={toastState.message}
-                        type={toastState.type}
-                        onClose={() => setToastState(null)}
-                    />
-                )}
             </div>
 
             {/* Loading overlay khi đang xử lý action */}

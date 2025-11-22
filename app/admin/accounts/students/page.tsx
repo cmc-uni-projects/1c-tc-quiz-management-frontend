@@ -198,6 +198,13 @@ const StudentAccountsPage = () => {
 
       const content = Array.isArray(data?.content) ? data.content : Array.isArray(data) ? data : [];
 
+      // Sort by newest first (createdAt or lastVisit)
+      content.sort((a: Student, b: Student) => {
+        const dateA = new Date(a.createdAt || a.lastVisit || 0).getTime();
+        const dateB = new Date(b.createdAt || b.lastVisit || 0).getTime();
+        return dateB - dateA; // Newest first
+      });
+
       setStudents(content);
 
       if (typeof data.totalPages === "number") setTotalPages(data.totalPages || 1);
@@ -430,7 +437,6 @@ const StudentAccountsPage = () => {
           {/* Tiêu đề bảng */}
           <div className="p-5 border-b border-gray-100 bg-gradient-to-r from-white to-purple-50/60">
             <p className="text-sm text-gray-600 font-medium flex flex-wrap items-center gap-2">
-              Hiển thị <span className="font-semibold text-gray-900">{students.length}</span> học sinh / Tổng: {totalElements}
               <span className="text-xs px-3 py-1 rounded-full bg-white shadow-inner">
                 Trang {currentPage + 1}/{totalPages}
               </span>
@@ -484,10 +490,10 @@ const StudentAccountsPage = () => {
                           </button>
                           <button
                             onClick={() => handleDelete(student.studentId)}
-                            className="px-4 py-1.5 rounded-full text-xs font-semibold bg-rose-500 text-white shadow hover:bg-rose-600 transition disabled:opacity-50"
+                            className="px-3 py-1.5 rounded-full text-xs font-semibold bg-rose-500 text-white shadow hover:bg-rose-600 transition disabled:opacity-50 flex items-center gap-1"
                             disabled={loading}
                           >
-                            <TrashIcon /> Xóa
+                            <TrashIcon className="w-3 h-3 flex-shrink-0" /> Xóa
                           </button>
                         </div>
                       </td>
