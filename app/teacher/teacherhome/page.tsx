@@ -39,39 +39,8 @@ const TeacherHome = () => {
   const router = useRouter();
   const { user } = useUser();
   const [roomCode, setRoomCode] = useState('');
-  const [showDropdown, setShowDropdown] = useState(false);
-  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
 
-  const username = user?.name;
-  const avatar = user?.avatarUrl;
-
-  const handleProfileClick = () => {
-    setShowDropdown(false);
-    router.push('/teacher/profile');
-  };
-
-  const handleChangePasswordClick = () => {
-    setShowDropdown(false);
-    router.push('/teacher/change-password');
-  };
-
-  const handleLogoutClick = () => {
-    setShowLogoutConfirm(true);
-    setShowDropdown(false);
-  };
-
-  const { showSuccess } = useToast();
-
-  const handleLogoutConfirm = async () => {
-    setShowLogoutConfirm(false);
-    localStorage.removeItem('jwt'); // Clear JWT from localStorage
-    router.push('/auth/login'); // Redirect to login page
-    showSuccess('Đăng xuất thành công');
-  };
-
-  const handleLogoutCancel = () => {
-    setShowLogoutConfirm(false);
-  };
+  const username = user?.username;
 
   const handleJoinRoom = () => {
     if (roomCode.trim()) {
@@ -110,60 +79,6 @@ const TeacherHome = () => {
   return (
     <>
       <div className="min-h-screen bg-gray-50 flex flex-1 flex-col">
-        {/* Top greeting bar */}
-        <header
-          className="flex justify-end items-center px-8 py-4 border-b border-zinc-200 bg-white"
-          onClick={() => setShowDropdown(false)}
-        >
-          <div className="relative flex items-center gap-3" onClick={(e) => e.stopPropagation()}>
-            <span className="text-sm text-zinc-700">
-              {`Xin chào, ${username || 'Giáo viên'}`}
-            </span>
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                setShowDropdown(!showDropdown);
-              }}
-              className="flex items-center gap-2 rounded-full bg-purple-50 px-2 py-1 shadow-sm hover:bg-purple-100 transition overflow-hidden"
-            >
-              <div className="h-8 w-8 rounded-full bg-purple-300 flex items-center justify-center text-purple-800 overflow-hidden">
-                {avatar ? (
-                  <img src={avatar} alt="avatar" className="h-8 w-8 rounded-full object-cover" />
-                ) : (
-                  <svg className="h-5 w-5" viewBox="0 0 24 24" fill="currentColor">
-                    <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" />
-                  </svg>
-                )}
-              </div>
-            </button>
-
-            {/* Dropdown Menu */}
-            {showDropdown && (
-              <div className="absolute right-0 top-full mt-2 w-52 bg-white rounded-lg shadow-lg border border-gray-200 z-10">
-                <button
-                  onClick={handleProfileClick}
-                  className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 border-b border-gray-100"
-                >
-                  Cập nhật thông tin
-                </button>
-                <button
-                  onClick={handleChangePasswordClick}
-                  className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 border-b border-gray-100"
-                >
-                  Đổi mật khẩu
-                </button>
-                <button
-                  onClick={handleLogoutClick}
-                  className="w-full text-left px-3 py-2 text-sm text-purple-600 hover:bg-purple-50 flex items-center gap-2"
-                >
-                  <span>←</span>
-                  Đăng xuất
-                </button>
-              </div>
-            )}
-          </div>
-        </header>
-
         {/* Main content */}
         <main className="flex-1 px-4 md:px-8 pb-10 bg-gray-50">
           {/* Hero banner */}
@@ -244,30 +159,6 @@ const TeacherHome = () => {
           &copy; 2025 QuizzZone. Mọi quyền được bảo lưu.
         </footer>
       </div>
-      
-      {/* Logout Confirmation Modal */}
-      {showLogoutConfirm && (
-        <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 max-w-sm w-full mx-4 shadow-xl">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Xác nhận đăng xuất</h3>
-            <p className="text-gray-600 mb-6">Bạn có chắc chắn muốn đăng xuất khỏi hệ thống?</p>
-            <div className="flex gap-3 justify-end">
-              <button
-                onClick={handleLogoutCancel}
-                className="px-4 py-2 text-gray-600 hover:text-gray-800 transition"
-              >
-                Hủy
-              </button>
-              <button
-                onClick={handleLogoutConfirm}
-                className="px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700 transition"
-              >
-                Đăng xuất
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </>
   );
 };
