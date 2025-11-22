@@ -2,6 +2,7 @@
 
 import React, { useEffect, useMemo, useState, useCallback } from "react";
 import Swal from "sweetalert2";
+import toast from "react-hot-toast";
 
 const API_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "/api";
 const PRIMARY_COLOR = "#6A1B9A";
@@ -110,39 +111,6 @@ function getCreatorBadgeRole(createdBy, currentUser) {
   return v.includes("admin") ? "admin" : "teacher";
 }
 
-const Toast = ({ message, type, onClose }) => {
-  const baseClasses = "fixed bottom-5 right-5 p-4 rounded-xl shadow-2xl z-[100] flex items-center";
-  let typeClasses = "";
-
-  switch (type) {
-    case 'success':
-      typeClasses = "bg-green-600 text-white";
-      break;
-    case 'error':
-      typeClasses = "bg-red-600 text-white";
-      break;
-    default:
-      typeClasses = "bg-gray-700 text-white";
-  }
-
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      onClose();
-    }, 4000);
-    return () => clearTimeout(timer);
-  }, [onClose]);
-
-
-  return (
-    <div className={`${baseClasses} ${typeClasses} transition-all duration-300 transform translate-y-0 opacity-100`}>
-      <p className="mr-4 font-semibold">{message}</p>
-      <button onClick={onClose} className="ml-4 opacity-75 hover:opacity-100 transition">
-        <XIcon className="w-5 h-5" />
-      </button>
-    </div>
-  );
-};
-
 
 // --- Component Chính ---
 export default function CategoriesPage() {
@@ -164,10 +132,6 @@ export default function CategoriesPage() {
   const [form, setForm] = useState({ name: "", description: "" });
   const [formError, setFormError] = useState("");
   const [loading, setLoading] = useState(false);
-
-  // State cho Toast
-  const [toastState, setToastState] = useState(null);
-
 
   // Badge màu theo người tạo
   const creatorBadgeClass = (role) => {
@@ -239,7 +203,7 @@ export default function CategoriesPage() {
 
     } catch (e) {
       console.error("Error fetching categories:", e);
-      setToastState({ message: e?.message || "Không thể tải danh mục", type: 'error' });
+      toast.error(e?.message || "Không thể tải danh mục");
     } finally {
       setLoading(false);
     }
@@ -325,7 +289,7 @@ export default function CategoriesPage() {
             : c
           )
         ));
-        setToastState({ message: "Cập nhật danh mục thành công", type: 'success' });
+        toast.success("Cập nhật danh mục thành công");
       } else {
         // Create
         const body = { name: form.name.trim(), description: form.description?.trim() || "" };
@@ -335,7 +299,7 @@ export default function CategoriesPage() {
           body: body,
         });
 
-        setToastState({ message: "Tạo danh mục thành công", type: 'success' });
+        toast.success("Tạo danh mục thành công");
 
         // Sau khi tạo thành công, reset về trang 0 và load lại danh sách
         setPage(0);
@@ -346,7 +310,7 @@ export default function CategoriesPage() {
     } catch (e) {
       console.error(e);
       setFormError(e?.message || "Có lỗi xảy ra");
-      setToastState({ message: e?.message || "Lưu danh mục thất bại", type: 'error' });
+      toast.error(e?.message || "Lưu danh mục thất bại");
     } finally {
       setLoading(false);
     }
@@ -378,10 +342,10 @@ export default function CategoriesPage() {
 
           // Xóa khỏi local state
           setCategories((prev) => prev.filter((c) => c.id !== id));
-          setToastState({ message: "Đã xóa danh mục thành công", type: 'success' });
+          toast.success("Đã xóa danh mục thành công");
         } catch (e) {
           console.error(e);
-          setToastState({ message: e?.message || "Không thể xóa danh mục", type: 'error' });
+          toast.error(e?.message || "Không thể xóa danh mục");
         } finally {
           setLoading(false);
         }
@@ -639,14 +603,6 @@ export default function CategoriesPage() {
         </div>
       )}
 
-      {/* Toast Notification */}
-      {toastState && (
-          <Toast
-              message={toastState.message}
-              type={toastState.type}
-              onClose={() => setToastState(null)}
-          />
-      )}
-    </div>
+      </div>
   );
 }

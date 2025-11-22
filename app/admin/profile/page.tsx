@@ -1,50 +1,18 @@
 "use client";
 import React, { useState, useRef, useEffect, useCallback } from "react";
+import toast from "react-hot-toast";
 
 const API_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "/api";
 const PRIMARY_BG = "#6D0446";
 const BUTTON_BG = "#A53AEC";
 const MAX_AVATAR_SIZE = 5 * 1024 * 1024; // 5MB
 
-const XIcon = (props) => (
+const XIcon = (props: React.SVGProps<SVGSVGElement>) => (
   <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
     <path d="M18 6 6 18"/>
     <path d="m6 6 12 12"/>
   </svg>
 );
-
-const Toast = ({ message, type, onClose }) => {
-  const baseClasses = "fixed bottom-5 right-5 p-4 rounded-xl shadow-2xl z-[100] flex items-center";
-  let typeClasses = "";
-
-  switch (type) {
-    case 'success':
-      typeClasses = "bg-green-600 text-white";
-      break;
-    case 'error':
-      typeClasses = "bg-red-600 text-white";
-      break;
-    default:
-      typeClasses = "bg-gray-700 text-white";
-  }
-
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      onClose();
-    }, 4000);
-    return () => clearTimeout(timer);
-  }, [onClose]);
-
-
-  return (
-    <div className={`${baseClasses} ${typeClasses} transition-all duration-300 transform translate-y-0 opacity-100`}>
-      <p className="mr-4 font-semibold">{message}</p>
-      <button onClick={onClose} className="ml-4 opacity-75 hover:opacity-100 transition">
-        <XIcon className="w-5 h-5" />
-      </button>
-    </div>
-  );
-};
 
 const getAuthToken = () => {
   if (typeof window !== 'undefined') {
@@ -53,14 +21,14 @@ const getAuthToken = () => {
   return null;
 };
 
-async function fetchApi(url, options = {}) {
+async function fetchApi(url: string, options: any = {}) {
   const token = getAuthToken();
   const defaultHeaders = {
     ...(!options.body || typeof options.body === 'string' || options.body instanceof URLSearchParams ? { 'Content-Type': 'application/json' } : {}),
     ...(token && { 'Authorization': `Bearer ${token}` }),
   };
 
-  const config = {
+  const config: any = {
     method: options.method || 'GET',
     headers: {
       ...defaultHeaders,
@@ -78,7 +46,7 @@ async function fetchApi(url, options = {}) {
     }
   }
 
-  const response = await fetch(url, config);
+  const response = await fetch(url, config as RequestInit);
   const isJson = response.headers.get('content-type')?.includes('application/json');
   
   if (!response.ok) {
@@ -101,20 +69,14 @@ async function fetchApi(url, options = {}) {
 
 
 export default function AdminProfilePage() {
-  const fileRef = useRef(null);
+  const fileRef = useRef<HTMLInputElement | null>(null);
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
-  const [avatar, setAvatar] = useState(null);
-  const [avatarFile, setAvatarFile] = useState(null);
+  const [avatar, setAvatar] = useState<string | null>(null);
+  const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(true);
   
-  const [toastState, setToastState] = useState(null); 
-
-  const showToast = useCallback((message, type) => {
-    setToastState({ message, type });
-  }, []);
-
   useEffect(() => {
     const fetchProfile = async () => {
       try {
@@ -124,15 +86,15 @@ export default function AdminProfilePage() {
         setAvatar(data.avatar || null);
       } catch (error) {
         console.error("Error fetching profile:", error);
-        showToast("Không thể tải thông tin hồ sơ", 'error');
+        toast.error("Không thể tải thông tin hồ sơ");
       } finally {
         setLoading(false);
       }
     };
     fetchProfile();
-  }, [showToast]);
+  }, []);
 
-  const handleFileChange = (e) => {
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files && e.target.files[0];
     if (!file) {
       if (e.target) e.target.value = "";
@@ -140,12 +102,12 @@ export default function AdminProfilePage() {
     }
 
     if (!file.type.startsWith("image/")) {
-      showToast("Vui lòng chọn tệp hình ảnh", 'error');
+      toast.error("Vui lòng chọn tệp hình ảnh");
       return;
     }
 
     if (file.size > MAX_AVATAR_SIZE) {
-      showToast("Ảnh đại diện không được lớn hơn 5MB", 'error');
+      toast.error("Ảnh đại diện không được lớn hơn 5MB");
       return;
     }
 
@@ -165,7 +127,7 @@ export default function AdminProfilePage() {
 
   const handleDeleteAvatar = async () => {
     if (!avatar) {
-      showToast("Không có ảnh đại diện để xóa", 'error');
+      toast.error("Không có ảnh đại diện để xóa");
       return;
     }
 
@@ -178,20 +140,20 @@ export default function AdminProfilePage() {
       setAvatar(null);
       setAvatarFile(null);
       if (fileRef.current) fileRef.current.value = "";
-      showToast("Xóa ảnh đại diện thành công", 'success');
+      toast.success("Xóa ảnh đại diện thành công");
       
     } catch (error) {
       console.error("Error deleting avatar:", error);
-      showToast(error?.message || "Lỗi khi xóa ảnh đại diện", 'error');
+      toast.error((error as any)?.message || "Lỗi khi xóa ảnh đại diện");
     } finally {
       setSaving(false);
     }
   };
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!username.trim()) {
-      showToast("Tên không được để trống", 'error');
+      toast.error("Tên không được để trống");
       return;
     }
 
@@ -223,11 +185,11 @@ export default function AdminProfilePage() {
       setAvatar(finalAvatarUrl);
       setAvatarFile(null);
       
-      showToast("Cập nhật hồ sơ thành công", 'success');
+      toast.success("Cập nhật hồ sơ thành công");
       
     } catch (error) {
       console.error("Error updating profile:", error);
-      showToast(error?.message || "Lỗi khi cập nhật hồ sơ", 'error');
+      toast.error((error as any)?.message || "Lỗi khi cập nhật hồ sơ");
     } finally {
       setSaving(false);
     }
@@ -351,14 +313,6 @@ export default function AdminProfilePage() {
         </div>
       </div>
       
-      {/* Toast Notification */}
-      {toastState && (
-          <Toast 
-              message={toastState.message} 
-              type={toastState.type} 
-              onClose={() => setToastState(null)} 
-          />
-      )}
-    </div>
+      </div>
   );
 }
