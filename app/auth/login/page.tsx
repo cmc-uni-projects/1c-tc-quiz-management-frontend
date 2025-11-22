@@ -5,9 +5,11 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { toastSuccess, toastError } from '@/lib/toast';
 import { fetchApi } from '@/lib/apiClient';
+import { useUser } from '@/lib/user';
 
 export default function LoginPage() {
   const router = useRouter();
+  const { mutate } = useUser();
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -29,8 +31,15 @@ export default function LoginPage() {
 
       if (response.token) {
         localStorage.setItem('jwt', response.token);
+        
+        // Mutate to re-fetch user data across the app
+        await mutate();
+
         toastSuccess('Đăng nhập thành công!');
 
+        // The mutate call above already fetched the user. We can use the updated cache.
+        // Or fetch again to be absolutely sure, but it's often not needed.
+        // For simplicity, we'll rely on the redirect and the other pages' useUser to handle it.
         const user = await fetchApi('/me');
         console.log('LoginPage: User data fetched:', user);
 

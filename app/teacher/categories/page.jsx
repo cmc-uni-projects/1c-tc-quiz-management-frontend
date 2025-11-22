@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState, useRef } from "react";
 import toast, { Toast } from "react-hot-toast";
+import { fetchApi, ApiError } from '@/lib/apiClient';
 import Swal from "sweetalert2";
 
 // Custom toast hook to prevent duplicate toasts
@@ -101,18 +102,6 @@ function sentenceCase(value) {
   return value.charAt(0).toUpperCase() + value.slice(1);
 }
 
-// Badge màu theo người tạo
-const creatorBadgeClass = (role) => {
-  switch ((role || "").toLowerCase()) {
-    case "admin":
-      return "bg-fuchsia-100 text-fuchsia-700 border border-fuchsia-200";
-    case "teacher":
-      return "bg-emerald-100 text-emerald-700 border border-emerald-200";
-    default:
-      return "bg-gray-100 text-gray-700 border border-gray-200";
-  }
-};
-
 export default function TeacherCategoriesPage() {
   const [categories, setCategories] = useState([]);
   const [keyword, setKeyword] = useState("");
@@ -130,36 +119,6 @@ export default function TeacherCategoriesPage() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const { showError, showSuccess } = useToast();
-
-  // Chuẩn hóa thông báo lỗi từ backend sang dạng thân thiện, tiếng Việt
-  const extractErrorMessage = async (res, fallback = "Có lỗi xảy ra") => {
-    try {
-      const text = await res.text();
-      if (!text) return fallback;
-
-      let raw = text;
-      try {
-        const parsed = JSON.parse(text);
-        raw = parsed.message || parsed.error || text;
-      } catch {
-        // text không phải JSON, giữ nguyên
-      }
-
-      if (raw && raw.includes("Category name already exists")) {
-        return "Tên danh mục đã tồn tại";
-      }
-      if (raw && raw.includes("You are not allowed to delete this category")) {
-        return "Bạn không có quyền xóa danh mục này";
-      }
-      if (raw && raw.includes("You are not allowed to update this category")) {
-        return "Bạn không có quyền sửa danh mục này";
-      }
-
-      return raw || fallback;
-    } catch {
-      return fallback;
-    }
-  };
 
   // Fetch categories from backend with pagination + optional search
   const fetchCategories = async (pageParam = page, keywordParam = keyword, showError = true) => {
@@ -183,13 +142,7 @@ export default function TeacherCategoriesPage() {
         });
         url = `/categories/search?${params.toString()}`;
       }
-      const res = await fetch(url, { credentials: "include" });
-      if (!res.ok) {
-        const error = new Error("Không thể tải danh sách danh mục");
-        error.status = res.status;
-        throw error;
-      }
-      const data = await res.json();
+      const data = await fetchApi(url);
       const content = Array.isArray(data?.content)
         ? data.content
         : Array.isArray(data)
@@ -303,33 +256,19 @@ export default function TeacherCategoriesPage() {
           name: form.name.trim(),
           description: form.description?.trim() || "",
         };
-        const res = await fetch(`/categories/${editing.id}`, {
+        const updated = await fetchApi(`/categories/${editing.id}`, {
           method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          credentials: "include",
-          body: JSON.stringify(body),
+          body,
         });
-        if (!res.ok) {
-          const msg = await extractErrorMessage(res);
-          throw new Error(msg);
-        }
-        const updated = await res.json();
         setCategories((prev) => prev.map((c) => (c.id === updated.id ? updated : c)));
         showSuccess("Cập nhật danh mục thành công");
       } else {
         // Create
         const body = { name: form.name.trim(), description: form.description?.trim() || "" };
-        const res = await fetch(`/categories`, {
+        await fetchApi(`/categories`, {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
-          credentials: "include",
-          body: JSON.stringify(body),
+          body,
         });
-        if (!res.ok) {
-          const msg = await extractErrorMessage(res);
-          throw new Error(msg);
-        }
-        await res.json();
         showSuccess("Tạo danh mục thành công");
         setModalOpen(false);
         setPage(0);
@@ -339,7 +278,7 @@ export default function TeacherCategoriesPage() {
       setModalOpen(false);
     } catch (e) {
       console.error(e);
-      setError(typeof e === "string" ? e : e?.message || "Có lỗi xảy ra");
+      setError(e?.message || "Có lỗi xảy ra");
     } finally {
       setLoading(false);
     }
@@ -373,14 +312,9 @@ export default function TeacherCategoriesPage() {
 
     try {
       setLoading(true);
-      const res = await fetch(`/categories/${id}`, {
+      await fetchApi(`/categories/${id}`, {
         method: "DELETE",
-        credentials: "include",
       });
-      if (!res.ok) {
-        const msg = await extractErrorMessage(res, "Không thể xóa danh mục");
-        throw new Error(msg);
-      }
       setCategories((prev) => prev.filter((c) => c.id !== id));
       showSuccess("Đã xóa danh mục thành công");
     } catch (e) {
@@ -439,6 +373,7 @@ export default function TeacherCategoriesPage() {
                 <tr>
                   <th className="px-4 py-3 text-left text-xs font-semibold uppercase">STT</th>
                   <th className="px-4 py-3 text-left text-xs font-semibold uppercase">Tên danh mục</th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold uppercase">Mô tả</th>
                   <th className="px-4 py-3 text-left text-xs font-semibold uppercase">Số câu hỏi</th>
                   <th className="px-4 py-3 text-left text-xs font-semibold uppercase">Người tạo</th>
                   <th className="px-4 py-3 text-right text-xs font-semibold uppercase">Thao tác</th>
@@ -464,19 +399,16 @@ export default function TeacherCategoriesPage() {
                         {cat.name}
                       </td>
                       <td className="px-4 py-3 text-gray-700">
+                        {cat.description || "Không có mô tả"}
+                      </td>
+                      <td className="px-4 py-3 text-gray-700">
                         {cat.questions?.length ?? 0}
                       </td>
                       <td className="px-4 py-3">
                         <span
-                          className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold ${creatorBadgeClass(
-                            cat.createdByRole
-                          )}`}
+                          className="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-gray-100 text-gray-700 border border-gray-200"
                         >
-                          {cat.createdByRole === "admin"
-                            ? "Quản trị viên"
-                            : cat.createdByRole === "teacher"
-                            ? "Giáo viên"
-                            : "Khác"}
+                          {cat.createdByName || 'Không rõ'}
                         </span>
                       </td>
                       <td className="px-4 py-3 text-right">
