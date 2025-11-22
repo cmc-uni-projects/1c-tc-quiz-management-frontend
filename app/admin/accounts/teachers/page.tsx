@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { MagnifyingGlassIcon, ChevronLeftIcon, ChevronRightIcon, UserIcon } from '@heroicons/react/24/outline';
 import toast from 'react-hot-toast';
+import Swal from 'sweetalert2';
 
 class ApiError extends Error {
   constructor(message, status, payload) {
@@ -82,24 +83,31 @@ async function fetchTeachersFromBackend(params: {
   page?: number;
   size?: number;
 }) {
-     const queryParams = new URLSearchParams();
-     if (params.email) queryParams.append('email', params.email);
-     if (params.username) queryParams.append('username', params.username);
-     if (params.status && params.status !== 'all') queryParams.append('status', params.status);
+  const queryParams = new URLSearchParams();
+  if (params.email) queryParams.append('email', params.email);
+  if (params.username) queryParams.append('username', params.username);
 
-     queryParams.append('page', String(params.page || 0));
-     queryParams.append('size', String(params.size || 20));
-     queryParams.append('sort', 'createdAt,desc');
+  const urlBase = '/api/admin/accounts/teachers';
+  const url = queryParams.toString()
+    ? `${urlBase}?${queryParams.toString()}`
+    : urlBase;
 
-     const url = `/api/admin/accounts/teachers?${queryParams.toString()}`;
-       const data = await fetchApi(url);
-       return data;
-   }
+  const data = await fetchApi(url);
+  return data;
+}
 
 async function deleteTeacherInBackend(id: number) {
   await fetchApi(`/api/admin/accounts/teachers/${id}`, {
     method: 'DELETE',
   });
+}
+
+async function toggleTeacherLockStatusInBackend(id: number, currentStatus: Teacher['status']) {
+  if (currentStatus === 'APPROVED') {
+    await fetchApi(`/api/admin/accounts/teachers/${id}/lock`, { method: 'POST' });
+  } else if (currentStatus === 'LOCKED') {
+    await fetchApi(`/api/admin/accounts/teachers/${id}/unlock`, { method: 'POST' });
+  }
 }
 
 const formatDate = (dateString: string | null | undefined) => {
@@ -169,6 +177,14 @@ const getStatusColor = (status: string) => {
   return colorMap[status] || 'bg-gray-100 text-gray-700';
 };
 
+const mapDisplayToApiStatus = (display: string) => {
+  if (display === 'Chờ duyệt') return 'PENDING';
+  if (display === 'Hoạt động') return 'APPROVED';
+  if (display === 'Bị từ chối') return 'REJECTED';
+  if (display === 'Tạm khóa') return 'LOCKED';
+  return null;
+};
+
 const TeacherAccountsPage = () => {
   const [searchEmail, setSearchEmail] = useState('');
   const [searchName, setSearchName] = useState('');
@@ -192,30 +208,43 @@ const TeacherAccountsPage = () => {
       const data = await fetchTeachersFromBackend({
         username: appliedName || undefined,
         email: appliedEmail || undefined,
-        page: currentPage,
-        size: itemsPerPage,
       });
 
-      console.log('API Response:', data);
+      const content = Array.isArray((data as any)?.content)
+        ? (data as any).content
+        : Array.isArray(data)
+          ? data
+          : [];
 
-      let filteredContent = data.content || [];
+      let filteredContent = content;
       if (appliedStatus !== 'all') {
-        const apiStatus = Object.keys(getStatusDisplay).find(key => getStatusDisplay[key as keyof typeof getStatusDisplay] === appliedStatus);
-
-        filteredContent = filteredContent.filter(
-          (t: Teacher) => t.status === apiStatus
-        );
+        const apiStatus = mapDisplayToApiStatus(appliedStatus);
+        if (apiStatus) {
+          filteredContent = content.filter(
+            (t: Teacher) => t.status === apiStatus
+          );
+        }
       }
 
       setTeachers(filteredContent);
-      setTotalPages(data.totalPages || 1);
-      setTotalElements(data.totalElements || 0);
+
+      if (typeof (data as any)?.totalPages === 'number') {
+        setTotalPages((data as any).totalPages || 1);
+      } else {
+        setTotalPages(1);
+      }
+
+      if (typeof (data as any)?.totalElements === 'number') {
+        setTotalElements((data as any).totalElements || filteredContent.length);
+      } else {
+        setTotalElements(filteredContent.length);
+      }
     } catch (error: any) {
       console.error('Error fetching teachers:', error);
       if (error.status === 403 || error.status === 401) {
-          toast.error("Truy cập bị từ chối. Vui lòng đăng nhập lại với tài khoản Admin.");
+        toast.error("Truy cập bị từ chối. Vui lòng đăng nhập lại với tài khoản Admin.");
       } else {
-          toast.error(error.message || 'Không thể tải danh sách giáo viên');
+        toast.error(error.message || 'Không thể tải danh sách giáo viên');
       }
       setTeachers([]);
       setTotalPages(1);
@@ -290,6 +319,45 @@ const TeacherAccountsPage = () => {
       } finally {
         setLoading(false);
       }
+    }
+  };
+
+  const handleToggleLock = async (teacher: Teacher) => {
+    if (teacher.status !== 'APPROVED' && teacher.status !== 'LOCKED') {
+      toast.error('Chỉ có thể đổi trạng thái giữa Hoạt động và Tạm khóa.');
+      return;
+    }
+
+    const isLocking = teacher.status === 'APPROVED';
+    const actionText = isLocking ? 'tạm khóa' : 'mở khóa';
+
+    const result = await Swal.fire({
+      title: `Xác nhận ${isLocking ? 'tạm khóa' : 'mở khóa'} tài khoản`,
+      text: `Bạn có chắc chắn muốn ${actionText} tài khoản giáo viên "${teacher.username}"?`,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#3085d6',
+      cancelButtonColor: '#d33',
+      confirmButtonText: 'Xác nhận',
+      cancelButtonText: 'Hủy',
+    });
+
+    if (!result.isConfirmed) return;
+
+    try {
+      setLoading(true);
+      await toggleTeacherLockStatusInBackend(teacher.teacherId, teacher.status);
+      toast.success(isLocking ? 'Đã tạm khóa tài khoản giáo viên.' : 'Đã mở khóa tài khoản giáo viên.');
+      await fetchTeachers();
+    } catch (error: any) {
+      console.error('Error toggling lock status:', error);
+      if (error.status === 403 || error.status === 401) {
+        toast.error('Truy cập bị từ chối. Vui lòng đăng nhập lại với tài khoản Admin.');
+      } else {
+        toast.error(error.message || 'Không thể cập nhật trạng thái giáo viên');
+      }
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -412,7 +480,14 @@ const TeacherAccountsPage = () => {
                         {getStatusDisplay(teacher.status)}
                       </span>
                     </td>
-                    <td className="px-4 py-3 text-center text-sm">
+                    <td className="px-4 py-3 text-center text-sm space-x-2">
+                      <button
+                        onClick={() => handleToggleLock(teacher)}
+                        className="px-3 py-1 bg-yellow-500 text-white rounded-lg text-xs font-semibold hover:bg-yellow-600 transition disabled:opacity-50"
+                        disabled={loading || (teacher.status !== 'APPROVED' && teacher.status !== 'LOCKED')}
+                      >
+                        {teacher.status === 'LOCKED' ? 'Mở khóa' : 'Tạm khóa'}
+                      </button>
                       <button
                         onClick={() => handleDelete(teacher.teacherId)}
                         className="px-3 py-1 bg-red-500 text-white rounded-lg text-xs font-semibold hover:bg-red-600 transition disabled:opacity-50"
