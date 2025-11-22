@@ -87,9 +87,11 @@ async function rejectTeacherInBackend(id) {
 }
 
 
-const PRIMARY_PURPLE_BG = '#E33AEC7A';
-const BUTTON_RED = '#f04040';
-const BUTTON_BLUE = '#1e90ff';
+const PAGE_BG = '#F4F2FF';
+const HERO_GRADIENT = 'linear-gradient(135deg, #FFB6FF 0%, #8A46FF 100%)';
+const TABLE_SHADOW = '0 25px 60px rgba(126, 62, 255, 0.18)';
+const BUTTON_RED = '#F43F5E';
+const BUTTON_BLUE = '#4C6FFF';
 
 const RefreshCw = (props) => (
   <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
@@ -305,13 +307,16 @@ export default function AdminReviewTeachersPage() {
 
     const statusColorMap = (status) => {
         switch (status) {
-            case 'pending': return 'bg-yellow-100 text-yellow-800';
-            case 'approved': return 'bg-green-100 text-green-800';
-            case 'rejected': return 'bg-red-100 text-red-800';
-            default: return 'bg-gray-100 text-gray-800';
+            case 'pending':
+                return 'bg-amber-100 text-amber-700 border border-amber-200 shadow-sm';
+            case 'approved':
+                return 'bg-emerald-100 text-emerald-700 border border-emerald-200 shadow-sm';
+            case 'rejected':
+                return 'bg-rose-100 text-rose-700 border border-rose-200 shadow-sm';
+            default:
+                return 'bg-gray-100 text-gray-700 border border-gray-200 shadow-sm';
         }
-    }
-
+    };
 
     const filteredTeachers = useMemo(() => {
         return allTeachers.filter(t => t.status === 'pending');
@@ -328,116 +333,141 @@ export default function AdminReviewTeachersPage() {
 
     if (error && filteredTeachers.length === 0) {
         return (
-            <div className="p-4 sm:p-8 font-sans">
-                <div className="bg-red-500/20 text-red-700 p-6 rounded-xl my-4 border border-red-500 shadow-xl">
-                    <h3 className="font-bold text-xl mb-2">Lỗi Kết nối API</h3>
-                    <p className="mb-4">{error}</p>
-                    <button
-                        onClick={fetchTeachers}
-                        className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition font-semibold"
-                    >
-                        Thử tải lại
-                    </button>
+            <div className="w-full min-h-screen py-6 sm:py-10 px-4 sm:px-8" style={{ backgroundColor: PAGE_BG }}>
+                <div className="max-w-6xl mx-auto">
+                    <div className="bg-red-500/15 text-red-700 p-6 rounded-2xl border border-red-200 shadow-lg">
+                        <h3 className="font-bold text-xl mb-2">Lỗi Kết nối API</h3>
+                        <p className="mb-4">{error}</p>
+                        <button
+                            onClick={fetchTeachers}
+                            className="px-4 py-2 rounded-xl bg-red-500 text-white font-semibold shadow hover:bg-red-600 transition"
+                        >
+                            Thử tải lại
+                        </button>
+                    </div>
                 </div>
             </div>
         );
     }
 
     return (
-        <div className="p-4 sm:p-8 font-sans">
-            <style jsx global>{`
-                body {
-                    background-color: #f0f0f0;
-                }
-            `}</style>
-
-            {/* Thanh tiêu đề Duyệt giáo viên */}
-            <div
-                className="p-4 sm:p-6 mb-8 rounded-xl shadow-lg"
-                style={{ backgroundColor: PRIMARY_PURPLE_BG }}
-            >
-                <h1 className="text-3xl font-extrabold text-white">
-                    Duyệt giáo viên
-                </h1>
-                <p className="text-white/80 mt-1 text-sm">
-                    Danh sách giáo viên chờ duyệt ({filteredTeachers.length} tài khoản)
-                </p>
-            </div>
-
-            {/* Hiển thị danh sách giáo viên */}
-            {filteredTeachers.length === 0 ? (
-                <div className="text-center p-10 bg-white rounded-xl shadow-md border border-gray-200">
-                    <p className="text-xl font-semibold text-gray-600">
-                        <UserCheck className="w-10 h-10 mx-auto text-green-500 mb-4"/>
-                        Tuyệt vời! Không có yêu cầu nào đang chờ duyệt.
-                    </p>
-                </div>
-            ) : (
-                <div className="space-y-4">
-                    {filteredTeachers.map((teacher) => (
-                        <div
-                            key={teacher.id}
-                            onClick={() => setSelectedTeacher(teacher)}
-                            className="bg-white rounded-xl p-4 shadow-md flex flex-col md:flex-row justify-between items-center transition duration-300 hover:shadow-lg border border-gray-100 cursor-pointer"
-                        >
-                            {/* Thông tin giáo viên */}
-                            <div className="flex flex-col sm:flex-row items-start sm:items-center space-y-1 sm:space-y-0 sm:space-x-6 w-full md:w-auto mb-3 md:mb-0">
-                                <p className="text-lg font-medium text-gray-800 break-all w-full sm:w-60">
-                                    {teacher.email}
-                                </p>
-                                <p className="text-gray-600 font-semibold w-full sm:w-40">
-                                    {teacher.fullName}
-                                </p>
-                                {/* Trạng thái */}
-                                <div className={`text-sm font-bold px-3 py-1 rounded-full w-full sm:w-40 text-center ${statusColorMap(teacher.status)}`}>
-                                    {statusMap[teacher.status]}
-                                </div>
-                            </div>
-
-                            {/* Nút hành động */}
-                            <div className="flex space-x-3 mt-3 md:mt-0">
-                                <button
-                                    type="button"
-                                    onClick={(e) => handleReject(e, teacher.id)}
-                                    style={{ backgroundColor: BUTTON_RED }}
-                                    className="px-5 py-2 text-white font-semibold rounded-lg shadow-sm hover:opacity-90 transition flex items-center"
-                                    disabled={loading}
-                                >
-                                    <UserX className="w-4 h-4 mr-1"/> Từ chối
-                                </button>
-                                <button
-                                    type="button"
-                                    onClick={(e) => handleApprove(e, teacher.id)}
-                                    style={{ backgroundColor: BUTTON_BLUE }}
-                                    className="px-5 py-2 text-white font-semibold rounded-lg shadow-sm hover:opacity-90 transition flex items-center"
-                                    disabled={loading}
-                                >
-                                    <UserCheck className="w-4 h-4 mr-1"/> Đồng ý
-                                </button>
-                            </div>
+        <div className="w-full min-h-screen py-6 sm:py-10 px-4 sm:px-8" style={{ backgroundColor: PAGE_BG }}>
+            <div className="max-w-6xl mx-auto space-y-6">
+                {/* Hero section */}
+                <div
+                    className="rounded-2xl shadow-2xl p-6 sm:p-8 text-white relative overflow-hidden"
+                    style={{ background: HERO_GRADIENT }}
+                >
+                    <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+                        <div>
+                            <h1 className="text-3xl font-extrabold drop-shadow">Duyệt tài khoản giáo viên</h1>
+                            <p className="text-white/80 mt-1 text-sm">
+                                Danh sách yêu cầu tạo tài khoản giáo viên đang chờ xử lý.
+                            </p>
                         </div>
-                    ))}
+                        <div className="flex flex-wrap gap-3 text-sm font-semibold">
+                            <span className="px-4 py-2 rounded-full bg-white/25 backdrop-blur">
+                                {filteredTeachers.length} yêu cầu đang chờ
+                            </span>
+                            <button
+                                onClick={fetchTeachers}
+                                className="px-4 py-2 rounded-full bg-white/20 hover:bg-white/30 transition flex items-center gap-2"
+                            >
+                                <RefreshCw className="w-4 h-4" />
+                                Tải lại
+                            </button>
+                        </div>
+                    </div>
                 </div>
-            )}
 
-            {selectedTeacher && (
-                <TeacherDetailModal teacher={selectedTeacher} onClose={() => setSelectedTeacher(null)} />
-            )}
+                {/* Pending list */}
+                <div
+                    className="bg-white rounded-2xl border border-white/60 shadow-[0_25px_60px_rgba(131,56,236,0.12)] overflow-hidden"
+                    style={{ boxShadow: TABLE_SHADOW }}
+                >
+                    {filteredTeachers.length === 0 ? (
+                        <div className="text-center p-12">
+                            <UserCheck className="w-12 h-12 mx-auto text-emerald-500 mb-4" />
+                            <p className="text-xl font-semibold text-gray-600">
+                                Tuyệt vời! Không có yêu cầu nào đang chờ duyệt.
+                            </p>
+                        </div>
+                    ) : (
+                        <div className="overflow-x-auto">
+                            <table className="w-full min-w-[760px] text-sm text-gray-700">
+                                <thead className="bg-[#F7F4FF] border-b border-gray-100 uppercase text-[0.65rem] tracking-wide text-gray-600">
+                                    <tr>
+                                        <th className="px-4 py-3 text-left">Email</th>
+                                        <th className="px-4 py-3 text-left">Họ tên</th>
+                                        <th className="px-4 py-3 text-left">Ngày đăng ký</th>
+                                        <th className="px-4 py-3 text-left">Trạng thái</th>
+                                        <th className="px-4 py-3 text-center">Thao tác</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-gray-100">
+                                    {filteredTeachers.map((teacher) => (
+                                        <tr
+                                            key={teacher.id}
+                                            className="hover:bg-purple-50/50 transition cursor-pointer"
+                                            onClick={() => setSelectedTeacher(teacher)}
+                                        >
+                                            <td className="px-4 py-3 font-medium break-all">{teacher.email}</td>
+                                            <td className="px-4 py-3">{teacher.fullName}</td>
+                                            <td className="px-4 py-3">{teacher.requestDate}</td>
+                                            <td className="px-4 py-3">
+                                                <span className={`px-3 py-1.5 rounded-full text-[0.7rem] font-semibold inline-flex items-center justify-center ${statusColorMap(teacher.status)}`}>
+                                                    {statusMap[teacher.status]}
+                                                </span>
+                                            </td>
+                                            <td className="px-4 py-3">
+                                                <div className="flex flex-wrap items-center justify-center gap-2">
+                                                    <button
+                                                        type="button"
+                                                        onClick={(e) => handleReject(e, teacher.id)}
+                                                        className="px-4 py-1.5 rounded-full text-xs font-semibold text-white shadow hover:brightness-110 transition flex items-center gap-1"
+                                                        style={{ backgroundColor: BUTTON_RED }}
+                                                        disabled={loading}
+                                                    >
+                                                        <UserX className="w-4 h-4" /> Từ chối
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        onClick={(e) => handleApprove(e, teacher.id)}
+                                                        className="px-4 py-1.5 rounded-full text-xs font-semibold text-white shadow hover:brightness-110 transition flex items-center gap-1"
+                                                        style={{ backgroundColor: BUTTON_BLUE }}
+                                                        disabled={loading}
+                                                    >
+                                                        <UserCheck className="w-4 h-4" /> Đồng ý
+                                                    </button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    )}
+                </div>
 
-            {/* Component Toast Notification */}
-            {toastState && (
-                <Toast
-                    message={toastState.message}
-                    type={toastState.type}
-                    onClose={() => setToastState(null)}
-                />
-            )}
+                {selectedTeacher && (
+                    <TeacherDetailModal teacher={selectedTeacher} onClose={() => setSelectedTeacher(null)} />
+                )}
+
+                {/* Component Toast Notification */}
+                {toastState && (
+                    <Toast
+                        message={toastState.message}
+                        type={toastState.type}
+                        onClose={() => setToastState(null)}
+                    />
+                )}
+            </div>
 
             {/* Loading overlay khi đang xử lý action */}
             {loading && filteredTeachers.length > 0 && (
-                <div className="fixed inset-0 bg-black bg-opacity-10 flex items-center justify-center z-40">
-                    <div className="bg-white p-4 rounded-lg shadow-xl flex items-center">
-                        <RefreshCw className="animate-spin -ml-1 mr-3 h-5 w-5 text-purple-600" />
+                <div className="fixed inset-0 bg-black/10 flex items-center justify-center z-40">
+                    <div className="bg-white px-5 py-3 rounded-xl shadow-xl flex items-center gap-2 text-sm font-medium text-gray-700">
+                        <RefreshCw className="animate-spin h-5 w-5 text-purple-600" />
                         Đang xử lý...
                     </div>
                 </div>
