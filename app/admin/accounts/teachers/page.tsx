@@ -477,7 +477,6 @@ const TeacherAccountsPage = () => {
           {/* Tiêu đề bảng */}
           <div className="p-5 border-b border-gray-100 bg-gradient-to-r from-white to-purple-50/60">
             <p className="text-sm text-gray-600 font-medium flex flex-wrap items-center gap-2">
-              Hiển thị <span className="font-semibold text-gray-900">{teachers.length}</span> giáo viên / Tổng: {totalElements}
               <span className="text-xs px-3 py-1 rounded-full bg-white shadow-inner">
                 Trang {currentPage + 1}/{totalPages}
               </span>
