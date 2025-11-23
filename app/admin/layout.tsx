@@ -124,6 +124,8 @@ const AdminSidebar = () => {
         return <CheckBadgeIcon className="w-5 h-5" />;
       case "Danh mục":
         return <FolderIcon className="w-5 h-5" />;
+      case "Câu hỏi":
+        return <AcademicCapIcon className="w-5 h-5" />;
       default:
         return null;
     }

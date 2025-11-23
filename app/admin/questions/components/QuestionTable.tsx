@@ -18,7 +18,7 @@ interface QuestionTableProps {
   onDelete: (id: number) => void;
   // User info for authorization check
   currentUserId: number;
-  currentUserRole: 'ADMIN' | 'TEACHER';
+  currentUserRole: 'ADMIN' | 'TEACHER' | 'STUDENT' | 'UNKNOWN';
 }
 
 export default function QuestionTable({
