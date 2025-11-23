@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-
+import {Autocomplete, AutocompleteItem} from "@nextui-org/react";
 
 // TYPES
 
@@ -33,6 +33,8 @@ export default function CreateExamPage() {
   const [startDate, setStartDate] = useState("");
   const [endTime, setEndTime] = useState("00:00");
   const [endDate, setEndDate] = useState("");
+  const [openLibrary, setOpenLibrary] = useState(false);
+  const [examCategory, setExamCategory] = useState("");
 
   // ======= STATE CÂU HỎI =======
   const [questions, setQuestions] = useState<Question[]>([
@@ -193,6 +195,40 @@ export default function CreateExamPage() {
             {/* Các input đầu */}
             <div className="space-y-4 mb-6">
               <div>
+            <label className="block text-sm mb-1">Danh mục bài thi</label>
+            <Autocomplete
+            allowsCustomValue
+            placeholder="Nhập hoặc chọn danh mục"
+            defaultItems={[
+            { label: "Toán", value: "math" },
+            { label: "Lý", value: "physics" },
+            { label: "Hóa", value: "chemistry" },
+            ]}
+            onSelectionChange={(key) => setExamCategory(key as string)}
+            onInputChange={(value) => setExamCategory(value)}
+            className="w-full"
+            inputProps={{
+            classNames: {
+            base: "h-auto",
+            inputWrapper: "border px-3 py-2 rounded-md bg-white h-auto",
+            input: "text-sm"
+            }
+            }}
+            popoverProps={{
+            classNames: {
+            content: "bg-white"
+            }
+            }}
+            >
+            {(item) => (
+           <AutocompleteItem key={item.value}>
+           {item.label}
+           </AutocompleteItem>
+           )}
+           </Autocomplete>
+           </div>
+
+              <div>
                 <label className="block text-sm mb-1">Tên bài thi</label>
                 <input
                   type="text"
@@ -298,7 +334,7 @@ export default function CreateExamPage() {
               <h3 className="text-lg font-semibold">Thêm câu hỏi</h3>
               <div className="flex items-center gap-2">
                 <button
-                  onClick={() => console.log("Thư viện clicked")}
+                 onClick={() => setOpenLibrary(true)}
                   className="px-5 py-2 border-2 border-[#A53AEC] text-[#A53AEC] bg-white rounded-full"
                 >
                   Thư viện
@@ -345,20 +381,7 @@ export default function CreateExamPage() {
                   </div>
 
                   {/* Danh mục + độ khó */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-4">
-                    <select
-                      value={q.category}
-                      onChange={(e) =>
-                        updateQuestionField(q.id, "category", e.target.value)
-                      }
-                      className="border px-3 py-2 rounded-md bg-white"
-                    >
-                      <option value="">Danh mục câu hỏi</option>
-                      <option value="math">Giải Tích</option>
-                      <option value="english">Triết</option>
-                      <option value="it">Java</option>
-                    </select>
-
+                  <div className="grid grid-cols-1 gap-3 mb-4">
                     <select
                       value={q.difficulty}
                       onChange={(e) =>
@@ -443,6 +466,97 @@ export default function CreateExamPage() {
               Đăng bài
             </button>
           </div>
+      
+           {/* ================== MODAL THƯ VIỆN (Figma Style) ================== */}
+{openLibrary && (
+  <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+    
+    <div className="bg-white rounded-xl p-6 relative w-[95%] max-w-[1350px] min-h-[80vh]">
+
+
+      {/* Nút đóng giống Figma */}
+      <button
+        onClick={() => setOpenLibrary(false)}
+        className="absolute top-3 right-4 text-gray-500 text-lg hover:text-black"
+      >
+        x
+      </button>
+
+      {/* ===== FILTER ===== */}
+      <div className="flex flex-wrap gap-3 mb-4 items-center">
+
+        <input
+          placeholder="Nhập tiêu đề / đáp án..."
+          className="w-[300px] h-[40px] rounded-full border border-gray-300 px-4 text-sm"
+        />
+
+        <select className="h-[40px] px-4 rounded-full border border-gray-300 text-sm">
+          <option>Chọn độ khó</option>
+          <option>Dễ</option>
+          <option>Trung bình</option>
+          <option>Khó</option>
+        </select>
+
+        <select className="h-[40px] px-4 rounded-full border border-gray-300 text-sm">
+          <option>Chọn loại câu hỏi</option>
+          <option>Một đáp án</option>
+          <option>Nhiều đáp án</option>
+        </select>
+
+        <select className="h-[40px] px-4 rounded-full border border-gray-300 text-sm">
+          <option>Chọn danh mục</option>
+          <option>Toán</option>
+          <option>Lý</option>
+          <option>Hóa</option>
+        </select>
+
+        <button className="bg-[#A53AEC] text-white px-5 py-2 rounded-full text-sm">
+          Tìm kiếm
+        </button>
+      </div>
+
+      {/* ===== TABLE ===== */}
+    <div className="border border-gray-200 rounded-lg overflow-hidden min-h-[55vh]">
+
+        <table className="w-full border-collapse text-center text-sm">
+          <thead className="border-b bg-white">
+            <tr>
+              <th className="py-2 border">STT</th>
+              <th className="border">Tiêu đề</th>
+              <th className="border">Loại câu hỏi</th>
+              <th className="border">Độ khó</th>
+              <th className="border">Đáp án</th>
+              <th className="border">Người tạo</th>
+              <th className="border">Danh mục</th>
+              <th className="border">Thao tác</th>
+            </tr>
+          </thead>
+
+          <tbody>
+            {/* Vùng trống */}
+            <tr>
+         <td className="pt-56" colSpan={8}></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      {/* ===== PAGINATION ===== */}
+      <div className="flex justify-center gap-3 mt-4">
+
+        <button className="border border-blue-500 text-blue-500 px-2 py-1">≪</button>
+        <button className="border border-blue-500 text-blue-500 px-2 py-1">‹</button>
+
+        <button className="border-2 border-black px-4 py-1">1</button>
+
+        <button className="border border-blue-500 text-blue-500 px-2 py-1">›</button>
+        <button className="border border-blue-500 text-blue-500 px-2 py-1">≫</button>
+
+      </div>
+
+    </div>
+  </div>
+)}
         </main>
 
         {/* ====================== FOOTER ====================== */}
