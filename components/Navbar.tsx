@@ -11,10 +11,8 @@ export default function Navbar() {
   const hideOnRoutes = [
     "/admin",
     "/register",      // Admin area has its own layout/header
-    "/student/studenthome",      // Student home renders a local header
-    "/teacher/teacherhome",      // Teacher home renders a local header
-    "/student/change-password",  // Student change-password has its own header
-    "/teacher/change-password",  // Teacher change-password has its own header
+    "/student",       // All student pages have their own layout/header
+    "/teacher",       // All teacher pages have their own layout/header
   ];
   if (pathname && hideOnRoutes.some((p) => pathname.startsWith(p))) return null;
 
