@@ -61,6 +61,10 @@ const mockExams = [
 export default function TeacherExamListPage() {
   const [exams, setExams] = useState(mockExams);
   const [openMenu, setOpenMenu] = useState<number | null>(null);
+  const [openShare, setOpenShare] = useState(false);
+  const [shareLink, setShareLink] = useState("");
+  const [activeTab, setActiveTab] = useState<"link" | "qr">("link");
+
   const router = useRouter();
   // Sắp xếp từ mới nhất → cũ nhất (để sau này em có nhiều bài thi)
   const sortedExams = [...exams].sort(
@@ -81,8 +85,11 @@ export default function TeacherExamListPage() {
             <button className="pb-2 border-b-2 border-black font-medium">
               Danh sách bài thi
             </button>
-            <button className="pb-2 text-gray-500 hover:text-black">
-              Lịch sử
+            <button
+            onClick={() => router.push("/teacher/history-exam")}
+            className="pb-2 text-gray-500 hover:text-black"
+            >
+            Lịch sử
             </button>
           </div>
 
@@ -137,6 +144,16 @@ export default function TeacherExamListPage() {
                    >
                    Cập nhật
                    </button>
+                  <button
+                  onClick={() => {
+                  setShareLink(`${window.location.origin}/teacher/exam/${exam.id}`);
+                  setOpenShare(true);
+                  setOpenMenu(null);
+                  }}
+                  className="block w-full text-left px-4 py-2 hover:bg-gray-100"
+                  >
+                  Chia sẻ
+                  </button>
                   </div>
                 )}
               </div>
@@ -152,6 +169,92 @@ export default function TeacherExamListPage() {
             Danh sách bài thi
           </h2>
           {/* Hiện tại chưa hiển thị card nào ở phần này theo figma */}
+          {openShare && (
+          <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+          <div className="bg-white w-[520px] rounded-xl p-6 relative">
+
+          {/* Nút đóng */}
+          <button
+          onClick={() => setOpenShare(false)}
+          className="absolute top-3 right-4 text-gray-500 hover:text-black text-lg"
+          >
+          x
+          </button>
+
+          {/* Tiêu đề */}
+          <h2 className="text-xl font-semibold text-center mb-4">
+          Chia sẻ
+          </h2>
+
+          {/* Tabs */}
+          <div className="flex border-b mb-4">
+          <button
+          onClick={() => setActiveTab("link")}
+          className={`flex-1 py-2 ${
+            activeTab === "link"
+              ? "border-b-2 border-black font-semibold"
+              : "text-gray-400"
+          }`}
+        >
+          Link
+        </button>
+
+        <button
+          onClick={() => setActiveTab("qr")}
+          className={`flex-1 py-2 ${
+            activeTab === "qr"
+              ? "border-b-2 border-black font-semibold"
+              : "text-gray-400"
+          }`}
+        >
+          Mã QR
+        </button>
+        </div>
+
+        {/* TAB LINK */}
+        {activeTab === "link" && (
+        <div className="space-y-3 mt-3">
+          <p className="text-sm">Sao chép link</p>
+
+          <div className="flex gap-2">
+            <input
+              value={shareLink}
+              readOnly
+              className="flex-1 border px-3 py-2 rounded-md text-sm"
+            />
+
+            <button
+              onClick={() => {
+                navigator.clipboard.writeText(shareLink);
+                alert("Đã sao chép!");
+              }}
+              className="bg-[#A53AEC] text-white px-4 py-2 rounded-md"
+            >
+              Sao chép
+            </button>
+          </div>
+          </div>
+          )}
+
+          {/* TAB QR */}
+          {activeTab === "qr" && (
+          <div className="flex flex-col items-center gap-4 mt-4">
+
+          {/* Chưa dùng dữ liệu cứng - chỉ khung */}
+          <div className="w-44 h-44 border-2 border-dashed text-gray-400 flex items-center justify-center">
+            QR CODE
+          </div>
+
+          <button className="bg-[#A53AEC] text-white px-4 py-2 rounded-md">
+            Tải xuống
+          </button>
+
+          </div>
+          )}
+          </div>
+          </div>
+          )}
+
         </main>
 
         {/* ============ FOOTER ============ */}
