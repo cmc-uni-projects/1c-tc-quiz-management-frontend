@@ -1,17 +1,10 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import QuestionForm from '../components/QuestionForm';
 import { useRouter, useParams } from 'next/navigation';
-
-// Định nghĩa kiểu dữ liệu cho QuestionData
-interface QuestionData {
-  title: string;
-  type: string;
-  difficulty: string;
-  answer: string;
-  category: string;
-}
+import { fetchApi } from '@/lib/apiClient';
+import { toastError, toastSuccess } from '@/lib/toast';
+import QuestionForm from '../components/QuestionForm';
 
 export default function EditQuestionPage() {
   const router = useRouter();
@@ -29,25 +22,11 @@ export default function EditQuestionPage() {
       if (!questionId) return;
 
       try {
-        // GỌI API GET đã được proxy (File 2: app/api/questions/[id]/route.ts)
-        const response = await fetch(`/api/questions/${questionId}`, {
-            credentials: 'include', // Quan trọng để gửi cookies xác thực
-            cache: 'no-store'
-        });
-
-        if (response.ok) {
-          const data = await response.json();
-          setInitialData(data);
-        } else {
-          // Bắt lỗi 404, 403, 401 từ Backend
-          const errorText = await response.text();
-          throw new Error(`Lỗi ${response.status}: ${errorText || 'Không tìm thấy câu hỏi hoặc không có quyền.'}`);
-        }
-
+        const data = await fetchApi(`/questions/${questionId}`);
+        setInitialData(data);
       } catch (error) {
         console.error('Fetch Error:', error);
-        setError(`Lỗi tải dữ liệu: ${error instanceof Error ? error.message : 'Lỗi kết nối.'}`);
-        // Chuyển hướng sau khi thất bại
+        toastError(`Lỗi tải dữ liệu: ${error instanceof Error ? error.message : 'Lỗi kết nối.'}`);
         router.push('/admin/questions');
       } finally {
         setLoading(false);
@@ -60,27 +39,17 @@ export default function EditQuestionPage() {
   const handleUpdateSubmit = async (data: QuestionData) => {
     console.log(`Submitting update for ID ${questionId}:`, data);
     try {
-      // GỌI API PUT (File 2: app/api/questions/[id]/route.ts)
-      const response = await fetch(`/api/questions/${questionId}`, {
+      await fetchApi(`/questions/${questionId}`, {
         method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        credentials: 'include',
-        body: JSON.stringify(data),
+        body: data,
       });
 
-      if (response.ok) {
-        alert('Cập nhật câu hỏi thành công!');
-        router.push('/admin/questions');
-      } else {
-        const errorText = await response.text();
-        alert(`Lỗi khi cập nhật: ${errorText || 'Vui lòng kiểm tra lại dữ liệu.'}`);
-      }
+      toastSuccess('Cập nhật câu hỏi thành công!');
+      router.push('/admin/questions');
 
     } catch (error) {
       console.error('API Error:', error);
-      alert('Có lỗi xảy ra trong quá trình kết nối.');
+      toastError(`Lỗi khi cập nhật: ${error instanceof Error ? error.message : 'Vui lòng kiểm tra lại dữ liệu.'}`);
     }
   };
 

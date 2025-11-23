@@ -11,27 +11,31 @@ async function proxyRequestWithId(request: Request, id: string, method: string) 
 
     // Xây dựng URL đầy đủ: http://localhost:8082/api/questions/{id}
     const backendUrl = `${API_URL}/questions/${id}`;
-    const cookies = request.headers.get('cookie');
+    const authorization = request.headers.get('authorization');
 
     // Lấy body nếu phương thức là PUT
     let bodyData: any = undefined;
-    if (method === 'PUT') {
+    if (method === 'PUT' || method === 'POST') {
          try {
              // Cố gắng đọc body, chỉ cần cho PUT
              bodyData = await request.json();
          } catch (e) {
-             console.warn(`Could not parse body for PUT request.`, e);
+             console.warn(`Could not parse body for ${method} request.`, e);
          }
     }
 
 
     try {
+        const headers: HeadersInit = {
+            'Content-Type': 'application/json',
+        };
+        if (authorization) {
+            headers['Authorization'] = authorization;
+        }
+
         const response = await fetch(backendUrl, {
             method: method,
-            headers: {
-                'Cookie': cookies || '',
-                'Content-Type': 'application/json',
-            },
+            headers: headers,
             body: bodyData ? JSON.stringify(bodyData) : undefined,
             cache: 'no-store',
         });

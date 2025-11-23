@@ -1,10 +1,11 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import QuestionForm from '../../../admin/questions/components/QuestionForm';
 import { useRouter, useParams } from 'next/navigation';
+import { fetchApi } from '@/lib/apiClient';
+import { toastError, toastSuccess } from '@/lib/toast';
+import QuestionForm from '../../../admin/questions/components/QuestionForm';
 
-// Định nghĩa kiểu dữ liệu cho QuestionData
 interface QuestionData {
   title: string;
   type: string;
@@ -21,37 +22,17 @@ export default function TeacherEditQuestionPage() {
   const [initialData, setInitialData] = useState<QuestionData | undefined>(undefined);
   const [loading, setLoading] = useState(true);
 
-  // --- DATA FETCHING (GET current question data) ---
   useEffect(() => {
     const fetchQuestionData = async () => {
       if (!questionId) return;
 
       try {
-        // THỰC TẾ: GỌI API GET để lấy dữ liệu câu hỏi hiện tại
-        /*
-        const response = await fetch(`/api/questions/${questionId}`);
-        if (response.ok) {
-          const data: QuestionData = await response.json();
-          setInitialData(data);
-        } else {
-          alert('Không tìm thấy câu hỏi này.');
-          router.push('/teacher/questions');
-        }
-        */
-
-        // Giả lập dữ liệu thành công cho Frontend demo
-        await new Promise(resolve => setTimeout(resolve, 500));
-        setInitialData({
-            title: `[Teacher] Tiêu đề câu hỏi số ${questionId}`,
-            type: 'True/False',
-            difficulty: 'Easy',
-            answer: 'Đúng',
-            category: 'Mathematics',
-        });
-
+        const data = await fetchApi(`/api/questions/${questionId}`);
+        setInitialData(data);
       } catch (error) {
         console.error('Fetch Error:', error);
-        alert('Lỗi tải dữ liệu.');
+        toastError('Lỗi tải dữ liệu.');
+        router.push('/teacher/questions');
       } finally {
         setLoading(false);
       }
@@ -59,36 +40,18 @@ export default function TeacherEditQuestionPage() {
     fetchQuestionData();
   }, [questionId, router]);
 
-  // --- SUBMISSION HANDLER (PUT/PATCH) ---
   const handleUpdateSubmit = async (data: QuestionData) => {
     console.log(`Submitting update for ID ${questionId} (Teacher):`, data);
     try {
-      // THỰC TẾ: GỌI API PUT/PATCH để cập nhật câu hỏi (Backend sẽ kiểm tra quyền)
-      /*
-      const response = await fetch(`/api/questions/${questionId}`, {
+      await fetchApi(`/api/questions/${questionId}`, {
         method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(data),
+        body: data,
       });
-
-      if (response.ok) {
-        alert('Cập nhật câu hỏi thành công!');
-        router.push('/teacher/questions');
-      } else {
-        alert('Lỗi khi cập nhật câu hỏi.');
-      }
-      */
-
-      // Giả lập thành công
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      alert('Cập nhật câu hỏi thành công! (Dữ liệu giả lập)');
+      toastSuccess('Cập nhật câu hỏi thành công!');
       router.push('/teacher/questions');
-
     } catch (error) {
       console.error('API Error:', error);
-      alert('Có lỗi xảy ra, vui lòng thử lại.');
+      toastError('Có lỗi xảy ra, vui lòng thử lại.');
     }
   };
 
