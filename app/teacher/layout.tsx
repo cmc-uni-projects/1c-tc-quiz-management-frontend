@@ -115,7 +115,7 @@ const TeacherTopBar = () => {
 
         <div className="flex-1"></div>
 
-        <ProfileDropdown />
+
       </div>
     </header>
   );
