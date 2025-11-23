@@ -2,7 +2,6 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useUser } from "@/lib/user";
-import ProfileDropdown from "./ProfileDropdown";
 
 export default function Navbar() {
   const pathname = usePathname();
@@ -36,9 +35,7 @@ export default function Navbar() {
 
         {/* Actions */}
         <div className="flex shrink-0 items-center gap-2">
-          {isAuthenticated ? (
-            <ProfileDropdown />
-          ) : (
+          {!isAuthenticated && (
             <>
               <Link
                 href="/auth/login"
