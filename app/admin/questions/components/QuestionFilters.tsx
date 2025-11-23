@@ -23,8 +23,8 @@ interface Option {
 
 // Các Endpoint API (Bạn cần tạo các API Route Proxy tương ứng trong Next.js)
 const ENDPOINTS = {
-    types: '/api/question-types',       // API lấy danh sách loại câu hỏi
-    difficulties: '/api/difficulties',  // API lấy danh sách độ khó
+    types: '/api/questions/question-types',       // API lấy danh sách loại câu hỏi
+    difficulties: '/api/questions/difficulties',  // API lấy danh sách độ khó
     categories: '/api/categories',      // API lấy danh sách danh mục
 };
 

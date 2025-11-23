@@ -26,8 +26,8 @@ interface Option {
 
 // Các Endpoint API (Sử dụng chung với QuestionFilters)
 const ENDPOINTS = {
-    types: '/api/question-types',
-    difficulties: '/api/difficulties',
+    types: '/api/questions/question-types',
+    difficulties: '/api/questions/difficulties',
     categories: '/api/categories',
 };
 

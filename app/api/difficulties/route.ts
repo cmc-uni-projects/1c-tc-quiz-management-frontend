@@ -14,16 +14,6 @@ async function proxyRequest(request: Request, endpoint: string, method: string) 
     const backendUrl = `${API_URL}${endpoint}`;
     const authorization = request.headers.get('authorization');
 
-    // Lấy body nếu phương thức là POST
-    let body: any = undefined;
-    if (method === 'POST' || method === 'PUT') { // Also handle PUT for updates
-        try {
-            body = await request.json();
-        } catch (e) {
-            console.warn(`Could not parse body for ${method} request.`, e);
-        }
-    }
-
     try {
         const headers: HeadersInit = {
             'Content-Type': 'application/json',
@@ -35,7 +25,6 @@ async function proxyRequest(request: Request, endpoint: string, method: string) 
         const response = await fetch(backendUrl, {
             method: method,
             headers: headers,
-            body: body ? JSON.stringify(body) : undefined,
             cache: 'no-store',
         });
         
@@ -56,23 +45,14 @@ async function proxyRequest(request: Request, endpoint: string, method: string) 
 }
 
 
-// --- 1. GET (Danh sách và tìm kiếm) ---
+// --- 1. GET (Danh sách) ---
 export async function GET(request: Request) {
     // Lấy query parameters từ request của client
     const { searchParams } = new URL(request.url);
     const queryString = searchParams.toString();
 
-    // Endpoint Backend: /api/questions/search?...
-    const endpoint = `/questions/search?${queryString}`;
+    // Endpoint Backend: /api/difficulties?{queryString}
+    const endpoint = `/difficulties?${queryString}`;
 
     return proxyRequest(request, endpoint, 'GET');
-}
-
-
-// --- 2. POST (Tạo mới) ---
-export async function POST(request: Request) {
-    // Endpoint Backend: /api/questions
-    const endpoint = `/questions`;
-
-    return proxyRequest(request, endpoint, 'POST');
 }

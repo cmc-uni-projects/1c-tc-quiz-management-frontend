@@ -101,6 +101,7 @@ const AdminSidebar = () => {
     },
     { name: "Duyệt tài khoản giáo viên", href: "/admin/approve-teachers" },
     { name: "Danh mục", href: "/admin/categories" },
+    { name: "Câu hỏi", href: "/admin/questions" },
   ];
 
   const [openSubmenu, setOpenSubmenu] = useState<string | null>(null);
