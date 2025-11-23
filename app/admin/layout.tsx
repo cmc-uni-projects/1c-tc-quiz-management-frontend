@@ -4,6 +4,15 @@ import { useRouter, usePathname } from "next/navigation";
 import { useUser } from "@/lib/user";
 import toast from "react-hot-toast";
 import ProfileDropdown from "@/components/ProfileDropdown";
+import {
+  HomeIcon,
+  UsersIcon,
+  CheckBadgeIcon,
+  FolderIcon,
+  ChevronDownIcon,
+  AcademicCapIcon,
+  UserIcon
+} from "@heroicons/react/24/outline";
 
 interface NavItem {
   name: string;
@@ -103,6 +112,22 @@ const AdminSidebar = () => {
     { name: "Danh mục", href: "/admin/categories" },
   ];
 
+  // Icon mapping for menu items
+  const getIcon = (name: string) => {
+    switch (name) {
+      case "Trang chủ":
+        return <HomeIcon className="w-5 h-5" />;
+      case "Quản lý tài khoản":
+        return <UsersIcon className="w-5 h-5" />;
+      case "Duyệt tài khoản giáo viên":
+        return <CheckBadgeIcon className="w-5 h-5" />;
+      case "Danh mục":
+        return <FolderIcon className="w-5 h-5" />;
+      default:
+        return null;
+    }
+  };
+
   const [openSubmenu, setOpenSubmenu] = useState<string | null>(null);
 
   const handleToggleSubmenu = (name: string) => {
@@ -191,7 +216,9 @@ const AdminSidebar = () => {
                       ${isCurrentActive ? "bg-zinc-100 text-purple-700 font-semibold" : "hover:bg-zinc-50"}
                     `}
                   >
-                    <span>{item.name}</span>
+                    {getIcon(item.name)}
+                    <span className="ml-3">{item.name}</span>
+                    <ChevronDownIcon className={`w-4 h-4 ml-auto transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} />
                   </button>
 
                   <div
@@ -213,6 +240,13 @@ const AdminSidebar = () => {
                             ${subIsActive ? "bg-zinc-100 text-purple-700 font-semibold" : "hover:bg-zinc-50"}
                           `}
                         >
+                          <span className="w-5 h-5 mr-3 flex items-center justify-center">
+                            {subItem.name === "Giáo viên" ? (
+                              <AcademicCapIcon className="w-4 h-4" />
+                            ) : (
+                              <UserIcon className="w-4 h-4" />
+                            )}
+                          </span>
                           <span>{subItem.name}</span>
                         </a>
                       );
@@ -227,11 +261,12 @@ const AdminSidebar = () => {
                 key={item.name}
                 href={item.href}
                 onClick={(e) => handleNavigation(item.href, e)}
-                className={`block rounded-lg px-3 py-2 transition-colors duration-150
+                className={`flex items-center rounded-lg px-3 py-2 transition-colors duration-150
                   ${isCurrentActive ? "bg-zinc-100 text-purple-700 font-semibold" : "hover:bg-zinc-50"}
                 `}
               >
-                {item.name}
+                {getIcon(item.name)}
+                <span className="ml-3">{item.name}</span>
               </a>
             );
           })}

@@ -5,6 +5,13 @@ import Link from 'next/link';
 import { useUser } from '@/lib/user';
 import toast from 'react-hot-toast';
 import ProfileDropdown from '@/components/ProfileDropdown';
+import {
+  HomeIcon,
+  FolderIcon,
+  DocumentTextIcon,
+  QuestionMarkCircleIcon,
+  ClipboardDocumentListIcon
+} from "@heroicons/react/24/outline";
 
 const LOGO_TEXT_COLOR = "#E33AEC";
 
@@ -70,6 +77,24 @@ const TeacherSidebar = () => {
     { href: '#', label: 'Quản lý bài thi', disabled: true },
   ];
 
+  // Icon mapping for menu items
+  const getIcon = (label: string) => {
+    switch (label) {
+      case 'Trang chủ':
+        return <HomeIcon className="w-5 h-5" />;
+      case 'Danh mục câu hỏi':
+        return <FolderIcon className="w-5 h-5" />;
+      case 'Danh sách bài thi':
+        return <DocumentTextIcon className="w-5 h-5" />;
+      case 'Quản lý câu hỏi':
+        return <QuestionMarkCircleIcon className="w-5 h-5" />;
+      case 'Quản lý bài thi':
+        return <ClipboardDocumentListIcon className="w-5 h-5" />;
+      default:
+        return null;
+    }
+  };
+
   return (
     <aside className="w-56 border-r border-zinc-200 bg-white flex flex-col">
       
@@ -79,9 +104,10 @@ const TeacherSidebar = () => {
             return (
               <div
                 key={item.href}
-                className="block rounded-lg px-3 py-2 text-zinc-400 cursor-not-allowed"
+                className="flex items-center rounded-lg px-3 py-2 text-zinc-400 cursor-not-allowed"
               >
-                {item.label}
+                {getIcon(item.label)}
+                <span className="ml-3">{item.label}</span>
               </div>
             );
           }
@@ -89,13 +115,14 @@ const TeacherSidebar = () => {
             <Link
               key={item.href}
               href={item.href}
-              className={`block rounded-lg px-3 py-2 ${
+              className={`flex items-center rounded-lg px-3 py-2 transition-colors duration-150 ${
                 pathname === item.href
                   ? 'bg-zinc-100 text-purple-700 font-semibold'
                   : 'hover:bg-zinc-50'
               }`}
             >
-              {item.label}
+              {getIcon(item.label)}
+              <span className="ml-3">{item.label}</span>
             </Link>
           );
         })}
