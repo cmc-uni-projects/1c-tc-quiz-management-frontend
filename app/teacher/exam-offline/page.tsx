@@ -482,8 +482,8 @@ export default function CreateExamPage() {
 
         <select className="h-[40px] px-4 rounded-full border border-gray-300 text-sm">
           <option>Chọn loại câu hỏi</option>
-          <option>Single</option>
-          <option>Multiple</option>
+          <option>Một đáp án</option>
+          <option>Nhiều đáp án</option>
         </select>
 
         <select className="h-[40px] px-4 rounded-full border border-gray-300 text-sm">
@@ -516,8 +516,6 @@ export default function CreateExamPage() {
           </thead>
 
           <tbody>
-
-
             {/* Vùng trống */}
             <tr>
          <td className="pt-56" colSpan={8}></td>
@@ -542,8 +540,6 @@ export default function CreateExamPage() {
     </div>
   </div>
 )}
-
-
 
         </main>
 
