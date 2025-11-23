@@ -4,6 +4,7 @@ import "./globals.css";
 import { Toaster } from "react-hot-toast";
 import { Providers } from "./providers";
 import Navbar from '@/components/Navbar';
+import AuthRedirect from '@/components/AuthRedirect';
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -30,6 +31,7 @@ export default function RootLayout({
       <body className={`${geistSans.variable} ${geistMono.variable}`}>
         {/*  */}
         <Providers>
+          <AuthRedirect />
           <div className="flex flex-col min-h-screen">
             <Navbar />
             <main className="flex-1">
