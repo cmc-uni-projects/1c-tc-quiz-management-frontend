@@ -20,16 +20,21 @@ const HERO_GRADIENT = "linear-gradient(135deg, #FFB6FF 0%, #8A46FF 100%)";
 const TABLE_SHADOW = "0 25px 60px rgba(126, 62, 255, 0.18)";
 
 // --- TYPE DEFINITIONS ---
+interface Category {
+  id: number;
+  name: string;
+}
+
 interface Question {
   id: number;
   title: string;
   type: string;
   difficulty: string;
-  answer: string;
-  creator: string;
-  creatorId: number;
-  category: string;
+  category: Category;
+  createdBy: string;
+  answers: { id: number; content: string; correct: boolean }[];
 }
+
 
 interface Filters {
   search: string;
@@ -39,21 +44,20 @@ interface Filters {
 }
 
 interface ApiResponse {
-  data: Question[];
-  meta: {
-    total: number;
-    page: number;
-    last_page: number;
-  };
+  content: Question[];
+  totalElements: number;
+  totalPages: number;
+  number: number;
 }
 
 // --- CONSTANTS ---
-const ITEMS_PER_PAGE = 20;
+const ITEMS_PER_PAGE = 10; // Match backend's hardcoded page size
 
 export default function AdminQuestionsPage() {
   const [questions, setQuestions] = useState<Question[]>([]);
   const [loading, setLoading] = useState(true);
   const [totalCount, setTotalCount] = useState(0);
+  const [totalPages, setTotalPages] = useState(0);
   const [currentPage, setCurrentPage] = useState(1);
 
   // State bộ lọc
@@ -72,24 +76,24 @@ export default function AdminQuestionsPage() {
   const fetchQuestions = useCallback(async () => {
     setLoading(true);
 
-    // 1. Xây dựng Query String
+    // Backend returns pages starting from 0, so we adjust
+    const pageIndex = currentPage - 1;
+
+    // 1. Xây dựng Query String -
+    // NOTE: Backend's /all endpoint currently does not support filtering.
+    // These filters are kept for UI purposes but not sent in the API call.
     const queryString = new URLSearchParams({
-      page: currentPage.toString(),
-      limit: ITEMS_PER_PAGE.toString(),
-      // Chỉ thêm các param nếu chúng có giá trị để URL gọn gàng
-      ...(filters.search && { search: filters.search }),
-      ...(filters.difficulty && { difficulty: filters.difficulty }),
-      ...(filters.type && { type: filters.type }),
-      ...(filters.category && { category: filters.category }),
+      page: pageIndex.toString(),
     }).toString();
 
     try {
-      // 2. Gọi API thực tế
-      const data = await fetchApi(`/questions?${queryString}`);
+      // 2. Gọi API thực tế - Corrected endpoint to /questions/all
+      const data: ApiResponse = await fetchApi(`/questions/all?${queryString}`);
 
-      // 3. Cập nhật State từ dữ liệu trả về của Backend
-      setQuestions(data.questions || data.data || []);
-      setTotalCount(data.totalCount || data.meta?.total || 0);
+      // 3. Cập nhật State từ dữ liệu trả về của Backend (Spring Page object)
+      setQuestions(data.content || []);
+      setTotalCount(data.totalElements || 0);
+      setTotalPages(data.totalPages || 0);
 
     } catch (error) {
       console.error("Failed to fetch questions:", error);
@@ -97,9 +101,9 @@ export default function AdminQuestionsPage() {
     } finally {
       setLoading(false);
     }
-  }, [currentPage, filters]); // Dependency array: Chạy lại khi trang hoặc bộ lọc đổi
+  }, [currentPage]); // Dependency array: Chỉ chạy lại khi trang thay đổi
 
-  // Gọi API khi currentPage hoặc filters thay đổi
+  // Gọi API khi component mount và khi fetchQuestions thay đổi (chủ yếu là khi currentPage đổi)
   useEffect(() => {
     fetchQuestions();
   }, [fetchQuestions]);
@@ -107,8 +111,12 @@ export default function AdminQuestionsPage() {
   // --- HANDLERS ---
   const handleFilterChange = (newFilters: Filters) => {
     setFilters(newFilters);
-    setCurrentPage(1); // Reset về trang 1 khi filter thay đổi
+    setCurrentPage(1);
+    // Note: Calling fetchQuestions() here won't apply filters until backend supports them.
+    // We still reset the page.
+    fetchQuestions();
   };
+
 
   const handleAddQuestion = () => {
     router.push('/admin/questions/create');
@@ -122,10 +130,20 @@ export default function AdminQuestionsPage() {
     if (!confirm('Bạn có chắc chắn muốn xóa câu hỏi này? Hành động này không thể hoàn tác.')) {
       return;
     }
+    if (!user || !user.name) {
+      toastError("Không thể xác định người dùng. Vui lòng đăng nhập lại.");
+      return;
+    }
+
 
     try {
-      // 1. Gọi API Xóa
-      await fetchApi(`/questions/${id}`, { method: 'DELETE' });
+      // 1. Gọi API Xóa - Thêm header X-User
+      await fetchApi(`/questions/delete/${id}`, {
+        method: 'DELETE',
+        headers: {
+          'X-User': user.name,
+        },
+      });
 
       // 2. Thông báo thành công
       toastSuccess("Đã xóa câu hỏi thành công!");
@@ -142,9 +160,6 @@ export default function AdminQuestionsPage() {
       toastError(`Lỗi: ${error.message}`);
     }
   };
-
-  // --- PAGINATION LOGIC ---
-  const totalPages = Math.ceil(totalCount / ITEMS_PER_PAGE);
 
   return (
     <div className="w-full min-h-screen py-6 sm:py-10 px-4 sm:px-8" style={{ backgroundColor: PAGE_BG }}>
@@ -175,7 +190,7 @@ export default function AdminQuestionsPage() {
                     type="text"
                     value={filters.search}
                     onChange={(e) => setFilters(prev => ({ ...prev, search: e.target.value }))}
-                    placeholder="Nhập tiêu đề/đáp án..."
+                    placeholder="Nhập tiêu đề/đáp án... (Lọc chưa hoạt động)"
                     className="w-full px-4 py-2 rounded-xl border border-gray-200 bg-white text-gray-800 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-purple-400"
                     onKeyDown={(e) => e.key === 'Enter' && handleFilterChange(filters)}
                   />
@@ -278,7 +293,7 @@ export default function AdminQuestionsPage() {
                 loading={loading}
                 onEdit={handleEdit}
                 onDelete={handleDelete}
-                currentUserId={user?.id}
+                currentUserName={user?.name}
                 currentUserRole={user?.role}
               />
             )}

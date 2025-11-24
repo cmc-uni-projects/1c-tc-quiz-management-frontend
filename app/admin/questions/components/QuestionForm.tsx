@@ -1,205 +1,237 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import toast from 'react-hot-toast';
+import { useRouter } from 'next/navigation';
+import { toast } from 'react-hot-toast';
+import { fetchApi } from '@/lib/apiClient';
 
-// Định nghĩa kiểu dữ liệu cho Question Data
-interface QuestionData {
+// --- TYPE DEFINITIONS ---
+interface AnswerField {
+  tempId: number; // For React key prop
+  content: string;
+  isCorrect: boolean;
+}
+
+interface QuestionFormData {
   title: string;
-  type: string;
+  type: 'SINGLE_CHOICE' | 'MULTIPLE_CHOICE' | 'TRUE_FALSE' | '';
   difficulty: string;
-  answer: string;
-  category: string;
+  categoryId: string;
+  answers: AnswerField[];
 }
 
-interface QuestionFormProps {
-  initialData?: QuestionData;
-  isEdit: boolean;
-  onSubmit: (data: QuestionData) => void;
-}
-
-// Định nghĩa kiểu dữ liệu cho Tùy chọn (để đồng nhất với QuestionFilters)
 interface Option {
   id: number | string;
   name: string;
 }
 
-// Các Endpoint API (Sử dụng chung với QuestionFilters)
-const ENDPOINTS = {
-    types: '/api/questions/question-types',
-    difficulties: '/api/questions/difficulties',
-    categories: '/api/categories',
+interface QuestionFormProps {
+  initialData?: QuestionFormData;
+  isEdit: boolean;
+  onSubmit: (data: QuestionFormData) => Promise<void>;
+  isLoading: boolean;
+}
+
+// --- CONSTANTS ---
+const FALLBACK_OPTIONS = {
+    types: [
+        { id: 'SINGLE_CHOICE', name: 'Một đáp án' },
+        { id: 'MULTIPLE_CHOICE', name: 'Nhiều đáp án' },
+        { id: 'TRUE_FALSE', name: 'Đúng/Sai' },
+    ],
+    difficulties: [
+        { id: 'Easy', name: 'Dễ' },
+        { id: 'Medium', name: 'Trung bình' },
+        { id: 'Hard', name: 'Khó' },
+    ],
+    categories: [{ id: 1, name: 'General' }],
 };
 
-export default function QuestionForm({ initialData, isEdit, onSubmit }: QuestionFormProps) {
-  const [formData, setFormData] = useState<QuestionData>(initialData || {
+export default function QuestionForm({ initialData, isEdit, onSubmit, isLoading }: QuestionFormProps) {
+  const [formData, setFormData] = useState<QuestionFormData>(initialData || {
     title: '',
     type: '',
     difficulty: '',
-    answer: '',
-    category: '',
+    categoryId: '',
+    answers: [{ tempId: 1, content: '', isCorrect: true }],
   });
 
-  const [loading, setLoading] = useState(false);
-
-  // State lưu trữ các tùy chọn tải từ API
-  const [typeOptions, setTypeOptions] = useState<Option[]>([]);
-  const [difficultyOptions, setDifficultyOptions] = useState<Option[]>([]);
-  const [categoryOptions, setCategoryOptions] = useState<Option[]>([]);
+  const [options, setOptions] = useState({
+    types: FALLBACK_OPTIONS.types,
+    difficulties: FALLBACK_OPTIONS.difficulties,
+    categories: FALLBACK_OPTIONS.categories,
+  });
   const [optionsLoading, setOptionsLoading] = useState(true);
+  const router = useRouter();
 
-  // Hàm helper để fetch dữ liệu
-  const fetchOptions = async (url: string, fallback: Option[]) => {
-    try {
-      const res = await fetch(url, { cache: 'no-store' });
-      if (res.ok) {
-        const data = await res.json();
-        return Array.isArray(data) ? data : fallback;
-      }
-    } catch (error) {
-      console.warn(`Lỗi khi gọi API ${url}, sử dụng dữ liệu mặc định.`, error);
-      toast.error(`Không thể tải tùy chọn từ ${url.split('/').pop()}.`);
-    }
-    return fallback;
-  };
-
-  // useEffect để tải dữ liệu khi component được mount
+  // --- DATA FETCHING for dropdowns ---
   useEffect(() => {
-    const loadAllOptions = async () => {
-      setOptionsLoading(true);
+    const fetchDropdownData = async () => {
+      try {
+        const [typesRes, difficultiesRes, categoriesRes] = await Promise.all([
+          fetchApi('/questions/question-types'),
+          fetchApi('/questions/difficulties'),
+          fetchApi('/categories'),
+        ]);
 
-      const [types, difficulties, cats] = await Promise.all([
-        fetchOptions(ENDPOINTS.types, FALLBACK_OPTIONS.types),
-        fetchOptions(ENDPOINTS.difficulties, FALLBACK_OPTIONS.difficulties),
-        fetchOptions(ENDPOINTS.categories, FALLBACK_OPTIONS.categories),
-      ]);
+        // Backend returns: ["SINGLE", "MULTIPLE", "TRUE_FALSE"]
+        // Frontend expects: ["SINGLE_CHOICE", "MULTIPLE_CHOICE", "TRUE_FALSE"]
+        const formattedTypes = typesRes.map((t: string) => {
+            const typeMap: { [key: string]: string } = {
+                'SINGLE': 'SINGLE_CHOICE',
+                'MULTIPLE': 'MULTIPLE_CHOICE', 
+                'TRUE_FALSE': 'TRUE_FALSE'
+            };
+            return { id: typeMap[t] || t, name: t.replace('_', ' ') };
+        });
+        const formattedDifficulties = difficultiesRes.map((d: string) => ({ id: d, name: d }));
 
-      setTypeOptions(types);
-      setDifficultyOptions(difficulties);
-      setCategoryOptions(cats);
-      setOptionsLoading(false);
+        setOptions({
+          types: formattedTypes,
+          difficulties: formattedDifficulties,
+          categories: categoriesRes, // API returns a direct list, not a Page object
+        });
+      } catch (error) {
+        toast.error('Không thể tải các tùy chọn cho form.');
+        console.error("Failed to fetch form options", error);
+      } finally {
+        setOptionsLoading(false);
+      }
     };
-
-    loadAllOptions();
+    fetchDropdownData();
   }, []);
 
-  // Đồng bộ dữ liệu ban đầu khi có initialData (dùng cho chế độ Sửa)
-  useEffect(() => {
-    if (initialData) {
-      setFormData(initialData);
-    }
-  }, [initialData]);
-
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+  // --- FORM HANDLERS ---
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
+  const handleAnswerChange = (tempId: number, field: 'content' | 'isCorrect', value: string | boolean) => {
+    setFormData(prev => {
+      let newAnswers = [...prev.answers];
 
-    // Call onSubmit passed from parent page (chứa logic gọi API POST/PUT)
-    onSubmit(formData);
+      if ((prev.type === 'SINGLE_CHOICE' || prev.type === 'TRUE_FALSE') && field === 'isCorrect' && value === true) {
+        // Uncheck all others
+        newAnswers = newAnswers.map(ans => ({ ...ans, isCorrect: false }));
+      }
 
-    // Note: setLoading(false) should ideally be called after the parent page's submission logic completes
-    // Giữ loading = true cho đến khi parent component xử lý xong
+      const answerIndex = newAnswers.findIndex(a => a.tempId === tempId);
+      if (answerIndex > -1) {
+        (newAnswers[answerIndex] as any)[field] = value;
+      }
+      return { ...prev, answers: newAnswers };
+    });
   };
 
-  const buttonText = isEdit ? 'Cập nhật câu hỏi' : 'Thêm câu hỏi';
-  const titleText = isEdit ? 'Cập nhật thông tin câu hỏi' : 'Thêm câu hỏi mới';
-  const isDisabled = loading || optionsLoading;
+  const addAnswer = () => {
+    setFormData(prev => ({
+      ...prev,
+      answers: [...prev.answers, { tempId: Date.now(), content: '', isCorrect: false }],
+    }));
+  };
+
+  const removeAnswer = (tempId: number) => {
+    if (formData.answers.length <= 1) {
+      toast.error('Câu hỏi phải có ít nhất một đáp án.');
+      return;
+    }
+    setFormData(prev => ({
+      ...prev,
+      answers: prev.answers.filter(a => a.tempId !== tempId),
+    }));
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (formData.answers.every(a => !a.isCorrect)) {
+      toast.error('Phải có ít nhất một đáp án đúng.');
+      return;
+    }
+    onSubmit(formData);
+  };
+  
+  const isDisabled = isLoading || optionsLoading;
 
   return (
-    <div className="max-w-xl mx-auto p-8 bg-white shadow-xl rounded-xl border border-gray-100">
-      <h1 className="text-3xl font-extrabold mb-8 text-purple-700 text-center">{titleText}</h1>
+    <div className="w-full max-w-3xl mx-auto p-6 sm:p-8 bg-white shadow-2xl rounded-2xl border border-gray-100">
+      <button onClick={() => router.back()} className="text-sm text-purple-600 hover:underline mb-6">
+        &larr; Quay lại danh sách
+      </button>
+      <h1 className="text-3xl font-extrabold mb-8 text-purple-800 text-center">
+        {isEdit ? 'Cập nhật câu hỏi' : 'Tạo câu hỏi mới'}
+      </h1>
       <form onSubmit={handleSubmit} className="space-y-6">
-
-        {/* Tiêu đề */}
+        {/* Title */}
         <div>
           <label className="block text-sm font-semibold text-gray-700 mb-1">Tiêu đề</label>
-          <input
-            type="text"
+          <textarea
             name="title"
             value={formData.title}
             onChange={handleChange}
             required
             disabled={isDisabled}
-            className="mt-1 block w-full border border-gray-300 rounded-lg shadow-sm p-3 focus:ring-purple-500 focus:border-purple-500 transition duration-150 disabled:bg-gray-50"
-            placeholder="Nhập tiêu đề câu hỏi"
+            className="mt-1 block w-full border border-gray-300 rounded-lg shadow-sm p-3 focus:ring-purple-500 focus:border-purple-500 transition duration-150 disabled:bg-gray-50 min-h-[100px]"
+            placeholder="Nhập nội dung câu hỏi..."
           />
         </div>
 
-        {/* Loại câu hỏi (Dropdown) */}
-        <div>
-          <label className="block text-sm font-semibold text-gray-700 mb-1">Loại câu hỏi</label>
-          <select
-            name="type"
-            value={formData.type}
-            onChange={handleChange}
-            required
-            disabled={isDisabled}
-            className="mt-1 block w-full border border-gray-300 rounded-lg shadow-sm p-3 bg-white focus:ring-purple-500 focus:border-purple-500 transition duration-150 disabled:bg-gray-50"
-          >
-            <option value="">{optionsLoading ? "Đang tải tùy chọn..." : "Chọn loại câu hỏi"}</option>
-            {typeOptions.map(opt => <option key={opt.id} value={opt.id}>{opt.name}</option>)}
-          </select>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {/* Question Type */}
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-1">Loại câu hỏi</label>
+              <select name="type" value={formData.type} onChange={handleChange} required disabled={isDisabled} className="mt-1 block w-full border border-gray-300 rounded-lg shadow-sm p-3 bg-white focus:ring-purple-500 focus:border-purple-500 transition">
+                <option value="">{optionsLoading ? "Tải..." : "Chọn loại"}</option>
+                {options.types.map(opt => <option key={opt.id} value={opt.id}>{opt.name}</option>)}
+              </select>
+            </div>
+            {/* Difficulty */}
+            <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-1">Độ khó</label>
+                <select name="difficulty" value={formData.difficulty} onChange={handleChange} required disabled={isDisabled} className="mt-1 block w-full border border-gray-300 rounded-lg shadow-sm p-3 bg-white focus:ring-purple-500 focus:border-purple-500 transition">
+                    <option value="">{optionsLoading ? "Tải..." : "Chọn độ khó"}</option>
+                    {options.difficulties.map(opt => <option key={opt.id} value={opt.id}>{opt.name}</option>)}
+                </select>
+            </div>
+            {/* Category */}
+            <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-1">Danh mục</label>
+                <select name="categoryId" value={formData.categoryId} onChange={handleChange} required disabled={isDisabled} className="mt-1 block w-full border border-gray-300 rounded-lg shadow-sm p-3 bg-white focus:ring-purple-500 focus:border-purple-500 transition">
+                    <option value="">{optionsLoading ? "Tải..." : "Chọn danh mục"}</option>
+                    {options.categories.map(opt => <option key={opt.id} value={opt.id}>{opt.name}</option>)}
+                </select>
+            </div>
         </div>
 
-        {/* Độ khó (Dropdown) */}
-        <div>
-          <label className="block text-sm font-semibold text-gray-700 mb-1">Độ khó</label>
-          <select
-            name="difficulty"
-            value={formData.difficulty}
-            onChange={handleChange}
-            required
-            disabled={isDisabled}
-            className="mt-1 block w-full border border-gray-300 rounded-lg shadow-sm p-3 bg-white focus:ring-purple-500 focus:border-purple-500 transition duration-150 disabled:bg-gray-50"
-          >
-            <option value="">{optionsLoading ? "Đang tải tùy chọn..." : "Chọn độ khó"}</option>
-            {difficultyOptions.map(opt => <option key={opt.id} value={opt.id}>{opt.name}</option>)}
-          </select>
+        {/* Answers Section */}
+        <div className="space-y-4 rounded-lg border border-gray-200 p-4">
+            <h3 className="font-semibold text-gray-800">Đáp án</h3>
+            {formData.answers.map((answer, index) => (
+            <div key={answer.tempId} className="flex items-center gap-3 p-2 rounded-md bg-gray-50">
+                {formData.type === 'SINGLE_CHOICE' ? (
+                     <input type="radio" name="correctAnswerRadio" checked={answer.isCorrect} onChange={(e) => handleAnswerChange(answer.tempId, 'isCorrect', e.target.checked)} className="h-5 w-5 text-purple-600 focus:ring-purple-500 border-gray-300"/>
+                ) : (
+                    <input type="checkbox" checked={answer.isCorrect} onChange={(e) => handleAnswerChange(answer.tempId, 'isCorrect', e.target.checked)} className="h-5 w-5 rounded text-purple-600 focus:ring-purple-500 border-gray-300"/>
+                )}
+                <input
+                    type="text"
+                    value={answer.content}
+                    onChange={(e) => handleAnswerChange(answer.tempId, 'content', e.target.value)}
+                    placeholder={`Nội dung đáp án ${index + 1}`}
+                    required
+                    className="flex-grow border border-gray-300 rounded-md shadow-sm p-2 focus:ring-purple-500 focus:border-purple-500"
+                />
+                <button type="button" onClick={() => removeAnswer(answer.tempId)} className="text-red-500 hover:text-red-700 font-semibold p-1">Xóa</button>
+            </div>
+            ))}
+            <button type="button" onClick={addAnswer} className="mt-2 text-sm font-semibold text-purple-600 hover:text-purple-800">
+                + Thêm đáp án
+            </button>
         </div>
-
-        {/* Đáp án */}
-        <div>
-          <label className="block text-sm font-semibold text-gray-700 mb-1">Đáp án</label>
-          <input
-            type="text"
-            name="answer"
-            value={formData.answer}
-            onChange={handleChange}
-            required
-            disabled={isDisabled}
-            className="mt-1 block w-full border border-gray-300 rounded-lg shadow-sm p-3 focus:ring-purple-500 focus:border-purple-500 transition duration-150 disabled:bg-gray-50"
-            placeholder="Nhập đáp án đúng"
-          />
-        </div>
-
-        {/* Danh mục (Dropdown) */}
-        <div>
-          <label className="block text-sm font-semibold text-gray-700 mb-1">Danh mục câu hỏi</label>
-          <select
-            name="category"
-            value={formData.category}
-            onChange={handleChange}
-            required
-            disabled={isDisabled}
-            className="mt-1 block w-full border border-gray-300 rounded-lg shadow-sm p-3 bg-white focus:ring-purple-500 focus:border-purple-500 transition duration-150 disabled:bg-gray-50"
-          >
-            <option value="">{optionsLoading ? "Đang tải tùy chọn..." : "Chọn danh mục"}</option>
-            {categoryOptions.map(opt => <option key={opt.id} value={opt.id}>{opt.name}</option>)}
-          </select>
-        </div>
-
-        {/* Nút Submit */}
-        <button
-          type="submit"
-          disabled={isDisabled}
-          className="w-full py-3 px-4 border border-transparent rounded-lg shadow-md text-base font-medium text-white bg-purple-600 hover:bg-purple-700 transition duration-150 disabled:opacity-50"
-        >
-          {isDisabled ? 'Đang tải...' : buttonText}
+        
+        {/* Submit Button */}
+        <button type="submit" disabled={isDisabled} className="w-full py-3 px-4 border border-transparent rounded-lg shadow-lg text-base font-medium text-white bg-purple-600 hover:bg-purple-700 transition duration-150 disabled:opacity-50 disabled:bg-purple-400">
+          {isDisabled ? 'Đang xử lý...' : (isEdit ? 'Cập nhật câu hỏi' : 'Tạo câu hỏi')}
         </button>
       </form>
     </div>
