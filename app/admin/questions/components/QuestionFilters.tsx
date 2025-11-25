@@ -44,7 +44,14 @@ export default function QuestionFilters({ initialFilters, onFilter }: QuestionFi
       // Gọi API backend với JWT token
       const data = await fetchApi(url);
       // Giả định API trả về một mảng các đối tượng Option
-      return Array.isArray(data) ? data : [];
+      if (!Array.isArray(data)) return [];
+
+      // Format categories từ backend response
+      if (url === ENDPOINTS.categories) {
+        return data.map((c: { id: number | string; name: string }) => ({ id: c.id, name: c.name }));
+      }
+
+      return data;
     } catch (error) {
       console.warn(`Lỗi khi gọi API ${url}:`, error);
       return [];

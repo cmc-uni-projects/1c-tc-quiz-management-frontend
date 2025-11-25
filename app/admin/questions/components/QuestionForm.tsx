@@ -78,7 +78,7 @@ export default function QuestionForm({ initialData, isEdit, onSubmit, isLoading 
         setOptions({
           types: formattedTypes,
           difficulties: formattedDifficulties,
-          categories: categoriesRes, // API returns a direct list, not a Page object
+          categories: formattedCategories,
         });
       } catch (error) {
         toast.error('Không thể tải các tùy chọn cho form.');
