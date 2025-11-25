@@ -8,10 +8,16 @@ import QuestionForm from '../../../admin/questions/components/QuestionForm';
 
 interface QuestionData {
   title: string;
-  type: string;
+  type: '' | 'SINGLE_CHOICE' | 'MULTIPLE_CHOICE' | 'TRUE_FALSE';
   difficulty: string;
-  answer: string;
-  category: string;
+  answer?: string;
+  category?: string;
+  categoryId: string;
+  answers: Array<{
+    tempId: number;
+    content: string;
+    isCorrect: boolean;
+  }>;
 }
 
 export default function TeacherEditQuestionPage() {
@@ -27,8 +33,24 @@ export default function TeacherEditQuestionPage() {
       if (!questionId) return;
 
       try {
-        const data = await fetchApi(`/api/questions/${questionId}`);
-        setInitialData(data);
+        const data = await fetchApi(`/questions/get/${questionId}`);
+        
+        // Transform backend data to frontend format
+        const transformedData: QuestionData = {
+          title: data.title,
+          type: (data.type === 'SINGLE' ? 'SINGLE_CHOICE' : 
+                data.type === 'MULTIPLE' ? 'MULTIPLE_CHOICE' : 'TRUE_FALSE') as 'SINGLE_CHOICE' | 'MULTIPLE_CHOICE' | 'TRUE_FALSE',
+          difficulty: data.difficulty,
+          categoryId: data.category?.id?.toString() || '',
+          answers: data.answers?.map((ans: any) => ({
+            tempId: ans.id || Date.now() + Math.random(),
+            content: ans.text,
+            isCorrect: ans.correct
+          })) || [],
+          answer: data.correctAnswer
+        };
+        
+        setInitialData(transformedData);
       } catch (error) {
         console.error('Fetch Error:', error);
         toastError('Lỗi tải dữ liệu.');
@@ -41,11 +63,24 @@ export default function TeacherEditQuestionPage() {
   }, [questionId, router]);
 
   const handleUpdateSubmit = async (data: QuestionData) => {
-    console.log(`Submitting update for ID ${questionId} (Teacher):`, data);
     try {
-      await fetchApi(`/api/questions/${questionId}`, {
+      // Transform frontend data to backend format
+      const backendData = {
+        title: data.title,
+        type: data.type === 'SINGLE_CHOICE' ? 'SINGLE' : 
+              data.type === 'MULTIPLE_CHOICE' ? 'MULTIPLE' : 'TRUE_FALSE',
+        difficulty: data.difficulty,
+        categoryId: parseInt(data.categoryId || '0'),
+        correctAnswer: data.type === 'TRUE_FALSE' ? data.answer : undefined,
+        answers: data.type === 'TRUE_FALSE' ? [] : data.answers?.map((ans: any) => ({
+          text: ans.content,
+          correct: ans.isCorrect
+        })) || []
+      };
+
+      await fetchApi(`/questions/edit/${questionId}`, {
         method: 'PUT',
-        body: data,
+        body: backendData,
       });
       toastSuccess('Cập nhật câu hỏi thành công!');
       router.push('/teacher/questions');
@@ -69,6 +104,7 @@ export default function TeacherEditQuestionPage() {
         isEdit={true}
         initialData={initialData}
         onSubmit={handleUpdateSubmit}
+        isLoading={false}
       />
     </div>
   );
