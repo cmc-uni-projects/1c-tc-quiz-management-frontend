@@ -15,6 +15,20 @@ const TrashIcon = (props: React.SVGAttributes<SVGSVGElement>) => (
   </svg>
 );
 
+const LockIcon = (props: React.SVGAttributes<SVGSVGElement>) => (
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+    <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+    <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+  </svg>
+);
+
+const UnlockIcon = (props: React.SVGAttributes<SVGSVGElement>) => (
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+    <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+    <path d="M7 11V7a5 5 0 0 1 9.9-1"/>
+  </svg>
+);
+
 class ApiError extends Error {
   status: number;
   payload: any;
@@ -530,10 +544,18 @@ const TeacherAccountsPage = () => {
                         <div className="flex flex-wrap items-center justify-center gap-2">
                           <button
                             onClick={() => handleToggleLock(teacher)}
-                            className="px-4 py-1.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-800 border border-amber-200 hover:bg-amber-200 transition disabled:opacity-50"
+                            className="px-4 py-1.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-800 border border-amber-200 hover:bg-amber-200 transition disabled:opacity-50 flex items-center gap-1"
                             disabled={loading || (teacher.status !== 'APPROVED' && teacher.status !== 'LOCKED')}
                           >
-                            {teacher.status === 'LOCKED' ? 'Mở khóa' : 'Tạm khóa'}
+                            {teacher.status === 'LOCKED' ? (
+                              <>
+                                <UnlockIcon className="w-3 h-3 flex-shrink-0" /> Mở khóa
+                              </>
+                            ) : (
+                              <>
+                                <LockIcon className="w-3 h-3 flex-shrink-0" /> Tạm khóa
+                              </>
+                            )}
                           </button>
                           <button
                             onClick={() => handleDelete(teacher.teacherId)}

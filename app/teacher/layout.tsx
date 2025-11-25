@@ -73,7 +73,7 @@ const TeacherSidebar = () => {
     { href: '/teacher/teacherhome', label: 'Trang chủ' },
     { href: '/teacher/categories', label: 'Danh mục câu hỏi' },
     { href: '/teacher/list-exam', label: 'Danh sách bài thi' },   
-    { href: '#', label: 'Quản lý câu hỏi', disabled: true },
+    { href: '/teacher/questions', label: 'Quản lý câu hỏi' },
     { href: '#', label: 'Quản lý bài thi', disabled: true },
   ];
 
