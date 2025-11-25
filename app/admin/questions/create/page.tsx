@@ -59,7 +59,7 @@ export default function CreateQuestionPage() {
 
     try {
       // 2. Call the correct backend endpoint
-      await fetchApi('/questions/create', {
+      await fetchApi('/admin/questions', {
         method: 'POST',
         body: payload,
       });

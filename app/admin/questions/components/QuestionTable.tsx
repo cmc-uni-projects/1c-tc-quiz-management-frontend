@@ -102,7 +102,8 @@ export default function QuestionTable({
           ) : (
             questions.map((question, index) => {
               // Authorization check: Admin OR (creator is current user)
-              const canEditOrDelete = currentUserRole === 'ADMIN' || question.createdBy === currentUserName;
+              const canEditOrDelete = currentUserRole === 'ADMIN' || 
+                                     (currentUserRole === 'TEACHER' && question.createdBy === currentUserName);
 
               return (
                 <tr key={question.id} className="hover:bg-purple-50 transition duration-100">
