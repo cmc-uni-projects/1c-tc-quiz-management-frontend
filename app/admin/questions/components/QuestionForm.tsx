@@ -106,6 +106,25 @@ export default function QuestionForm({ initialData, isEdit, onSubmit, isLoading 
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
   };
+    
+  useEffect(() => {
+    // Automatically set answers for TRUE_FALSE questions
+    if (formData.type === 'TRUE_FALSE') {
+      setFormData(prev => ({
+        ...prev,
+        answers: [
+          { tempId: 1, content: 'True', isCorrect: true },
+          { tempId: 2, content: 'False', isCorrect: false },
+        ],
+      }));
+    } else if (formData.answers.length === 2 && formData.answers[0].content === 'True' && formData.answers[1].content === 'False') {
+      // Reset answers when switching away from TRUE_FALSE
+      setFormData(prev => ({
+        ...prev,
+        answers: [{ tempId: 1, content: '', isCorrect: true }],
+      }));
+    }
+  }, [formData.type]);
 
   const handleAnswerChange = (tempId: number, field: 'content' | 'isCorrect', value: string | boolean) => {
     setFormData(prev => {
@@ -152,6 +171,7 @@ export default function QuestionForm({ initialData, isEdit, onSubmit, isLoading 
   };
   
   const isDisabled = isLoading || optionsLoading;
+  const isTrueFalse = formData.type === 'TRUE_FALSE';
 
   return (
     <div className="w-full max-w-3xl mx-auto p-6 sm:p-8 bg-white shadow-2xl rounded-2xl border border-gray-100">
@@ -208,7 +228,7 @@ export default function QuestionForm({ initialData, isEdit, onSubmit, isLoading 
             <h3 className="font-semibold text-gray-800">Đáp án</h3>
             {formData.answers.map((answer, index) => (
             <div key={answer.tempId} className="flex items-center gap-3 p-2 rounded-md bg-gray-50">
-                {formData.type === 'SINGLE_CHOICE' ? (
+                {formData.type === 'SINGLE_CHOICE' || isTrueFalse ? (
                      <input type="radio" name="correctAnswerRadio" checked={answer.isCorrect} onChange={(e) => handleAnswerChange(answer.tempId, 'isCorrect', e.target.checked)} className="h-5 w-5 text-purple-600 focus:ring-purple-500 border-gray-300"/>
                 ) : (
                     <input type="checkbox" checked={answer.isCorrect} onChange={(e) => handleAnswerChange(answer.tempId, 'isCorrect', e.target.checked)} className="h-5 w-5 rounded text-purple-600 focus:ring-purple-500 border-gray-300"/>
@@ -219,14 +239,19 @@ export default function QuestionForm({ initialData, isEdit, onSubmit, isLoading 
                     onChange={(e) => handleAnswerChange(answer.tempId, 'content', e.target.value)}
                     placeholder={`Nội dung đáp án ${index + 1}`}
                     required
-                    className="flex-grow border border-gray-300 rounded-md shadow-sm p-2 focus:ring-purple-500 focus:border-purple-500"
+                    disabled={isTrueFalse}
+                    className="flex-grow border border-gray-300 rounded-md shadow-sm p-2 focus:ring-purple-500 focus:border-purple-500 disabled:bg-gray-100"
                 />
-                <button type="button" onClick={() => removeAnswer(answer.tempId)} className="text-red-500 hover:text-red-700 font-semibold p-1">Xóa</button>
+                {!isTrueFalse && (
+                    <button type="button" onClick={() => removeAnswer(answer.tempId)} className="text-red-500 hover:text-red-700 font-semibold p-1">Xóa</button>
+                )}
             </div>
             ))}
-            <button type="button" onClick={addAnswer} className="mt-2 text-sm font-semibold text-purple-600 hover:text-purple-800">
-                + Thêm đáp án
-            </button>
+            {!isTrueFalse && (
+                <button type="button" onClick={addAnswer} className="mt-2 text-sm font-semibold text-purple-600 hover:text-purple-800">
+                    + Thêm đáp án
+                </button>
+            )}
         </div>
         
         {/* Submit Button */}
