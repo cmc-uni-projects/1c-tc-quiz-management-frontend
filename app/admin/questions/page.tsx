@@ -79,16 +79,18 @@ export default function AdminQuestionsPage() {
     // Backend returns pages starting from 0, so we adjust
     const pageIndex = currentPage - 1;
 
-    // 1. Xây dựng Query String -
-    // NOTE: Backend's /all endpoint currently does not support filtering.
-    // These filters are kept for UI purposes but not sent in the API call.
-    const queryString = new URLSearchParams({
+    // 1. Xây dựng Query String - Bao gồm các bộ lọc
+    const queryParams = new URLSearchParams({
       page: pageIndex.toString(),
-    }).toString();
+      ...(filters.search && { search: filters.search }),
+      ...(filters.difficulty && { difficulty: filters.difficulty }),
+      ...(filters.type && { type: filters.type }),
+      ...(filters.category && { category: filters.category }),
+    });
 
     try {
-      // 2. Gọi API thực tế - Sử dụng admin endpoint
-      const data: ApiResponse = await fetchApi(`/admin/questions?page=${pageIndex}`);
+      // 2. Gọi API thực tế - Sử dụng admin endpoint với filters
+      const data: ApiResponse = await fetchApi(`/admin/questions?${queryParams.toString()}`);
 
       // 3. Cập nhật State từ dữ liệu trả về của Backend (Spring Page object)
       setQuestions(data.content || []);
@@ -101,7 +103,7 @@ export default function AdminQuestionsPage() {
     } finally {
       setLoading(false);
     }
-  }, [currentPage]); // Dependency array: Chỉ chạy lại khi trang thay đổi
+  }, [currentPage, filters]); // Dependency array: Chỉ chạy lại khi trang thay đổi
 
   // Gọi API khi component mount và khi fetchQuestions thay đổi (chủ yếu là khi currentPage đổi)
   useEffect(() => {
