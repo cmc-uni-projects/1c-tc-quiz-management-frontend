@@ -497,10 +497,18 @@ const StudentAccountsPage = () => {
                         <div className="flex flex-wrap items-center justify-center gap-2">
                           <button
                             onClick={() => handleToggleLock(student)}
-                            className="px-4 py-1.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-800 border border-amber-200 hover:bg-amber-200 transition disabled:opacity-50"
+                            className="px-4 py-1.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-800 border border-amber-200 hover:bg-amber-200 transition disabled:opacity-50 flex items-center gap-1"
                             disabled={loading || (student.status !== 'ACTIVE' && student.status !== 'LOCKED')}
                           >
-                            {student.status === 'LOCKED' ? 'Mở khóa' : 'Tạm khóa'}
+                            {student.status === 'LOCKED' ? (
+                              <>
+                                <UnlockIcon className="w-3 h-3 flex-shrink-0" /> Mở khóa
+                              </>
+                            ) : (
+                              <>
+                                <LockIcon className="w-3 h-3 flex-shrink-0" /> Tạm khóa
+                              </>
+                            )}
                           </button>
                           <button
                             onClick={() => handleDelete(student.studentId)}

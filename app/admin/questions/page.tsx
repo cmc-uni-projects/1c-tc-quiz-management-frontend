@@ -87,8 +87,8 @@ export default function AdminQuestionsPage() {
     }).toString();
 
     try {
-      // 2. Gọi API thực tế - Corrected endpoint to /questions/all
-      const data: ApiResponse = await fetchApi(`/questions/all?${queryString}`);
+      // 2. Gọi API thực tế - Sử dụng admin endpoint
+      const data: ApiResponse = await fetchApi(`/admin/questions?page=${pageIndex}`);
 
       // 3. Cập nhật State từ dữ liệu trả về của Backend (Spring Page object)
       setQuestions(data.content || []);
@@ -130,19 +130,16 @@ export default function AdminQuestionsPage() {
     if (!confirm('Bạn có chắc chắn muốn xóa câu hỏi này? Hành động này không thể hoàn tác.')) {
       return;
     }
-    if (!user || !user.name) {
+    if (!user || !user.username) {
       toastError("Không thể xác định người dùng. Vui lòng đăng nhập lại.");
       return;
     }
 
 
     try {
-      // 1. Gọi API Xóa - Thêm header X-User
-      await fetchApi(`/questions/delete/${id}`, {
+      // 1. Gọi API Xóa - Sử dụng admin endpoint
+      await fetchApi(`/admin/questions/${id}`, {
         method: 'DELETE',
-        headers: {
-          'X-User': user.name,
-        },
       });
 
       // 2. Thông báo thành công
@@ -293,7 +290,7 @@ export default function AdminQuestionsPage() {
                 loading={loading}
                 onEdit={handleEdit}
                 onDelete={handleDelete}
-                currentUserName={user?.name}
+                currentUserName={user?.username}
                 currentUserRole={user?.role}
               />
             )}

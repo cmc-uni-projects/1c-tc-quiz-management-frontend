@@ -123,9 +123,6 @@ export default function TeacherQuestionsPage() {
     try {
       await fetchApi(`/questions/delete/${id}`, {
         method: 'DELETE',
-        headers: {
-          'X-User': user.username,
-        },
       });
 
       toastSuccess("Đã xóa câu hỏi thành công!");
