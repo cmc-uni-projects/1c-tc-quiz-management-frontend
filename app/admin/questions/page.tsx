@@ -82,9 +82,16 @@ export default function AdminQuestionsPage() {
     // 1. Xây dựng Query String -
     // NOTE: Backend's /all endpoint currently does not support filtering.
     // These filters are kept for UI purposes but not sent in the API call.
-    const queryString = new URLSearchParams({
+    const searchParams = new URLSearchParams({
       page: pageIndex.toString(),
-    }).toString();
+    });
+
+    if (filters.search) searchParams.append('search', filters.search);
+    if (filters.difficulty) searchParams.append('difficulty', filters.difficulty);
+    if (filters.type) searchParams.append('type', filters.type);
+    if (filters.category) searchParams.append('category', filters.category);
+
+    const queryString = searchParams.toString();
 
     try {
       // 2. Gọi API thực tế - Corrected endpoint to /questions/all

@@ -63,7 +63,7 @@ export async function GET(request: Request) {
     const queryString = searchParams.toString();
 
     // Endpoint Backend: /api/questions/search?...
-    const endpoint = `/questions/search?${queryString}`;
+    const endpoint = `/questions/all?${queryString}`;
 
     return proxyRequest(request, endpoint, 'GET');
 }

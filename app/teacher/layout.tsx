@@ -103,7 +103,7 @@ const TeacherSidebar = () => {
           if (item.disabled) {
             return (
               <div
-                key={item.href}
+                key={item.label}
                 className="flex items-center rounded-lg px-3 py-2 text-zinc-400 cursor-not-allowed"
               >
                 {getIcon(item.label)}
