@@ -44,8 +44,14 @@ export async function fetchApi(endpoint: string, options: FetchApiOptions = {}) 
      }
   }
 
+  const fullUrl = `${API_BASE_URL}${endpoint}`;
+  console.log(`[fetchApi] ${options.method || 'GET'} ${fullUrl}`, {
+    headers,
+    hasToken: !!token,
+    body: body ? (typeof body === 'string' ? JSON.parse(body) : body) : undefined,
+  });
 
-  const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+  const response = await fetch(fullUrl, {
     method: options.method,
     headers,
     body: body as BodyInit | null | undefined,
