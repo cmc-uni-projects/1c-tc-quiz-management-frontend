@@ -1,6 +1,7 @@
 "use client";
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useRouter, usePathname } from "next/navigation";
+import Link from "next/link";
 import { useUser } from "@/lib/user";
 import toast from "react-hot-toast";
 import ProfileDropdown from "@/components/ProfileDropdown";
@@ -39,17 +40,17 @@ const AdminAuthGuard = ({ children }: AdminAuthGuardProps) => {
   const { user, isLoading, isAuthenticated } = useUser();
   const router = useRouter();
 
-  const [isRedirecting, setIsRedirecting] = useState(false);
+  const hasRedirectedRef = useRef(false);
 
   useEffect(() => {
     // console.log('AdminAuthGuard: useEffect triggered.');
-    // console.log('AdminAuthGuard: User:', user, 'isLoading:', isLoading, 'isAuthenticated:', isAuthenticated, 'isRedirecting:', isRedirecting);
+    // console.log('AdminAuthGuard: User:', user, 'isLoading:', isLoading, 'isAuthenticated:', isAuthenticated);
 
-    if (isLoading || isRedirecting) {
+    if (isLoading || hasRedirectedRef.current) {
       return;
     }
 
-    if (!isLoading && !isRedirecting) {
+    if (!isLoading) {
       console.log('AdminAuthGuard: Loading finished. Final state: User:', user, 'isAuthenticated:', isAuthenticated);
     }
 
@@ -65,14 +66,14 @@ const AdminAuthGuard = ({ children }: AdminAuthGuardProps) => {
     }
 
     if (redirectPath) {
-        setIsRedirecting(true);
+        hasRedirectedRef.current = true;
         if (toastMessage) {
             toast.error(toastMessage);
         }
         router.push(redirectPath);
     }
 
-  }, [user, isLoading, isAuthenticated, router, isRedirecting]);
+  }, [user, isLoading, isAuthenticated, router]);
 
   if (isLoading) {
     return (
@@ -132,10 +133,10 @@ const AdminSidebar = () => {
     }
   };
 
-  const [openSubmenu, setOpenSubmenu] = useState<string | null>(null);
+  const [userToggledSubmenu, setUserToggledSubmenu] = useState<string | null>(null);
 
   const handleToggleSubmenu = (name: string) => {
-    setOpenSubmenu(openSubmenu === name ? null : name);
+    setUserToggledSubmenu(userToggledSubmenu === name ? null : name);
   };
 
   /**
@@ -162,27 +163,22 @@ const AdminSidebar = () => {
     return shouldBeActive;
   };
 
-  useEffect(() => {
-    let shouldOpen = false;
-    if (typeof currentPathname !== 'string') return; // Guard for pathname loading
+  // Derive which submenu should be open based on current path
+  const getActiveSubmenu = (): string | null => {
+    if (typeof currentPathname !== 'string') return null;
 
-    navItems.forEach((item) => {
+    for (const item of navItems) {
       if (item.submenu) {
         if (item.submenu.some(subItem => subItem && subItem.href && currentPathname.startsWith(subItem.href))) {
-          setOpenSubmenu(item.name);
-          shouldOpen = true;
+          return item.name;
         }
       }
-    });
-
-    if (!shouldOpen && openSubmenu) {
-      const isParentActive = navItems.some(item => isActive(item));
-      if (!isParentActive) {
-         setOpenSubmenu(null);
-      }
     }
+    return null;
+  };
 
-  }, [currentPathname]);
+  // Use user toggle if set, otherwise use path-based active submenu
+  const activeSubmenu = userToggledSubmenu !== null ? userToggledSubmenu : getActiveSubmenu();
 
   const handleNavigation = (href: string, e: React.MouseEvent) => {
     e.preventDefault();
@@ -193,21 +189,20 @@ const AdminSidebar = () => {
     <>
       <aside className="w-64 bg-white border-r border-zinc-200 h-screen fixed top-0 left-0 z-50 shadow-xl overflow-y-auto">
         <div className="flex items-center space-x-2 px-4 py-3 border-b border-zinc-200 bg-white">
-          <a
-            href="/"
-            onClick={(e) => handleNavigation("/admin", e)}
+          <Link
+            href="/admin"
             className="text-xl font-black"
             style={{ color: LOGO_TEXT_COLOR }}
           >
             QuizzZone
-          </a>
+          </Link>
         </div>
 
         <nav className="px-4 py-4 text-sm font-medium text-zinc-700 space-y-1">
           {navItems.map((item) => {
             const hasSubmenu = !!item.submenu;
             const isCurrentActive = isActive(item);
-            const isOpen = openSubmenu === item.name || (hasSubmenu && isCurrentActive);
+            const isOpen = activeSubmenu === item.name || (hasSubmenu && isCurrentActive);
 
             if (!item.href) return null;
 

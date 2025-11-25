@@ -32,21 +32,6 @@ interface QuestionFormProps {
   isLoading: boolean;
 }
 
-// --- CONSTANTS ---
-const FALLBACK_OPTIONS = {
-    types: [
-        { id: 'SINGLE_CHOICE', name: 'Một đáp án' },
-        { id: 'MULTIPLE_CHOICE', name: 'Nhiều đáp án' },
-        { id: 'TRUE_FALSE', name: 'Đúng/Sai' },
-    ],
-    difficulties: [
-        { id: 'Easy', name: 'Dễ' },
-        { id: 'Medium', name: 'Trung bình' },
-        { id: 'Hard', name: 'Khó' },
-    ],
-    categories: [{ id: 1, name: 'General' }],
-};
-
 export default function QuestionForm({ initialData, isEdit, onSubmit, isLoading }: QuestionFormProps) {
   const [formData, setFormData] = useState<QuestionFormData>(initialData || {
     title: '',
@@ -56,10 +41,14 @@ export default function QuestionForm({ initialData, isEdit, onSubmit, isLoading 
     answers: [{ tempId: 1, content: '', isCorrect: true }],
   });
 
-  const [options, setOptions] = useState({
-    types: FALLBACK_OPTIONS.types,
-    difficulties: FALLBACK_OPTIONS.difficulties,
-    categories: FALLBACK_OPTIONS.categories,
+  const [options, setOptions] = useState<{
+    types: Option[];
+    difficulties: Option[];
+    categories: Option[];
+  }>({
+    types: [],
+    difficulties: [],
+    categories: [],
   });
   const [optionsLoading, setOptionsLoading] = useState(true);
   const router = useRouter();
@@ -137,7 +126,11 @@ export default function QuestionForm({ initialData, isEdit, onSubmit, isLoading 
 
       const answerIndex = newAnswers.findIndex(a => a.tempId === tempId);
       if (answerIndex > -1) {
-        (newAnswers[answerIndex] as any)[field] = value;
+        if (field === 'content') {
+          newAnswers[answerIndex].content = value as string;
+        } else if (field === 'isCorrect') {
+          newAnswers[answerIndex].isCorrect = value as boolean;
+        }
       }
       return { ...prev, answers: newAnswers };
     });

@@ -110,7 +110,7 @@ export default function EditQuestionPage() {
     console.log(`Submitting update for ID ${questionId}:`, payload);
     try {
       // 2. Call the correct backend endpoint
-      await fetchApi(`/questions/edit/${questionId}`, {
+      await fetchApi(`/questions/${questionId}`, {
         method: 'PUT',
         body: payload,
       });

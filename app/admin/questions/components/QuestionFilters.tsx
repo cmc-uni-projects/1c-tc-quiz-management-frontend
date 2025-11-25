@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
+import { fetchApi } from '@/lib/apiClient';
 
 interface Filters {
   search: string;
@@ -21,30 +22,11 @@ interface Option {
   name: string;
 }
 
-// Các Endpoint API (Bạn cần tạo các API Route Proxy tương ứng trong Next.js)
+// Các Endpoint API - gọi trực tiếp backend endpoints
 const ENDPOINTS = {
-    types: '/api/questions/question-types',       // API lấy danh sách loại câu hỏi
-    difficulties: '/api/questions/difficulties',  // API lấy danh sách độ khó
-    categories: '/api/categories',      // API lấy danh sách danh mục
-};
-
-// Dữ liệu dự phòng (Fallback) để UI không bị lỗi khi chưa kết nối API
-const FALLBACK_OPTIONS = {
-    types: [
-        { id: 'MULTIPLE_CHOICE', name: 'Lựa chọn nhiều đáp án' },
-        { id: 'TRUE_FALSE', name: 'Đúng/Sai' },
-        { id: 'FILL_IN_BLANK', name: 'Điền vào chỗ trống' }
-    ],
-    difficulties: [
-        { id: 'EASY', name: 'Dễ' },
-        { id: 'MEDIUM', name: 'Trung bình' },
-        { id: 'HARD', name: 'Khó' }
-    ],
-    categories: [
-        { id: 1, name: 'Toán' },
-        { id: 2, name: 'Văn' },
-        { id: 3, name: 'Anh' }
-    ],
+    types: '/questions/question-types',       // API lấy danh sách loại câu hỏi
+    difficulties: '/questions/difficulties',  // API lấy danh sách độ khó
+    categories: '/categories',      // API lấy danh sách danh mục
 };
 
 export default function QuestionFilters({ initialFilters, onFilter }: QuestionFiltersProps) {
@@ -56,20 +38,17 @@ export default function QuestionFilters({ initialFilters, onFilter }: QuestionFi
   const [categoryOptions, setCategoryOptions] = useState<Option[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // Hàm helper để fetch dữ liệu
-  const fetchOptions = async (url: string, fallback: Option[]) => {
+  // Hàm helper để fetch dữ liệu từ backend
+  const fetchOptions = async (url: string): Promise<Option[]> => {
     try {
-      // Gọi API: Nếu đây là API Route của Next.js, nó sẽ proxy đến Backend
-      const res = await fetch(url, { cache: 'no-store' });
-      if (res.ok) {
-        const data = await res.json();
-        // Giả định API trả về một mảng các đối tượng Option
-        return Array.isArray(data) ? data : fallback;
-      }
+      // Gọi API backend với JWT token
+      const data = await fetchApi(url);
+      // Giả định API trả về một mảng các đối tượng Option
+      return Array.isArray(data) ? data : [];
     } catch (error) {
-      console.warn(`Lỗi khi gọi API ${url}, sử dụng dữ liệu mặc định.`, error);
+      console.warn(`Lỗi khi gọi API ${url}:`, error);
+      return [];
     }
-    return fallback; // Trả về fallback nếu lỗi
   };
 
   // useEffect để tải dữ liệu khi component được mount
@@ -79,9 +58,9 @@ export default function QuestionFilters({ initialFilters, onFilter }: QuestionFi
 
       // Gọi song song 3 API để tiết kiệm thời gian
       const [types, difficulties, cats] = await Promise.all([
-        fetchOptions(ENDPOINTS.types, FALLBACK_OPTIONS.types),
-        fetchOptions(ENDPOINTS.difficulties, FALLBACK_OPTIONS.difficulties),
-        fetchOptions(ENDPOINTS.categories, FALLBACK_OPTIONS.categories),
+        fetchOptions(ENDPOINTS.types),
+        fetchOptions(ENDPOINTS.difficulties),
+        fetchOptions(ENDPOINTS.categories),
       ]);
 
       setTypeOptions(types);

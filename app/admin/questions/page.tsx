@@ -152,9 +152,10 @@ export default function AdminQuestionsPage() {
         fetchQuestions(); // Reload trang hiện tại
       }
 
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Delete error:", error);
-      toastError(`Lỗi: ${error.message}`);
+      const errorMessage = error instanceof Error ? error.message : 'Lỗi không xác định';
+      toastError(`Lỗi: ${errorMessage}`);
     }
   };
 
