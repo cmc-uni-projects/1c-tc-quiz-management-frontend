@@ -1,9 +1,15 @@
 "use client";
 
-import React, { useState } from "react";
-
+import React, { useState, useEffect } from "react";
+import { fetchApi } from '@/lib/apiClient'; // Import fetchApi
+import { toastError } from '@/lib/toast'; // Import toastError
 
 // TYPES
+
+interface Option {
+  id: number | string;
+  name: string;
+}
 
 type Answer = {
   id: number;
@@ -20,6 +26,27 @@ type Question = {
   answers: Answer[];
 };
 
+// API Endpoints
+const ENDPOINTS = {
+    types: '/api/questions/question-types',
+    difficulties: '/api/questions/difficulties',
+    categories: '/api/categories',
+};
+
+// Helper function to fetch data
+const fetchOptions = async (url: string, fallback: Option[] = []) => {
+  try {
+    const res = await fetchApi(url);
+    // Assuming the API returns an array of objects with 'id' and 'name'
+    const data = Array.isArray(res) ? res.map((item: any) => ({ id: item.id || item.name, name: item.name })) : fallback;
+    return data;
+  } catch (error) {
+    console.error(`Error fetching options from ${url}:`, error);
+    toastError(`Failed to load options from ${url.split('/').pop()}.`);
+    return fallback;
+  }
+};
+
 
 // COMPONENT CHÍNH
 
@@ -27,12 +54,36 @@ export default function CreateExamPage() {
   // ======= STATE BÀI THI =======
   const [examTitle, setExamTitle] = useState("");
   const [questionCount, setQuestionCount] = useState<number | "">("");
-  const [examType, setExamType] = useState("");
+  const [examType, setExamType] = useState(""); // This will store difficulty ID/name for the exam
   const [duration, setDuration] = useState<number | "">(0);
   const [startTime, setStartTime] = useState("00:00");
   const [startDate, setStartDate] = useState("");
   const [endTime, setEndTime] = useState("00:00");
   const [endDate, setEndDate] = useState("");
+
+  // ======= STATE CHO CÁC TÙY CHỌN ĐỘNG =======
+  const [categoryOptions, setCategoryOptions] = useState<Option[]>([]);
+  const [difficultyOptions, setDifficultyOptions] = useState<Option[]>([]);
+  const [questionTypeOptions, setQuestionTypeOptions] = useState<Option[]>([]);
+  const [loadingOptions, setLoadingOptions] = useState(true);
+
+  // Fetch dynamic options on component mount
+  useEffect(() => {
+    const loadOptions = async () => {
+      setLoadingOptions(true);
+      const [categories, difficulties, types] = await Promise.all([
+        fetchOptions(ENDPOINTS.categories),
+        fetchOptions(ENDPOINTS.difficulties),
+        fetchOptions(ENDPOINTS.types),
+      ]);
+      setCategoryOptions(categories);
+      setDifficultyOptions(difficulties);
+      setQuestionTypeOptions(types);
+      setLoadingOptions(false);
+    };
+    loadOptions();
+  }, []);
+
 
   // ======= STATE CÂU HỎI =======
   const [questions, setQuestions] = useState<Question[]>([
@@ -53,7 +104,7 @@ export default function CreateExamPage() {
   // XỬ LÝ CÂU HỎI
 
   const addQuestion = () => {
-    const newId = questions[questions.length - 1].id + 1;
+    const newId = questions.length > 0 ? questions[questions.length - 1].id + 1 : 1;
     setQuestions([
       ...questions,
       {
@@ -97,17 +148,19 @@ export default function CreateExamPage() {
 
   const addAnswer = (qid: number) => {
     setQuestions(
-      questions.map((q) =>
-        q.id === qid
-          ? {
-              ...q,
-              answers: [
-                ...q.answers,
-                { id: q.answers.length + 1, text: "", isCorrect: false },
-              ],
-            }
-          : q
-      )
+      questions.map((q) => {
+        if (q.id === qid) {
+          const newAnswerId = q.answers.length > 0 ? q.answers[q.answers.length - 1].id + 1 : 1;
+          return {
+            ...q,
+            answers: [
+              ...q.answers,
+              { id: newAnswerId, text: "", isCorrect: false },
+            ],
+          };
+        }
+        return q;
+      })
     );
   };
 
@@ -117,7 +170,7 @@ export default function CreateExamPage() {
         q.id === qid
           ? {
               ...q,
-              answers: q.answers.length > 1 ? q.answers.filter((a) => a.id !== aid) : q.answers,
+              answers: q.answers.length > 2 ? q.answers.filter((a) => a.id !== aid) : q.answers, // Keep at least 2 answers
             }
           : q
       )
@@ -230,11 +283,12 @@ export default function CreateExamPage() {
                   value={examType}
                   onChange={(e) => setExamType(e.target.value)}
                   className="w-full border px-3 py-2 rounded-md bg-white"
+                  disabled={loadingOptions}
                 >
-                  <option value="">Chọn loại</option>
-                   <option value="easy">Dễ</option>
-                   <option value="medium">Trung bình</option>
-                   <option value="hard">Khó</option>
+                  <option value="">{loadingOptions ? "Đang tải..." : "Chọn độ khó"}</option>
+                  {difficultyOptions.map(opt => (
+                    <option key={opt.id} value={opt.id}>{opt.name}</option>
+                  ))}
                 </select>
               </div>
             </div>
@@ -337,10 +391,12 @@ export default function CreateExamPage() {
                         updateQuestionField(q.id, "questionType", e.target.value)
                       }
                       className="border px-3 py-2 rounded-md bg-white"
+                      disabled={loadingOptions}
                     >
-                      <option value="">Loại câu hỏi</option>
-                      <option value="single">Chọn 1 đáp án</option>
-                      <option value="multi">Chọn nhiều đáp án</option>
+                      <option value="">{loadingOptions ? "Đang tải..." : "Loại câu hỏi"}</option>
+                      {questionTypeOptions.map(opt => (
+                        <option key={opt.id} value={opt.id}>{opt.name}</option>
+                      ))}
                     </select>
                   </div>
 
@@ -352,11 +408,12 @@ export default function CreateExamPage() {
                         updateQuestionField(q.id, "category", e.target.value)
                       }
                       className="border px-3 py-2 rounded-md bg-white"
+                      disabled={loadingOptions}
                     >
-                      <option value="">Danh mục câu hỏi</option>
-                      <option value="math">Giải Tích</option>
-                      <option value="english">Triết</option>
-                      <option value="it">Java</option>
+                      <option value="">{loadingOptions ? "Đang tải..." : "Danh mục câu hỏi"}</option>
+                      {categoryOptions.map(opt => (
+                        <option key={opt.id} value={opt.id}>{opt.name}</option>
+                      ))}
                     </select>
 
                     <select
@@ -365,11 +422,12 @@ export default function CreateExamPage() {
                         updateQuestionField(q.id, "difficulty", e.target.value)
                       }
                       className="border px-3 py-2 rounded-md bg-white"
+                      disabled={loadingOptions}
                     >
-                      <option value="">Độ khó</option>
-                      <option value="easy">Dễ</option>
-                      <option value="medium">Trung bình</option>
-                      <option value="hard">Khó</option>
+                      <option value="">{loadingOptions ? "Đang tải..." : "Độ khó"}</option>
+                      {difficultyOptions.map(opt => (
+                        <option key={opt.id} value={opt.id}>{opt.name}</option>
+                      ))}
                     </select>
                   </div>
 
