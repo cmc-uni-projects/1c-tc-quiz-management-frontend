@@ -25,7 +25,7 @@ interface Question {
   difficulty: string;
   category: { id: number; name: string };
   createdBy: string;
-  answers: { id: number; content: string; correct: boolean }[];
+  answers: { id: number; text: string; correct: boolean }[];
 }
 
 interface ApiResponse {
