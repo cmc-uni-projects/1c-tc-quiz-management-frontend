@@ -12,7 +12,8 @@ import {
   ChevronDownIcon,
   AcademicCapIcon,
   UserIcon,
-  QuestionMarkCircleIcon
+  QuestionMarkCircleIcon,
+  ClipboardDocumentListIcon
 } from "@heroicons/react/24/outline";
 
 interface NavItem {
@@ -112,6 +113,7 @@ const AdminSidebar = () => {
     { name: "Duyệt tài khoản giáo viên", href: "/admin/approve-teachers" },
     { name: "Danh mục", href: "/admin/categories" },
     { name: "Câu hỏi", href: "/admin/questions" },
+    { name: "Quản lý bài thi", href: "/admin/exam-offline" },
   ];
 
   // Icon mapping for menu items
@@ -127,6 +129,8 @@ const AdminSidebar = () => {
         return <FolderIcon className="w-5 h-5" />;
       case "Câu hỏi":
         return <QuestionMarkCircleIcon className="w-5 h-5" />;
+      case "Quản lý bài thi":
+        return <ClipboardDocumentListIcon className="w-5 h-5" />;
       default:
         return null;
     }

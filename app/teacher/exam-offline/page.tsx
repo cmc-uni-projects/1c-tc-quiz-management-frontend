@@ -103,7 +103,7 @@ export default function CreateExamPage() {
       setLibraryQuestions(data.content.map(q => ({
         id: q.id,
         title: q.title,
-        questionType: q.type === 'SINGLE' ? 'single' : (q.type === 'MULTIPLE' ? 'multi' : (q.type === 'TRUE_FALSE' ? 'true_false' : '')),
+        questionType: q.type === 'SINGLE' ? 'single' : (q.type === 'MULTIPLE' ? 'multi' : (q.type === 'TRUE_FALSE' ? 'true_false' : 'single')),
         categoryId: q.category.id.toString(),
         categoryName: q.category.name,
         difficulty: q.difficulty,
