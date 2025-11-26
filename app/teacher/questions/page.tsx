@@ -279,34 +279,51 @@ export default function TeacherQuestionsPage() {
             <div className="p-5 border-t border-gray-100 flex justify-center items-center gap-2 text-sm text-gray-500 bg-white">
               <button
                 onClick={() => setCurrentPage(1)}
-                disabled={currentPage === 1}
-                className="px-3 py-1 border border-gray-300 rounded-md text-gray-600 hover:bg-gray-100 disabled:opacity-50 transition"
+                disabled={currentPage === 1 || loading}
+                className="px-3 py-1 rounded-full text-gray-400 hover:text-purple-700 hover:bg-purple-50 disabled:opacity-40 disabled:cursor-not-allowed transition"
               >
-                &lt;&lt;
+                «
               </button>
+
               <button
                 onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
-                disabled={currentPage === 1}
-                className="px-3 py-1 border border-gray-300 rounded-md text-gray-600 hover:bg-gray-100 disabled:opacity-50 transition"
+                disabled={currentPage === 1 || loading}
+                className="px-3 py-1 rounded-full text-gray-400 hover:text-purple-700 hover:bg-purple-50 disabled:opacity-40 disabled:cursor-not-allowed transition"
               >
-                &lt;
+                ‹
               </button>
-              <span className="px-4 py-1 bg-purple-600 text-white font-bold rounded-md shadow-md">
-                {currentPage} / {totalPages}
-              </span>
+
+              {Array.from({ length: totalPages }, (_, i) => (
+                <button
+                  key={i}
+                  onClick={() => setCurrentPage(i + 1)}
+                  disabled={loading}
+                  className={`w-8 h-8 flex items-center justify-center rounded-full text-sm font-semibold transition-colors
+                    ${
+                      currentPage === i + 1
+                        ? 'bg-purple-700 text-white shadow-lg'
+                        : 'text-gray-600 hover:bg-purple-50'
+                    }
+                  `}
+                >
+                  {i + 1}
+                </button>
+              ))}
+
               <button
                 onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
-                disabled={currentPage === totalPages}
-                className="px-3 py-1 border border-gray-300 rounded-md text-gray-600 hover:bg-gray-100 disabled:opacity-50 transition"
+                disabled={currentPage === totalPages || loading}
+                className="px-3 py-1 rounded-full text-gray-400 hover:text-purple-700 hover:bg-purple-50 disabled:opacity-40 disabled:cursor-not-allowed transition"
               >
-                &gt;
+                ›
               </button>
+
               <button
                 onClick={() => setCurrentPage(totalPages)}
-                disabled={currentPage === totalPages}
-                className="px-3 py-1 border border-gray-300 rounded-md text-gray-600 hover:bg-gray-100 disabled:opacity-50 transition"
+                disabled={currentPage === totalPages || loading}
+                className="px-3 py-1 rounded-full text-gray-400 hover:text-purple-700 hover:bg-purple-50 disabled:opacity-40 disabled:cursor-not-allowed transition"
               >
-                &gt;&gt;
+                »
               </button>
             </div>
           )}
