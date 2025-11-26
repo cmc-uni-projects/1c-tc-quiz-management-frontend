@@ -31,7 +31,7 @@ interface Category {
 
 interface Answer {
   id: number;
-  content: string;
+  text: string;
   correct: boolean;
 }
 
@@ -73,9 +73,8 @@ export default function QuestionTable({
     const correctAnswers = answers.filter(a => a.correct);
     if (correctAnswers.length === 0) return 'N/A';
     // Join multiple correct answers if they exist
-    return correctAnswers.map(a => a.content).join('; ');
+    return correctAnswers.map(a => a.text).join('; ');
   };
-
 
   return (
     <div className="bg-white rounded-xl shadow-lg overflow-x-auto border border-gray-200">

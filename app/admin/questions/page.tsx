@@ -32,7 +32,7 @@ interface Question {
   difficulty: string;
   category: Category;
   createdBy: string;
-  answers: { id: number; content: string; correct: boolean }[];
+  answers: { id: number; text: string; correct: boolean }[];
 }
 
 
