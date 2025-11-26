@@ -250,7 +250,7 @@ export default function CreateExamPage() {
           {/* ================== FORM TẠO BÀI THI ================== */}
           <section className="bg-white rounded-2xl shadow p-8 mb-6">
             <h2 className="text-2xl font-semibold text-center mb-8">
-              Tạo bài thi offline
+              Tạo bài thi offline - Admin
             </h2>
 
             {/* Các input đầu */}
