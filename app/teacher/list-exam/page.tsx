@@ -2,6 +2,16 @@
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 
+interface Exam {
+  id: number;
+  title: string;
+  startTime: string;
+  endTime: string;
+  duration: number;
+  questionCount: number;
+  status: "PENDING" | "ONGOING" | "COMPLETED";
+}
+
 // ===== SVG ICONS =====
 const ClockIcon = () => (
   <svg
@@ -45,21 +55,8 @@ const MoreIcon = () => (
   </svg>
 );
 
-// ===== MOCK DATA (chỉ 1 bài thi ĐANG CHỜ như figma) =====
-const mockExams = [
-  {
-    id: 1,
-    title: "hii",
-    startTime: "00:39 - 16/11/25",
-    endTime: "01:39 - 16/11/25",
-    duration: 10,
-    questionCount: 10,
-    status: "PENDING",
-  },
-];
-
 export default function TeacherExamListPage() {
-  const [exams, setExams] = useState(mockExams);
+  const [exams, setExams] = useState<Exam[]>([]);
   const [openMenu, setOpenMenu] = useState<number | null>(null);
   const [openShare, setOpenShare] = useState(false);
   const [shareLink, setShareLink] = useState("");

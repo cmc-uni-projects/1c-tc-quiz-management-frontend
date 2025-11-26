@@ -26,7 +26,7 @@ export default function AdminPage() {
                 setIsSearching(false);
                 // Xử lý logic tìm kiếm
                 console.log('Đã hoàn thành tìm kiếm.');
-                toast.info(`Tìm kiếm hoàn tất cho mã: ${cleanedCode}`);
+                toast.success(`Tìm kiếm hoàn tất cho mã: ${cleanedCode}`);
             }, 1500);
         } else {
             toast.error('Mã phòng phải có ít nhất 6 ký tự.');

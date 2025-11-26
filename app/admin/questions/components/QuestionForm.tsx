@@ -19,8 +19,8 @@ const TrashIcon = (props: React.SVGAttributes<SVGSVGElement>) => (
 // --- TYPE DEFINITIONS ---
 interface AnswerField {
   tempId: number; // For React key prop
-  content: string;
-  isCorrect: boolean;
+  content: string; // FE dùng 'content' để hiển thị
+  isCorrect: boolean; // FE dùng 'isCorrect' để hiển thị
 }
 
 interface QuestionFormData {
@@ -39,38 +39,27 @@ interface Option {
 interface QuestionFormProps {
   initialData?: QuestionFormData;
   isEdit: boolean;
-  onSubmit: (data: QuestionFormData) => Promise<void>;
+  onSubmit: (data: any) => Promise<void>; // Chấp nhận any vì cấu trúc gửi đi khác cấu trúc state
   isLoading: boolean;
 }
-
-// --- CONSTANTS ---
-const FALLBACK_OPTIONS = {
-    types: [
-        { id: 'SINGLE_CHOICE', name: 'Một đáp án' },
-        { id: 'MULTIPLE_CHOICE', name: 'Nhiều đáp án' },
-        { id: 'TRUE_FALSE', name: 'Đúng/Sai' },
-    ],
-    difficulties: [
-        { id: 'Easy', name: 'Dễ' },
-        { id: 'Medium', name: 'Trung bình' },
-        { id: 'Hard', name: 'Khó' },
-    ],
-    categories: [{ id: 1, name: 'General' }],
-};
 
 export default function QuestionForm({ initialData, isEdit, onSubmit, isLoading }: QuestionFormProps) {
   const [formData, setFormData] = useState<QuestionFormData>(initialData || {
     title: '',
-    type: '',
+    type: '', // Sẽ lưu ID từ Backend (ví dụ: "SINGLE")
     difficulty: '',
     categoryId: '',
     answers: [{ tempId: 1, content: '', isCorrect: true }],
   });
 
-  const [options, setOptions] = useState({
-    types: FALLBACK_OPTIONS.types,
-    difficulties: FALLBACK_OPTIONS.difficulties,
-    categories: FALLBACK_OPTIONS.categories,
+  const [options, setOptions] = useState<{
+    types: Option[];
+    difficulties: Option[];
+    categories: Option[];
+  }>({
+    types: [],
+    difficulties: [],
+    categories: [],
   });
   const [optionsLoading, setOptionsLoading] = useState(true);
   const router = useRouter();
@@ -85,22 +74,30 @@ export default function QuestionForm({ initialData, isEdit, onSubmit, isLoading 
           fetchApi('/categories'),
         ]);
 
-        // Backend returns: ["SINGLE", "MULTIPLE", "TRUE_FALSE"]
-        // Frontend expects: ["SINGLE_CHOICE", "MULTIPLE_CHOICE", "TRUE_FALSE"]
+        // Backend trả về: ["SINGLE", "MULTIPLE", "TRUE_FALSE"]
+        // Frontend hiển thị đẹp hơn nhưng GIỮ NGUYÊN ID để gửi lại Backend
         const formattedTypes = typesRes.map((t: string) => {
-            const typeMap: { [key: string]: string } = {
-                'SINGLE': 'SINGLE_CHOICE',
-                'MULTIPLE': 'MULTIPLE_CHOICE', 
-                'TRUE_FALSE': 'TRUE_FALSE'
+            const nameMap: { [key: string]: string } = {
+                'SINGLE': 'Single Choice (Chọn 1)',
+                'MULTIPLE': 'Multiple Choice (Chọn nhiều)',
+                'TRUE_FALSE': 'True / False'
             };
-            return { id: typeMap[t] || t, name: t.replace('_', ' ') };
+            return { id: t, name: nameMap[t] || t.replace('_', ' ') };
         });
+
         const formattedDifficulties = difficultiesRes.map((d: string) => ({ id: d, name: d }));
+
+        // --- SỬA LỖI: Map categoriesRes thành formattedCategories ---
+        const formattedCategories = categoriesRes.map((c: any) => ({
+             id: c.id,
+             name: c.name
+        }));
+        // -------------------------------------------------------------
 
         setOptions({
           types: formattedTypes,
           difficulties: formattedDifficulties,
-          categories: categoriesRes, // API returns a direct list, not a Page object
+          categories: formattedCategories, // Biến này giờ đã tồn tại
         });
       } catch (error) {
         toast.error('Không thể tải các tùy chọn cho form.');
@@ -117,9 +114,9 @@ export default function QuestionForm({ initialData, isEdit, onSubmit, isLoading 
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
   };
-    
+
   useEffect(() => {
-    // Automatically set answers for TRUE_FALSE questions
+    // Tự động set đáp án cho TRUE_FALSE
     if (formData.type === 'TRUE_FALSE') {
       setFormData(prev => ({
         ...prev,
@@ -129,7 +126,7 @@ export default function QuestionForm({ initialData, isEdit, onSubmit, isLoading 
         ],
       }));
     } else if (formData.answers.length === 2 && formData.answers[0].content === 'True' && formData.answers[1].content === 'False') {
-      // Reset answers when switching away from TRUE_FALSE
+      // Reset khi chuyển từ TRUE_FALSE sang dạng khác
       setFormData(prev => ({
         ...prev,
         answers: [{ tempId: 1, content: '', isCorrect: true }],
@@ -141,14 +138,18 @@ export default function QuestionForm({ initialData, isEdit, onSubmit, isLoading 
     setFormData(prev => {
       let newAnswers = [...prev.answers];
 
-      if ((prev.type === 'SINGLE_CHOICE' || prev.type === 'TRUE_FALSE') && field === 'isCorrect' && value === true) {
-        // Uncheck all others
+      // Nếu là Single Choice hoặc True/False, chọn 1 cái đúng thì các cái khác thành sai
+      if ((prev.type === 'SINGLE' || prev.type === 'TRUE_FALSE') && field === 'isCorrect' && value === true) {
         newAnswers = newAnswers.map(ans => ({ ...ans, isCorrect: false }));
       }
 
       const answerIndex = newAnswers.findIndex(a => a.tempId === tempId);
       if (answerIndex > -1) {
-        (newAnswers[answerIndex] as any)[field] = value;
+        if (field === 'content') {
+          newAnswers[answerIndex].content = value as string;
+        } else if (field === 'isCorrect') {
+          newAnswers[answerIndex].isCorrect = value as boolean;
+        }
       }
       return { ...prev, answers: newAnswers };
     });
@@ -172,15 +173,18 @@ export default function QuestionForm({ initialData, isEdit, onSubmit, isLoading 
     }));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    // Validation cơ bản
     if (formData.answers.every(a => !a.isCorrect)) {
       toast.error('Phải có ít nhất một đáp án đúng.');
       return;
     }
+
+    // Gửi dữ liệu thô ra ngoài để component cha xử lý
     onSubmit(formData);
   };
-  
+
   const isDisabled = isLoading || optionsLoading;
   const isTrueFalse = formData.type === 'TRUE_FALSE';
 
@@ -239,7 +243,8 @@ export default function QuestionForm({ initialData, isEdit, onSubmit, isLoading 
             <h3 className="font-semibold text-gray-800">Đáp án</h3>
             {formData.answers.map((answer, index) => (
             <div key={answer.tempId} className="flex items-center gap-3 p-2 rounded-md bg-gray-50">
-                {formData.type === 'SINGLE_CHOICE' || isTrueFalse ? (
+                {/* Lưu ý: Check type là "SINGLE" thay vì "SINGLE_CHOICE" để khớp với value select */}
+                {formData.type === 'SINGLE' || isTrueFalse ? (
                      <input type="radio" name="correctAnswerRadio" checked={answer.isCorrect} onChange={(e) => handleAnswerChange(answer.tempId, 'isCorrect', e.target.checked)} className="h-5 w-5 text-purple-600 focus:ring-purple-500 border-gray-300"/>
                 ) : (
                     <input type="checkbox" checked={answer.isCorrect} onChange={(e) => handleAnswerChange(answer.tempId, 'isCorrect', e.target.checked)} className="h-5 w-5 rounded text-purple-600 focus:ring-purple-500 border-gray-300"/>

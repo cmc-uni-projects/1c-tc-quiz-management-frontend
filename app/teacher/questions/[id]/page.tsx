@@ -20,6 +20,12 @@ interface QuestionData {
   }>;
 }
 
+interface BackendAnswer {
+  id: number;
+  text: string;
+  correct: boolean;
+}
+
 export default function TeacherEditQuestionPage() {
   const router = useRouter();
   const params = useParams();
@@ -34,22 +40,22 @@ export default function TeacherEditQuestionPage() {
 
       try {
         const data = await fetchApi(`/questions/get/${questionId}`);
-        
+
         // Transform backend data to frontend format
         const transformedData: QuestionData = {
           title: data.title,
-          type: (data.type === 'SINGLE' ? 'SINGLE_CHOICE' : 
+          type: (data.type === 'SINGLE' ? 'SINGLE_CHOICE' :
                 data.type === 'MULTIPLE' ? 'MULTIPLE_CHOICE' : 'TRUE_FALSE') as 'SINGLE_CHOICE' | 'MULTIPLE_CHOICE' | 'TRUE_FALSE',
           difficulty: data.difficulty,
           categoryId: data.category?.id?.toString() || '',
-          answers: data.answers?.map((ans: any) => ({
+          answers: data.answers?.map((ans: BackendAnswer) => ({
             tempId: ans.id || Date.now() + Math.random(),
             content: ans.text,
             isCorrect: ans.correct
           })) || [],
           answer: data.correctAnswer
         };
-        
+
         setInitialData(transformedData);
       } catch (error) {
         console.error('Fetch Error:', error);
@@ -67,18 +73,21 @@ export default function TeacherEditQuestionPage() {
       // Transform frontend data to backend format
       const backendData = {
         title: data.title,
-        type: data.type === 'SINGLE_CHOICE' ? 'SINGLE' : 
+        type: data.type === 'SINGLE_CHOICE' ? 'SINGLE' :
               data.type === 'MULTIPLE_CHOICE' ? 'MULTIPLE' : 'TRUE_FALSE',
         difficulty: data.difficulty,
         categoryId: parseInt(data.categoryId || '0'),
         correctAnswer: data.type === 'TRUE_FALSE' ? data.answer : undefined,
-        answers: data.type === 'TRUE_FALSE' ? [] : data.answers?.map((ans: any) => ({
+        answers: data.type === 'TRUE_FALSE' ? [] : data.answers?.map((ans: { tempId: number; content: string; isCorrect: boolean }) => ({
           text: ans.content,
           correct: ans.isCorrect
         })) || []
       };
 
-      await fetchApi(`/questions/edit/${questionId}`, {
+      // Use correct endpoint based on role
+      // Admin: /api/admin/questions/{id}
+      // Teacher: /api/questions/update/{id}
+      await fetchApi(`/questions/update/${questionId}`, {
         method: 'PUT',
         body: backendData,
       });

@@ -94,8 +94,8 @@ export default function AdminQuestionsPage() {
     const queryString = searchParams.toString();
 
     try {
-      // 2. Gọi API thực tế - Sử dụng admin endpoint
-      const data: ApiResponse = await fetchApi(`/admin/questions?page=${pageIndex}`);
+      // 2. Gọi API thực tế - Sử dụng admin endpoint với filters
+      const data: ApiResponse = await fetchApi(`/admin/questions?${queryParams.toString()}`);
 
       // 3. Cập nhật State từ dữ liệu trả về của Backend (Spring Page object)
       setQuestions(data.content || []);
@@ -108,7 +108,7 @@ export default function AdminQuestionsPage() {
     } finally {
       setLoading(false);
     }
-  }, [currentPage]); // Dependency array: Chỉ chạy lại khi trang thay đổi
+  }, [currentPage, filters]); // Dependency array: Chỉ chạy lại khi trang thay đổi
 
   // Gọi API khi component mount và khi fetchQuestions thay đổi (chủ yếu là khi currentPage đổi)
   useEffect(() => {
@@ -159,9 +159,10 @@ export default function AdminQuestionsPage() {
         fetchQuestions(); // Reload trang hiện tại
       }
 
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Delete error:", error);
-      toastError(`Lỗi: ${error.message}`);
+      const errorMessage = error instanceof Error ? error.message : 'Lỗi không xác định';
+      toastError(`Lỗi: ${errorMessage}`);
     }
   };
 

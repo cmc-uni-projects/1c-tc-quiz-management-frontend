@@ -46,8 +46,8 @@ export default function EditQuestionPage() {
 
       setIsLoading(true);
       try {
-        // 1. Fetch from the correct endpoint
-        const data: QuestionEntity = await fetchApi(`/questions/get/${questionId}`);
+        // 1. Fetch from the correct endpoint - Use admin endpoint for admin users
+        const data: QuestionEntity = await fetchApi(`/admin/questions/${questionId}`);
 
         // 2. Transform backend entity to form data structure
         // Convert backend enum to frontend enum
@@ -109,8 +109,8 @@ export default function EditQuestionPage() {
 
     console.log(`Submitting update for ID ${questionId}:`, payload);
     try {
-      // 2. Call the correct backend endpoint
-      await fetchApi(`/questions/edit/${questionId}`, {
+      // 2. Call the correct backend endpoint - Use admin endpoint for admin users
+      await fetchApi(`/admin/questions/${questionId}`, {
         method: 'PUT',
         body: payload,
       });

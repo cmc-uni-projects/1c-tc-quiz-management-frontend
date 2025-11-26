@@ -8,8 +8,10 @@ export class ApiError extends Error {
 }
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8082/api';
 
-interface FetchApiOptions extends RequestInit {
-  body?: any;
+interface FetchApiOptions {
+  method?: string;
+  headers?: Record<string, string>;
+  body?: Record<string, unknown> | string;
 }
 
 const isClient = typeof window !== 'undefined';
@@ -42,21 +44,34 @@ export async function fetchApi(endpoint: string, options: FetchApiOptions = {}) 
      }
   }
 
-
-  const response = await fetch(`${API_BASE_URL}${endpoint}`, {
-    ...options,
+  const fullUrl = `${API_BASE_URL}${endpoint}`;
+  console.log(`[fetchApi] ${options.method || 'GET'} ${fullUrl}`, {
     headers,
-    body,
+    hasToken: !!token,
+    body: body ? (typeof body === 'string' ? JSON.parse(body) : body) : undefined,
+  });
+
+  const response = await fetch(fullUrl, {
+    method: options.method,
+    headers,
+    body: body as BodyInit | null | undefined,
   });
 
   if (!response.ok) {
-    if (response.status === 401 || response.status === 403) {
+    if (response.status === 401) {
+      // 401 Unauthorized: Token hết hạn hoặc không hợp lệ
       if (isClient) {
         localStorage.removeItem('jwt');
         window.location.href = '/auth/login';
       }
 
-      throw new ApiError('Phiên đăng nhập đã hết hạn hoặc không hợp lệ. Vui lòng đăng nhập lại.', response.status);
+      throw new ApiError('Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.', response.status);
+    }
+
+    if (response.status === 403) {
+      // 403 Forbidden: User được xác thực nhưng không có quyền truy cập
+      const errorData = await response.json().catch(() => ({ message: 'Bạn không có quyền truy cập tài nguyên này.' }));
+      throw new ApiError(errorData.message || 'Bạn không có quyền truy cập tài nguyên này.', response.status);
     }
 
     const errorData = await response.json().catch(() => ({ message: `Request failed with status ${response.status}` }));
