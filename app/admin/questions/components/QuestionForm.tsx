@@ -5,6 +5,17 @@ import { useRouter } from 'next/navigation';
 import { toast } from 'react-hot-toast';
 import { fetchApi } from '@/lib/apiClient';
 
+// Trash Icon component
+const TrashIcon = (props: React.SVGAttributes<SVGSVGElement>) => (
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+    <polyline points="3 6 5 6 21 6"/>
+    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/>
+    <path d="M10 11v6"/>
+    <path d="M14 11v6"/>
+    <path d="M9 6V4a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2"/>
+  </svg>
+);
+
 // --- TYPE DEFINITIONS ---
 interface AnswerField {
   tempId: number; // For React key prop
@@ -248,7 +259,9 @@ const handleSubmit = (e: React.FormEvent) => {
                     className="flex-grow border border-gray-300 rounded-md shadow-sm p-2 focus:ring-purple-500 focus:border-purple-500 disabled:bg-gray-100"
                 />
                 {!isTrueFalse && (
-                    <button type="button" onClick={() => removeAnswer(answer.tempId)} className="text-red-500 hover:text-red-700 font-semibold p-1">Xóa</button>
+                    <button type="button" onClick={() => removeAnswer(answer.tempId)} className="p-2 rounded-full bg-red-100 text-red-600 hover:bg-red-200 transition-colors">
+                        <TrashIcon />
+                    </button>
                 )}
             </div>
             ))}

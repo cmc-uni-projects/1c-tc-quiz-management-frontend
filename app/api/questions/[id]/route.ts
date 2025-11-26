@@ -1,4 +1,4 @@
-import { NextResponse } from 'next/server';
+import { NextResponse, NextRequest } from 'next/server';
 
 // Đọc biến môi trường (ví dụ: http://localhost:8082/api)
 const API_URL = process.env.NEXT_PUBLIC_API_URL;

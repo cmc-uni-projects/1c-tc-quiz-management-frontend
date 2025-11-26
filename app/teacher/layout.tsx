@@ -74,7 +74,7 @@ const TeacherSidebar = () => {
     { href: '/teacher/categories', label: 'Danh mục câu hỏi' },
     { href: '/teacher/list-exam', label: 'Danh sách bài thi' },   
     { href: '/teacher/questions', label: 'Quản lý câu hỏi' },
-    { href: '#', label: 'Quản lý bài thi', disabled: true },
+    { href: '/teacher/exam-offline', label: 'Quản lý bài thi' },
   ];
 
   // Icon mapping for menu items
@@ -99,33 +99,20 @@ const TeacherSidebar = () => {
     <aside className="w-56 border-r border-zinc-200 bg-white flex flex-col">
       
       <nav className="flex-1 px-4 py-4 text-sm font-medium text-zinc-700 space-y-1">
-        {navItems.map((item) => {
-          if (item.disabled) {
-            return (
-              <div
-                key={item.href}
-                className="flex items-center rounded-lg px-3 py-2 text-zinc-400 cursor-not-allowed"
-              >
-                {getIcon(item.label)}
-                <span className="ml-3">{item.label}</span>
-              </div>
-            );
-          }
-          return (
-            <Link
-              key={item.href}
-              href={item.href}
-              className={`flex items-center rounded-lg px-3 py-2 transition-colors duration-150 ${
-                pathname === item.href
-                  ? 'bg-zinc-100 text-purple-700 font-semibold'
-                  : 'hover:bg-zinc-50'
-              }`}
-            >
-              {getIcon(item.label)}
-              <span className="ml-3">{item.label}</span>
-            </Link>
-          );
-        })}
+        {navItems.map((item) => (
+          <Link
+            key={item.href}
+            href={item.href}
+            className={`flex items-center rounded-lg px-3 py-2 transition-colors duration-150 ${
+              pathname === item.href
+                ? 'bg-zinc-100 text-purple-700 font-semibold'
+                : 'hover:bg-zinc-50'
+            }`}
+          >
+            {getIcon(item.label)}
+            <span className="ml-3">{item.label}</span>
+          </Link>
+        ))}
       </nav>
     </aside>
   );

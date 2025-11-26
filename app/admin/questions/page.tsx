@@ -32,7 +32,7 @@ interface Question {
   difficulty: string;
   category: Category;
   createdBy: string;
-  answers: { id: number; content: string; correct: boolean }[];
+  answers: { id: number; text: string; correct: boolean }[];
 }
 
 
@@ -79,14 +79,19 @@ export default function AdminQuestionsPage() {
     // Backend returns pages starting from 0, so we adjust
     const pageIndex = currentPage - 1;
 
-    // 1. Xây dựng Query String - Bao gồm các bộ lọc
-    const queryParams = new URLSearchParams({
+    // 1. Xây dựng Query String -
+    // NOTE: Backend's /all endpoint currently does not support filtering.
+    // These filters are kept for UI purposes but not sent in the API call.
+    const searchParams = new URLSearchParams({
       page: pageIndex.toString(),
-      ...(filters.search && { search: filters.search }),
-      ...(filters.difficulty && { difficulty: filters.difficulty }),
-      ...(filters.type && { type: filters.type }),
-      ...(filters.category && { category: filters.category }),
     });
+
+    if (filters.search) searchParams.append('search', filters.search);
+    if (filters.difficulty) searchParams.append('difficulty', filters.difficulty);
+    if (filters.type) searchParams.append('type', filters.type);
+    if (filters.category) searchParams.append('category', filters.category);
+
+    const queryString = searchParams.toString();
 
     try {
       // 2. Gọi API thực tế - Sử dụng admin endpoint với filters
@@ -304,34 +309,51 @@ export default function AdminQuestionsPage() {
             <div className="p-5 border-t border-gray-100 flex justify-center items-center gap-2 text-sm text-gray-500 bg-white">
               <button
                 onClick={() => setCurrentPage(1)}
-                disabled={currentPage === 1}
-                className="px-3 py-1 border border-gray-300 rounded-md text-gray-600 hover:bg-gray-100 disabled:opacity-50 transition"
+                disabled={currentPage === 1 || loading}
+                className="px-3 py-1 rounded-full text-gray-400 hover:text-purple-700 hover:bg-purple-50 disabled:opacity-40 disabled:cursor-not-allowed transition"
               >
-                &lt;&lt;
+                «
               </button>
+
               <button
                 onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
-                disabled={currentPage === 1}
-                className="px-3 py-1 border border-gray-300 rounded-md text-gray-600 hover:bg-gray-100 disabled:opacity-50 transition"
+                disabled={currentPage === 1 || loading}
+                className="px-3 py-1 rounded-full text-gray-400 hover:text-purple-700 hover:bg-purple-50 disabled:opacity-40 disabled:cursor-not-allowed transition"
               >
-                &lt;
+                ‹
               </button>
-              <span className="px-4 py-1 bg-purple-600 text-white font-bold rounded-md shadow-md">
-                {currentPage} / {totalPages}
-              </span>
+
+              {Array.from({ length: totalPages }, (_, i) => (
+                <button
+                  key={i}
+                  onClick={() => setCurrentPage(i + 1)}
+                  disabled={loading}
+                  className={`w-8 h-8 flex items-center justify-center rounded-full text-sm font-semibold transition-colors
+                    ${
+                      currentPage === i + 1
+                        ? 'bg-purple-700 text-white shadow-lg'
+                        : 'text-gray-600 hover:bg-purple-50'
+                    }
+                  `}
+                >
+                  {i + 1}
+                </button>
+              ))}
+
               <button
                 onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
-                disabled={currentPage === totalPages}
-                className="px-3 py-1 border border-gray-300 rounded-md text-gray-600 hover:bg-gray-100 disabled:opacity-50 transition"
+                disabled={currentPage === totalPages || loading}
+                className="px-3 py-1 rounded-full text-gray-400 hover:text-purple-700 hover:bg-purple-50 disabled:opacity-40 disabled:cursor-not-allowed transition"
               >
-                &gt;
+                ›
               </button>
+
               <button
                 onClick={() => setCurrentPage(totalPages)}
-                disabled={currentPage === totalPages}
-                className="px-3 py-1 border border-gray-300 rounded-md text-gray-600 hover:bg-gray-100 disabled:opacity-50 transition"
+                disabled={currentPage === totalPages || loading}
+                className="px-3 py-1 rounded-full text-gray-400 hover:text-purple-700 hover:bg-purple-50 disabled:opacity-40 disabled:cursor-not-allowed transition"
               >
-                &gt;&gt;
+                »
               </button>
             </div>
           )}
