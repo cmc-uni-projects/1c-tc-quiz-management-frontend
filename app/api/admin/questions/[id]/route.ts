@@ -1,79 +1,63 @@
 import { NextResponse } from 'next/server';
 
-// Đọc biến môi trường (ví dụ: http://localhost:8082/api)
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
-// Helper function để chuyển tiếp yêu cầu đến Backend
-async function proxyAdminRequestWithId(request: Request, id: string, method: string) {
-    if (!API_URL) {
-        return NextResponse.json({ message: 'Internal Server Error: API_URL is missing' }, { status: 500 });
-    }
+async function proxyRequestWithId(request: Request, endpoint: string, method: string) {
+    if (!API_URL) return NextResponse.json({ message: 'API_URL missing' }, { status: 500 });
 
-    // Xây dựng URL đầy đủ: http://localhost:8082/api/admin/questions/{id}
-    const backendUrl = `${API_URL}/admin/questions/${id}`;
+    const backendUrl = `${API_URL}${endpoint}`;
     const authorization = request.headers.get('authorization');
 
-    // Lấy body nếu phương thức là PUT
-    let bodyData: Record<string, unknown> | undefined = undefined;
-    if (method === 'PUT' || method === 'POST') {
-         try {
-             // Cố gắng đọc body, chỉ cần cho PUT
-             bodyData = await request.json();
-         } catch (e) {
-             console.warn(`Could not parse body for ${method} request.`, e);
-         }
+    let body: any = undefined;
+    if (method === 'PUT') {
+         try { body = await request.json(); } catch (e) {}
     }
 
-
     try {
-        const headers: HeadersInit = {
-            'Content-Type': 'application/json',
-        };
-        if (authorization) {
-            headers['Authorization'] = authorization;
-        }
-
-        const response = await fetch(backendUrl, {
+        const res = await fetch(backendUrl, {
             method: method,
-            headers: headers,
-            body: bodyData ? JSON.stringify(bodyData) : undefined,
+            headers: {
+                'Content-Type': 'application/json',
+                ...(authorization ? { 'Authorization': authorization } : {})
+            },
+            body: body ? JSON.stringify(body) : undefined,
             cache: 'no-store',
         });
 
-        // Trả về response từ Backend cho Client
-        return new NextResponse(response.body, {
-            status: response.status,
-            headers: response.headers,
-        });
-
+        let data = {};
+        if (res.status !== 204) {
+             const contentType = res.headers.get("content-type");
+             if (contentType && contentType.includes("application/json")) {
+                data = await res.json().catch(() => ({}));
+             }
+        }
+        return NextResponse.json(data, { status: res.status });
     } catch (error) {
-        console.error(`Error proxying ${method} request for admin question ${id}:`, error);
-        return NextResponse.json({
-            message: 'Internal Server Error: Failed to connect to Backend.',
-            details: error instanceof Error ? error.message : 'Unknown error'
-        }, { status: 500 });
+        return NextResponse.json({ message: 'Failed to connect' }, { status: 500 });
     }
 }
 
+interface RouteContext { params: { id: string }; }
 
-// Tham số route động được lấy từ params
-interface RouteContext {
-    params: { id: string };
-}
-
-// --- 1. GET (Chi tiết câu hỏi) ---
+// --- 1. GET (Chi tiết) ---
+// Lưu ý: AdminController chưa có API lấy chi tiết 1 câu hỏi (/questions/{id}).
+// Nên ở đây ta dùng tạm endpoint chung của User thường để lấy dữ liệu hiển thị form sửa.
 export async function GET(request: Request, context: RouteContext) {
-    return proxyAdminRequestWithId(request, context.params.id, 'GET');
+    //  Trỏ vào API Admin vừa tạo
+    const endpoint = `/admin/questions/${context.params.id}`;
+    return proxyAdminRequestWithId(request, endpoint, 'GET');
 }
 
-
-// --- 2. PUT (Cập nhật câu hỏi) ---
+// --- 2. PUT (Cập nhật - Admin) ---
 export async function PUT(request: Request, context: RouteContext) {
-    return proxyAdminRequestWithId(request, context.params.id, 'PUT');
+    // Backend AdminController: @PutMapping("/questions/{id}")
+    const endpoint = `/admin/questions/${context.params.id}`;
+    return proxyRequestWithId(request, endpoint, 'PUT');
 }
 
-
-// --- 3. DELETE (Xóa câu hỏi) ---
+// --- 3. DELETE (Xóa - Admin) ---
 export async function DELETE(request: Request, context: RouteContext) {
-    return proxyAdminRequestWithId(request, context.params.id, 'DELETE');
+    // Backend AdminController: @DeleteMapping("/questions/{id}")
+    const endpoint = `/admin/questions/${context.params.id}`;
+    return proxyRequestWithId(request, endpoint, 'DELETE');
 }

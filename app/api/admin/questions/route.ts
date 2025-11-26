@@ -1,77 +1,55 @@
 import { NextResponse } from 'next/server';
 
-// Đọc biến môi trường (ví dụ: http://localhost:8082/api)
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
-// Helper function để chuyển tiếp yêu cầu đến Backend
 async function proxyAdminRequest(request: Request, endpoint: string, method: string) {
-    if (!API_URL) {
-        return NextResponse.json({ message: 'Internal Server Error: API_URL is missing' }, { status: 500 });
-    }
+    if (!API_URL) return NextResponse.json({ message: 'API_URL missing' }, { status: 500 });
 
-    // Xây dựng URL đầy đủ của Backend
+    // URL sẽ là: http://localhost:8082/api/admin/questions...
     const backendUrl = `${API_URL}${endpoint}`;
     const authorization = request.headers.get('authorization');
 
-    // Lấy body nếu phương thức là POST
-    let body: Record<string, unknown> | undefined = undefined;
-    if (method === 'POST' || method === 'PUT') { // Also handle PUT for updates
-        try {
-            body = await request.json();
-        } catch (e) {
-            console.warn(`Could not parse body for ${method} request.`, e);
-        }
+    let body: any = undefined;
+    if (method === 'POST') {
+        try { body = await request.json(); } catch (e) {}
     }
 
     try {
-        const headers: HeadersInit = {
-            'Content-Type': 'application/json',
-        };
-        if (authorization) {
-            headers['Authorization'] = authorization;
-        }
-
-        const response = await fetch(backendUrl, {
+        const res = await fetch(backendUrl, {
             method: method,
-            headers: headers,
+            headers: {
+                'Content-Type': 'application/json',
+                ...(authorization ? { 'Authorization': authorization } : {})
+            },
             body: body ? JSON.stringify(body) : undefined,
             cache: 'no-store',
         });
-        
-        // Trả về response từ Backend (bao gồm cả status, headers và body)
-        return new NextResponse(response.body, {
-            status: response.status,
-            headers: response.headers,
-        });
 
+        // Đọc response an toàn
+        let data = {};
+        const contentType = res.headers.get("content-type");
+        if (contentType && contentType.includes("application/json")) {
+             data = await res.json().catch(() => ({}));
+        }
+
+        return NextResponse.json(data, { status: res.status });
     } catch (error) {
-        // Lỗi ECONNREFUSED xảy ra ở đây nếu Backend chưa chạy
-        console.error(`Error proxying ${method} request to Backend at ${backendUrl}:`, error);
-        return NextResponse.json({
-            message: 'Internal Server Error: Failed to connect to Backend (ECONNREFUSED)',
-            details: error instanceof Error ? error.message : 'Unknown error'
-        }, { status: 500 });
+        return NextResponse.json({ message: 'Failed to connect to Backend' }, { status: 500 });
     }
 }
 
-
-// --- 1. GET (Danh sách câu hỏi admin với filters) ---
+// --- 1. GET (Danh sách) ---
 export async function GET(request: Request) {
-    // Lấy query parameters từ request của client
     const { searchParams } = new URL(request.url);
-    const queryString = searchParams.toString();
-
-    // Endpoint Backend: /api/admin/questions?...
-    const endpoint = `/admin/questions?${queryString}`;
-
+    // Backend AdminController: @GetMapping("/questions")
+    // Giữ nguyên query params (page, etc.)
+    const endpoint = `/admin/questions?${searchParams.toString()}`;
     return proxyAdminRequest(request, endpoint, 'GET');
 }
 
-
-// --- 2. POST (Tạo mới câu hỏi) ---
+// --- 2. POST (Tạo mới) ---
 export async function POST(request: Request) {
-    // Endpoint Backend: /api/admin/questions
+    // Backend AdminController: @PostMapping("/questions")
     const endpoint = `/admin/questions`;
-
     return proxyAdminRequest(request, endpoint, 'POST');
 }
