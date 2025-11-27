@@ -4,8 +4,9 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { toastSuccess, toastError } from '@/lib/toast';
-import { fetchApi } from '@/lib/apiClient';
+import { fetchApi, ApiError } from '@/lib/apiClient';
 import { useUser } from '@/lib/user';
+import AccountLockedPopup from '@/components/AccountLockedPopup';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -17,17 +18,35 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showLockedPopup, setShowLockedPopup] = useState(false);
+  const [accountType, setAccountType] = useState<'teacher' | 'student'>('student');
+
+  // Clear error when user starts typing
+  const handleEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setEmail(e.target.value);
+    if (error) setError(null);
+  };
+
+  const handlePasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setPassword(e.target.value);
+    if (error) setError(null);
+  };
 
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
+    e.stopPropagation();
+    console.log('Login form submitted with:', { email, password });
+    
     setError(null);
     setLoading(true);
 
     try {
+      console.log('Calling fetchApi...');
       const response = await fetchApi('/auth/login', {
         method: 'POST',
         body: { email, password },
       });
+      console.log('fetchApi response:', response);
 
       if (response.token) {
         localStorage.setItem('jwt', response.token);
@@ -71,10 +90,33 @@ export default function LoginPage() {
       }
     } catch (err: any) {
       console.error('Login Error:', err);
-      const errorMessage = err.message || 'Sai tài khoản hoặc mật khẩu.';
+      
+      // Extract error message from backend response
+      let errorMessage = 'Sai tài khoản hoặc mật khẩu.';
+      
+      if (err instanceof ApiError) {
+        errorMessage = err.message;
+      } else if (err.error) {
+        errorMessage = err.error;
+      } else if (err.message) {
+        errorMessage = err.message;
+      }
+      
+      console.log('Setting error message:', errorMessage);
       setError(errorMessage);
-      toastError(errorMessage);
-      localStorage.removeItem('jwt');
+      
+      // Kiểm tra nếu là lỗi khóa tài khoản thì hiển thị popup
+      if (errorMessage.includes('khóa') || err.status === 403) {
+        // Xác định loại tài khoản dựa trên email (hoặc có thể từ backend)
+        const accType = email.includes('teacher') || email.includes('gv') ? 'teacher' : 'student';
+        setAccountType(accType);
+        setShowLockedPopup(true);
+      } else {
+        toastError(errorMessage, 5000); // Hiển thị trong 5 giây
+      }
+      
+      // Không xóa email và password khi login thất bại
+      // localStorage.removeItem('jwt'); // Chỉ xóa khi có token cũ
     } finally {
       setLoading(false);
     }
@@ -96,7 +138,7 @@ export default function LoginPage() {
             <input
               type="email"
               value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              onChange={handleEmailChange}
               placeholder="Nhập email của bạn"
               className="w-full rounded-md border border-zinc-300 bg-white px-4 py-3 text-zinc-900 placeholder:text-zinc-400 focus:border-[#E33AEC] focus:outline-none focus:ring-2 focus:ring-[#E33AEC]/30"
               required
@@ -111,7 +153,7 @@ export default function LoginPage() {
               <input
                 type={showPassword ? 'text' : 'password'}
                 value={password}
-                onChange={(e) => setPassword(e.target.value)}
+                onChange={handlePasswordChange}
                 className="w-full rounded-md border border-zinc-300 bg-white px-4 py-3 pr-12 text-zinc-900 placeholder:text-zinc-400 focus:border-[#E33AEC] focus:outline-none focus:ring-2 focus:ring-[#E33AEC]/30"
                 required
               />
@@ -163,6 +205,13 @@ export default function LoginPage() {
           </div>
         </form>
       </div>
+      
+      {/* Account Locked Popup */}
+      <AccountLockedPopup
+        isOpen={showLockedPopup}
+        onClose={() => setShowLockedPopup(false)}
+        accountType={accountType}
+      />
     </div>
   );
 }
