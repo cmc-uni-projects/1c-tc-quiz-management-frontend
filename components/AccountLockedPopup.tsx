@@ -14,13 +14,13 @@ export default function AccountLockedPopup({ isOpen, onClose, accountType }: Acc
   const accountTypeText = accountType === 'teacher' ? 'giáo viên' : 'học viên';
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg p-8 max-w-md w-full mx-4 shadow-xl">
+    <div className="fixed inset-0 bg-gradient-to-br from-slate-900/80 via-purple-900/60 to-slate-900/80 backdrop-blur-sm flex items-center justify-center z-50">
+      <div className="bg-white rounded-2xl p-8 max-w-md w-full mx-4 shadow-2xl border border-white/20 backdrop-blur-xl transform transition-all duration-300 scale-100 hover:scale-[1.02]">
         <div className="text-center">
           {/* Icon Lock */}
-          <div className="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-red-100 mb-4">
+          <div className="mx-auto flex items-center justify-center h-20 w-20 rounded-full bg-gradient-to-br from-red-500 to-pink-600 mb-6 shadow-lg animate-pulse">
             <svg
-              className="h-8 w-8 text-red-600"
+              className="h-10 w-10 text-white"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -35,7 +35,7 @@ export default function AccountLockedPopup({ isOpen, onClose, accountType }: Acc
           </div>
 
           {/* Title */}
-          <h3 className="text-2xl font-bold text-gray-900 mb-2">
+          <h3 className="text-3xl font-bold bg-gradient-to-r from-red-600 to-pink-600 bg-clip-text text-transparent mb-3">
             Tài khoản đã bị khóa
           </h3>
 
@@ -46,41 +46,37 @@ export default function AccountLockedPopup({ isOpen, onClose, accountType }: Acc
           </p>
 
           {/* Contact Info */}
-          <div className="bg-gray-50 rounded-lg p-4 mb-6 text-left">
-            <h4 className="font-semibold text-gray-900 mb-2">Thông tin liên hệ:</h4>
-            <p className="text-gray-600 text-sm mb-1">
-              📧 Email: admin@quiz.edu.vn
-            </p>
-            <p className="text-gray-600 text-sm mb-1">
-              📞 Hotline: 1900-1234
-            </p>
-            <p className="text-gray-600 text-sm">
-              🕐 Giờ làm việc: 8:00 - 17:00 (Thứ 2 - Thứ 6)
-            </p>
-          </div>
-
-          {/* Action Buttons */}
-          <div className="flex flex-col space-y-3">
-            <button
-              onClick={() => window.location.href = '/auth/login'}
-              className="w-full bg-blue-600 text-white py-3 px-4 rounded-lg hover:bg-blue-700 transition-colors font-medium"
-            >
-              Quay lại trang đăng nhập
-            </button>
-            
-            <button
-              onClick={() => window.location.href = 'mailto:admin@quiz.edu.vn'}
-              className="w-full bg-gray-100 text-gray-700 py-3 px-4 rounded-lg hover:bg-gray-200 transition-colors font-medium"
-            >
-              Gửi email liên hệ
-            </button>
+          <div className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl p-5 mb-6 text-left border border-gray-200/50">
+            <h4 className="font-semibold text-gray-900 mb-4 flex items-center">
+              <svg className="h-5 w-5 mr-2 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              Thông tin liên hệ:
+            </h4>
+            <div className="space-y-2">
+              <p className="text-gray-700 text-sm flex items-center">
+                <span className="mr-2">📧</span>
+                <span className="font-medium">Email:</span> admin@gmail.com
+              </p>
+              <p className="text-gray-700 text-sm flex items-center">
+                <span className="mr-2">📞</span>
+                <span className="font-medium">Hotline:</span> 1900-1234
+              </p>
+              <p className="text-gray-700 text-sm flex items-center">
+                <span className="mr-2">🕐</span>
+                <span className="font-medium">Giờ làm việc:</span> 8:00 - 17:00 (Thứ 2 - Thứ 6)
+              </p>
+            </div>
           </div>
 
           {/* Close Button */}
           <button
             onClick={onClose}
-            className="mt-4 text-gray-400 hover:text-gray-600 text-sm underline"
+            className="mt-6 w-full bg-gradient-to-r from-gray-500 to-gray-600 text-white py-3 px-4 rounded-xl hover:from-gray-600 hover:to-gray-700 transition-all duration-300 font-medium shadow-lg hover:shadow-gray-500/25 transform hover:scale-[1.02] flex items-center justify-center"
           >
+            <svg className="h-5 w-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
             Đóng thông báo
           </button>
         </div>
