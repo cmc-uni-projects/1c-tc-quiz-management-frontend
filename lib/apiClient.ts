@@ -70,8 +70,8 @@ export async function fetchApi(endpoint: string, options: FetchApiOptions = {}) 
 
     if (response.status === 403) {
       // 403 Forbidden: User được xác thực nhưng không có quyền truy cập
-      const errorData = await response.json().catch(() => ({ message: 'Bạn không có quyền truy cập tài nguyên này.' }));
-      throw new ApiError(errorData.message || 'Bạn không có quyền truy cập tài nguyên này.', response.status);
+      const errorData = await response.json().catch(() => ({ error: 'Bạn không có quyền truy cập tài nguyên này.' }));
+      throw new ApiError(errorData.error || 'Bạn không có quyền truy cập tài nguyên này.', response.status);
     }
 
     const errorData = await response.json().catch(() => ({ message: `Request failed with status ${response.status}` }));
