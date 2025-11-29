@@ -81,7 +81,8 @@ export default function AdminProfilePage() {
     const fetchProfile = async () => {
       try {
         const data = await fetchApi(`${API_URL}/profile`);
-        setUsername(data.username || "");
+        console.log('Profile data from backend:', data);
+        setUsername(data.name || data.username || "");
         setEmail(data.email || "");
         setAvatar(data.avatar || null);
       } catch (error) {
@@ -125,29 +126,15 @@ export default function AdminProfilePage() {
     fileRef.current?.click();
   };
 
-  const handleDeleteAvatar = async () => {
+  const handleDeleteAvatar = () => {
     if (!avatar) {
       toast.error("Không có ảnh đại diện để xóa");
       return;
     }
 
-    setSaving(true);
-    try {
-      await fetchApi(`${API_URL}/profile/delete-avatar`, {
-        method: "DELETE",
-      });
-
-      setAvatar(null);
-      setAvatarFile(null);
-      if (fileRef.current) fileRef.current.value = "";
-      toast.success("Xóa ảnh đại diện thành công");
-      
-    } catch (error) {
-      console.error("Error deleting avatar:", error);
-      toast.error((error as any)?.message || "Lỗi khi xóa ảnh đại diện");
-    } finally {
-      setSaving(false);
-    }
+    setAvatar(null);
+    setAvatarFile(null);
+    if (fileRef.current) fileRef.current.value = "";
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -162,6 +149,7 @@ export default function AdminProfilePage() {
     try {
       let finalAvatarUrl = avatar;
 
+      // Trường hợp 1: Upload ảnh mới
       if (avatarFile) {
         const formData = new FormData();
         formData.append("file", avatarFile);
@@ -173,12 +161,24 @@ export default function AdminProfilePage() {
 
         finalAvatarUrl = uploadData.avatarUrl;
         
-      } else if (avatar === null && finalAvatarUrl !== null) {
-          finalAvatarUrl = null;
+      } 
+      // Trường hợp 2: Xóa ảnh (avatar là null và không có file mới)
+      else if (avatar === null) {
+        // Gọi API delete-avatar để xóa ảnh trên server
+        try {
+          await fetchApi(`${API_URL}/profile/delete-avatar`, {
+            method: "DELETE",
+          });
+        } catch (deleteError) {
+          console.error("Error deleting avatar:", deleteError);
+          // Vẫn tiếp tục cập nhật profile ngay cả khi xóa ảnh lỗi
+        }
+        finalAvatarUrl = null;
       }
+      // Trường hợp 3: Không thay đổi ảnh (giữ nguyên)
 
       const response = await fetchApi(`${API_URL}/profile`, {
-        method: "PUT",
+        method: "PATCH",
         body: { username: username.trim(), avatar: finalAvatarUrl },
       });
 

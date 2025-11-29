@@ -84,11 +84,8 @@ export default function TeacherEditQuestionPage() {
         })) || []
       };
 
-      // Use correct endpoint based on role
-      // Admin: /api/admin/questions/{id}
-      // Teacher: /api/questions/update/{id}
-      await fetchApi(`/questions/update/${questionId}`, {
-        method: 'PUT',
+      await fetchApi(`/questions/edit/${questionId}`, {
+        method: 'PATCH',
         body: backendData,
       });
       toastSuccess('Cập nhật câu hỏi thành công!');

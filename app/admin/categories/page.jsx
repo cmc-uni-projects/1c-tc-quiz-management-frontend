@@ -278,7 +278,7 @@ export default function CategoriesPage() {
         // Update
         const body = { id: editing.id, name: form.name.trim(), description: form.description?.trim() || "" };
         await fetchApi(`${API_URL}/categories/edit/${editing.id}`, {
-          method: "PUT",
+          method: "PATCH",
           body: body,
         });
 
