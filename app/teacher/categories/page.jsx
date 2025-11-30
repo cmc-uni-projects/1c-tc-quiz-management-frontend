@@ -256,8 +256,8 @@ export default function TeacherCategoriesPage() {
           name: form.name.trim(),
           description: form.description?.trim() || "",
         };
-        const updated = await fetchApi(`/categories/${editing.id}`, {
-          method: "PUT",
+        const updated = await fetchApi(`/categories/edit/${editing.id}`, {
+          method: "PATCH",
           body,
         });
         setCategories((prev) => prev.map((c) => (c.id === updated.id ? updated : c)));

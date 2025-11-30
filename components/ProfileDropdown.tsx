@@ -81,8 +81,16 @@ export default function ProfileDropdown() {
         onClick={() => setOpen((v) => !v)}
         className="flex items-center gap-2 rounded-full bg-gray-200/50 px-2 py-1.5 text-sm text-zinc-700 hover:bg-gray-200/80"
       >
-        <span className="grid h-8 w-8 place-items-center rounded-full bg-gray-300 text-gray-700">
-          👤
+        <span className="relative grid h-8 w-8 place-items-center rounded-full bg-gray-300 text-gray-700 overflow-hidden">
+          {user?.avatarUrl ? (
+            <img 
+              src={user.avatarUrl} 
+              alt="Avatar" 
+              className="absolute inset-0 w-full h-full object-cover"
+            />
+          ) : (
+            '👤'
+          )}
         </span>
         <span className="hidden sm:inline">Xin chào, {user?.firstName || user?.lastName ? `${user?.firstName || ''} ${user?.lastName || ''}`.trim() : user?.username?.split('@')[0] || 'User'}</span>
       </button>

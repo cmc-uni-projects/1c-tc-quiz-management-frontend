@@ -45,6 +45,7 @@ const fetcher = async (url: string): Promise<User | null> => {
             id: rawUserData.id,
             email: rawUserData.username,
             role: cleanRole as User['role'],
+            avatarUrl: rawUserData.avatar || rawUserData.avatarUrl, // Preserve avatar data
         };
 
         console.log('UserProvider fetcher: Data transformed. Clean Role:', transformedUser.role);
