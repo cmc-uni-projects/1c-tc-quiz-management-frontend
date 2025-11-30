@@ -1,364 +1,496 @@
-'use client';
+"use client";
 
-import { useState, useEffect, useCallback } from 'react';
-import { useRouter } from 'next/navigation';
-import { fetchApi } from '@/lib/apiClient';
-import { toastError, toastSuccess } from '@/lib/toast';
-import { useUser } from '@/lib/user';
-import QuestionFilters from './components/QuestionFilters';
-import QuestionTable from './components/QuestionTable';
-import QuestionForm from './components/QuestionForm';
+import React, { useEffect, useState, useCallback, useMemo } from "react";
+import Swal from "sweetalert2";
+import toast from "react-hot-toast";
 
-// Color constants matching other admin pages
-const PRIMARY_COLOR = "#6A1B9A";
-const LOGO_TEXT_COLOR = "#E33AEC";
-const MAIN_CONTENT_BG = "#6D0446";
-const SEARCH_BAR_BG = "#E33AEC";
-const BUTTON_COLOR = "#9453C9";
+/* --- Constants (style/colors) --- */
+const API_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "/api";
+const PAGE_SIZE = 10;
 const PAGE_BG = "#F4F2FF";
 const HERO_GRADIENT = "linear-gradient(135deg, #FFB6FF 0%, #8A46FF 100%)";
+const BUTTON_COLOR = "#9453C9";
+const SEARCH_BAR_BG = "#E33AEC";
 const TABLE_SHADOW = "0 25px 60px rgba(126, 62, 255, 0.18)";
 
-// --- TYPE DEFINITIONS ---
-interface Category {
-  id: number;
-  name: string;
+/* --- fetchApi (reuse the pattern from your categories file) --- */
+const getAuthToken = () => {
+  if (typeof window !== "undefined") return localStorage.getItem("jwt");
+  return null;
+};
+
+async function fetchApi(url, options = {}) {
+  const token = getAuthToken();
+  const defaultHeaders = {
+    "Content-Type": "application/json",
+    ...(token && { Authorization: `Bearer ${token}` }),
+  };
+
+  const config = {
+    method: options.method || "GET",
+    headers: {
+      ...defaultHeaders,
+      ...(options.headers || {}),
+    },
+    credentials: "include",
+  };
+
+  if (options.body) {
+    config.body = typeof options.body === "string" ? options.body : JSON.stringify(options.body);
+  }
+
+  const response = await fetch(url, config);
+  const isJson = response.headers.get("content-type")?.includes("application/json");
+
+  if (!response.ok) {
+    let errorText = "Lỗi không xác định";
+    try {
+      const parsed = isJson ? await response.json() : null;
+      errorText = (parsed && (parsed.message || parsed.error)) || (isJson ? JSON.stringify(parsed) : await response.text());
+    } catch {}
+    throw new Error(errorText.toString().substring(0, 300));
+  }
+
+  try {
+    return isJson ? await response.json() : await response.text();
+  } catch {
+    return null;
+  }
 }
 
-interface Question {
-  id: number;
-  title: string;
-  type: string;
-  difficulty: string;
-  category: Category;
-  createdBy: string;
-  answers: { id: number; text: string; correct: boolean }[];
-}
+/* --- Small icons (reused) --- */
+const PlusIcon = (props) => (
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+    <line x1="12" y1="5" x2="12" y2="19" />
+    <line x1="5" y1="12" x2="19" y2="12" />
+  </svg>
+);
+const XIcon = (props) => (
+  <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+    <path d="M18 6 6 18"/>
+    <path d="m6 6 12 12"/>
+  </svg>
+);
 
+/* --- Modal component for Create/Edit (internal) --- */
+function QuestionModal({ open, onClose, onSubmit, categories = [], editing = null }) {
+  const [title, setTitle] = useState(editing?.title || "");
+  const [type, setType] = useState(editing?.type || "");
+  const [difficulty, setDifficulty] = useState(editing?.difficulty || "");
+  const [answer, setAnswer] = useState(editing?.answer || "");
+  const [categoryId, setCategoryId] = useState(editing?.categoryId || "");
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
 
-interface Filters {
-  search: string;
-  difficulty: string;
-  type: string;
-  category: string;
-}
+  // when editing prop changes, sync fields
+  useEffect(() => {
+    setTitle(editing?.title || "");
+    setType(editing?.type || "");
+    setDifficulty(editing?.difficulty || "");
+    setAnswer(editing?.answer || "");
+    setCategoryId(editing?.categoryId || "");
+    setError("");
+  }, [editing, open]);
 
-interface ApiResponse {
-  content: Question[];
-  totalElements: number;
-  totalPages: number;
-  number: number;
-}
+  const validate = () => {
+    if (!title.trim()) return "Tiêu đề là bắt buộc";
+    if (!type) return "Chọn loại câu hỏi";
+    if (!difficulty) return "Chọn độ khó";
+    if (!answer.trim()) return "Chọn/nhập đáp án";
+    if (!categoryId) return "Chọn danh mục";
+    return "";
+  };
 
-// --- CONSTANTS ---
-const ITEMS_PER_PAGE = 10; // Match backend's hardcoded page size
-
-export default function AdminQuestionsPage() {
-  const [questions, setQuestions] = useState<Question[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [totalCount, setTotalCount] = useState(0);
-  const [totalPages, setTotalPages] = useState(0);
-  const [currentPage, setCurrentPage] = useState(1);
-
-  // State bộ lọc
-  const [filters, setFilters] = useState<Filters>({
-    search: '',
-    difficulty: '',
-    type: '',
-    category: '',
-  });
-
-  const router = useRouter();
-  const { user } = useUser(); // Lấy user thực tế
-
-  // --- DATA FETCHING FUNCTION ---
-  // Sử dụng useCallback để tránh tạo lại hàm không cần thiết khi render
-  const fetchQuestions = useCallback(async () => {
-    setLoading(true);
-
-    // Backend returns pages starting from 0, so we adjust
-    const pageIndex = currentPage - 1;
-
-    // 1. Xây dựng Query String -
-    // NOTE: Backend's /all endpoint currently does not support filtering.
-    // These filters are kept for UI purposes but not sent in the API call.
-    const searchParams = new URLSearchParams({
-      page: pageIndex.toString(),
-    });
-
-    if (filters.search) searchParams.append('search', filters.search);
-    if (filters.difficulty) searchParams.append('difficulty', filters.difficulty);
-    if (filters.type) searchParams.append('type', filters.type);
-    if (filters.category) searchParams.append('category', filters.category);
-
-    const queryString = searchParams.toString();
+  const handleSubmit = async () => {
+    const v = validate();
+    setError(v);
+    if (v) return;
 
     try {
-      // 2. Gọi API thực tế - Sử dụng admin endpoint với filters
-      const data: ApiResponse = await fetchApi(`/admin/questions?${queryParams.toString()}`);
+      setLoading(true);
+      const payload = {
+        title: title.trim(),
+        type,
+        difficulty,
+        answer: answer.trim(),
+        categoryId,
+      };
+      await onSubmit(payload); // parent handles API calls and state update
+      setLoading(false);
+    } catch (e) {
+      setLoading(false);
+      setError(e?.message || "Lỗi khi lưu");
+    }
+  };
 
-      // 3. Cập nhật State từ dữ liệu trả về của Backend (Spring Page object)
-      setQuestions(data.content || []);
-      setTotalCount(data.totalElements || 0);
-      setTotalPages(data.totalPages || 0);
+  if (!open) return null;
+  return (
+    <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4" onClick={onClose}>
+      <div className="bg-white rounded-2xl w-full max-w-md p-6 shadow-2xl" onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-xl font-bold">{editing ? "Cập nhật thông tin câu hỏi" : "Thêm câu hỏi mới"}</h3>
+          <button onClick={onClose} className="text-gray-500 hover:text-gray-800"><XIcon /></button>
+        </div>
 
-    } catch (error) {
-      console.error("Failed to fetch questions:", error);
-      toastError("Không thể tải danh sách câu hỏi. Vui lòng thử lại.");
+        <div className="space-y-3">
+          <div>
+            <label className="text-sm font-medium block mb-1">Tiêu đề</label>
+            <input value={title} onChange={(e) => setTitle(e.target.value)} className="w-full px-3 py-2 border rounded-lg" />
+          </div>
+
+          <div>
+            <label className="text-sm font-medium block mb-1">Loại câu hỏi</label>
+            <select value={type} onChange={(e) => setType(e.target.value)} className="w-full px-3 py-2 border rounded-lg">
+              <option value="">-- Chọn loại --</option>
+              <option value="TRUE_FALSE">Đúng / Sai</option>
+            </select>
+          </div>
+
+          <div>
+            <label className="text-sm font-medium block mb-1">Độ khó</label>
+            <select value={difficulty} onChange={(e) => setDifficulty(e.target.value)} className="w-full px-3 py-2 border rounded-lg">
+              <option value="">-- Chọn độ khó --</option>
+              <option value="EASY">Dễ</option>
+              <option value="MEDIUM">Trung bình</option>
+              <option value="HARD">Khó</option>
+            </select>
+          </div>
+
+          <div>
+            <label className="text-sm font-medium block mb-1">Đáp án</label>
+            <input value={answer} onChange={(e) => setAnswer(e.target.value)} className="w-full px-3 py-2 border rounded-lg" />
+            <p className="text-xs text-gray-500 mt-1">Với trắc nghiệm: nhập đáp án đúng (ví dụ: A hoặc 1). Với đúng/sai: nhập 'Đúng' hoặc 'Sai'.</p>
+          </div>
+
+          <div>
+            <label className="text-sm font-medium block mb-1">Danh mục câu hỏi</label>
+            <select value={categoryId} onChange={(e) => setCategoryId(e.target.value)} className="w-full px-3 py-2 border rounded-lg">
+              <option value="">-- Chọn danh mục --</option>
+              {categories.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+            </select>
+          </div>
+
+          {error && <div className="text-red-600 text-sm font-medium">{error}</div>}
+
+          <div className="flex justify-end gap-3 pt-2">
+            <button onClick={onClose} className="px-4 py-2 border rounded-xl hover:bg-gray-100" disabled={loading}>Hủy</button>
+            <button onClick={handleSubmit} className="px-4 py-2 rounded-xl text-white" style={{ backgroundColor: BUTTON_COLOR }} disabled={loading}>
+              {loading ? (editing ? "Đang cập nhật..." : "Đang tạo...") : (editing ? "Cập nhật câu hỏi" : "Thêm câu hỏi")}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* --- Main Page Component --- */
+export default function QuestionsPage() {
+  const [questions, setQuestions] = useState([]);
+  const [categories, setCategories] = useState([]);
+  const [currentUser, setCurrentUser] = useState(null);
+
+  const [keyword, setKeyword] = useState("");
+  const [difficultyFilter, setDifficultyFilter] = useState("");
+  const [typeFilter, setTypeFilter] = useState("");
+  const [categoryFilter, setCategoryFilter] = useState("");
+
+  const [page, setPage] = useState(0);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalElements, setTotalElements] = useState(0);
+  const [loading, setLoading] = useState(false);
+
+  const [modalOpen, setModalOpen] = useState(false);
+  const [editingQuestion, setEditingQuestion] = useState(null);
+
+  /* --- Load profile once (optional) --- */
+  useEffect(() => {
+    (async () => {
+      try {
+        const profile = await fetchApi(`${API_URL}/me`);
+        setCurrentUser(profile);
+      } catch {}
+    })();
+  }, []);
+
+  /* --- Fetch categories and initial questions --- */
+  useEffect(() => {
+    fetchCategories();
+  }, []);
+
+  useEffect(() => {
+    fetchQuestions(page, keyword, difficultyFilter, typeFilter, categoryFilter);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [page]);
+
+  const fetchCategories = async () => {
+    try {
+      const data = await fetchApi(`${API_URL}/categories`);
+      const content = Array.isArray(data) ? data : data?.content || [];
+      setCategories(content);
+    } catch (e) {
+      console.error("Load categories failed:", e);
+    }
+  };
+
+  const fetchQuestions = useCallback(async (pageParam = 0, kw = "", diff = "", type = "", cat = "") => {
+    try {
+      setLoading(true);
+      const params = new URLSearchParams();
+      params.set("page", String(pageParam));
+      params.set("size", String(PAGE_SIZE));
+      params.set("sort", "id,desc");
+      if (kw?.trim()) params.set("q", kw.trim());
+      if (diff) params.set("difficulty", diff);
+      if (type) params.set("type", type);
+      if (cat) params.set("categoryId", cat);
+
+      const url = `${API_URL}/questions/search?${params.toString()}`;
+      const data = await fetchApi(url);
+
+      // Support both paged response and simple array
+      const content = Array.isArray(data?.content) ? data.content : Array.isArray(data) ? data : data?.content || [];
+      setQuestions(content);
+
+      if (typeof data?.totalPages === "number") setTotalPages(data.totalPages || 1);
+      else setTotalPages(1);
+
+      if (typeof data?.totalElements === "number") setTotalElements(data.totalElements || content.length);
+      else setTotalElements(content.length);
+
+      setPage(pageParam);
+    } catch (e) {
+      console.error("Fetch questions error:", e);
+      toast.error(e?.message || "Không thể tải câu hỏi");
     } finally {
       setLoading(false);
     }
-  }, [currentPage, filters]); // Dependency array: Chỉ chạy lại khi trang thay đổi
+  }, []);
 
-  // Gọi API khi component mount và khi fetchQuestions thay đổi (chủ yếu là khi currentPage đổi)
-  useEffect(() => {
-    fetchQuestions();
-  }, [fetchQuestions]);
-
-  // --- HANDLERS ---
-  const handleFilterChange = (newFilters: Filters) => {
-    setFilters(newFilters);
-    setCurrentPage(1);
-    // Note: Calling fetchQuestions() here won't apply filters until backend supports them.
-    // We still reset the page.
-    fetchQuestions();
+  /* --- Handlers for filters/search --- */
+  const handleSearch = () => {
+    setPage(0);
+    fetchQuestions(0, keyword, difficultyFilter, typeFilter, categoryFilter);
   };
 
+  const filtered = useMemo(() => {
+    // keep client-side small filtering for UX on current page
+    const kw = keyword.trim().toLowerCase();
+    if (!kw) return questions;
+    return questions.filter(q => q.title?.toLowerCase().includes(kw) || String(q.answer || "").toLowerCase().includes(kw));
+  }, [questions, keyword]);
 
-  const handleAddQuestion = () => {
-    router.push('/admin/questions/create');
+  /* --- Open modal create --- */
+  const openAdd = () => {
+    setEditingQuestion(null);
+    setModalOpen(true);
   };
 
-  const handleEdit = (id: number) => {
-    router.push(`/admin/questions/${id}`);
+  /* --- Open modal edit --- */
+  const openEdit = (q) => {
+    setEditingQuestion(q);
+    setModalOpen(true);
   };
 
-  const handleDelete = async (id: number) => {
-    if (!confirm('Bạn có chắc chắn muốn xóa câu hỏi này? Hành động này không thể hoàn tác.')) {
-      return;
-    }
-    if (!user || !user.username) {
-      toastError("Không thể xác định người dùng. Vui lòng đăng nhập lại.");
-      return;
-    }
-
-
+  /* --- Submit create or update (parent handles API call) --- */
+  const handleSubmitQuestion = async (payload) => {
     try {
-      // 1. Gọi API Xóa - Sử dụng admin endpoint
-      await fetchApi(`/admin/questions/${id}`, {
-        method: 'DELETE',
-      });
-
-      // 2. Thông báo thành công
-      toastSuccess("Đã xóa câu hỏi thành công!");
-
-      // 3. Refresh lại danh sách
-      if (questions.length === 1 && currentPage > 1) {
-        setCurrentPage(prev => prev - 1);
+      if (editingQuestion) {
+        await fetchApi(`${API_URL}/questions/edit/${editingQuestion.id}`, {
+          method: "PATCH",
+          body: payload,
+        });
+        setQuestions(prev => prev.map(p => p.id === editingQuestion.id ? { ...p, ...payload } : p));
+        toast.success("Cập nhật câu hỏi thành công");
       } else {
-        fetchQuestions(); // Reload trang hiện tại
+        const created = await fetchApi(`${API_URL}/questions`, {
+          method: "POST",
+          body: payload,
+        });
+        toast.success("Tạo câu hỏi thành công");
+        await fetchQuestions(0, keyword, difficultyFilter, typeFilter, categoryFilter);
       }
-
-    } catch (error: unknown) {
-      console.error("Delete error:", error);
-      const errorMessage = error instanceof Error ? error.message : 'Lỗi không xác định';
-      toastError(`Lỗi: ${errorMessage}`);
+      setModalOpen(false);
+      setEditingQuestion(null);
+    } catch (e) {
+      console.error(e);
+      toast.error(e?.message || "Lưu câu hỏi thất bại");
+      throw e;
     }
   };
+
+  /* --- Delete --- */
+  const handleDelete = (id) => {
+    const q = questions.find((x) => x.id === id);
+    if (!q) return;
+    Swal.fire({
+      title: "Xác nhận xóa",
+      text: `Bạn có chắc muốn xóa câu hỏi "${q.title}"?`,
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonText: "Xóa",
+      cancelButtonText: "Hủy",
+    }).then(async (result) => {
+      if (result.isConfirmed) {
+        try {
+          setLoading(true);
+          await fetchApi(`${API_URL}/questions/delete/${id}`, { method: "DELETE" });
+          setQuestions(prev => prev.filter(x => x.id !== id));
+          toast.success("Đã xóa câu hỏi");
+        } catch (e) {
+          console.error(e);
+          toast.error(e?.message || "Xóa thất bại");
+        } finally {
+          setLoading(false);
+        }
+      }
+    });
+  };
+
+  /* --- helper for role badge (copied concept from categories) --- */
+  function sentenceCase(value) {
+    if (!value) return "";
+    return value.charAt(0).toUpperCase() + value.slice(1);
+  }
 
   return (
     <div className="w-full min-h-screen py-6 sm:py-10 px-4 sm:px-8" style={{ backgroundColor: PAGE_BG }}>
       <div className="max-w-6xl mx-auto space-y-6">
         {/* Hero + tìm kiếm */}
-        <div
-          className="rounded-2xl shadow-2xl p-6 sm:p-8 text-white relative overflow-hidden"
-          style={{ background: HERO_GRADIENT }}
-        >
+        <div className="rounded-2xl shadow-2xl p-6 sm:p-8 text-white relative overflow-hidden" style={{ background: HERO_GRADIENT }}>
           <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
             <div>
               <h1 className="text-3xl font-extrabold drop-shadow">Quản lý Câu hỏi</h1>
-              <p className="text-white/80 mt-1 text-sm">Quản lý tất cả câu hỏi trong hệ thống</p>
+              <p className="text-white/80 mt-1 text-sm">Quản lý câu hỏi, lọc và chỉnh sửa nhanh</p>
             </div>
 
             <div className="flex items-center gap-2 text-sm font-semibold">
-              <span className="px-4 py-1 rounded-full bg-white/25 backdrop-blur">Tổng {totalCount} câu hỏi</span>
+              <span className="px-4 py-1 rounded-full bg-white/25 backdrop-blur">Tổng {totalElements} câu hỏi</span>
             </div>
           </div>
 
           <div className="mt-6 bg-white/95 rounded-2xl p-4 shadow-inner">
-            <div className="space-y-4">
-              {/* Tìm kiếm theo từ khóa */}
-              <div className="flex items-end gap-2">
-                <div className="flex-grow">
-                  <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1 block">Tìm kiếm câu hỏi</label>
-                  <input
-                    type="text"
-                    value={filters.search}
-                    onChange={(e) => setFilters(prev => ({ ...prev, search: e.target.value }))}
-                    placeholder="Nhập tiêu đề/đáp án... (Lọc chưa hoạt động)"
-                    className="w-full px-4 py-2 rounded-xl border border-gray-200 bg-white text-gray-800 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-purple-400"
-                    onKeyDown={(e) => e.key === 'Enter' && handleFilterChange(filters)}
-                  />
-                </div>
-                <button
-                  onClick={() => handleFilterChange(filters)}
-                  className="px-6 py-2.5 rounded-xl text-white text-sm font-semibold shadow-lg hover:brightness-110 transition whitespace-nowrap"
-                  style={{ backgroundColor: SEARCH_BAR_BG }}
-                  disabled={loading}
-                >
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-end">
+              <div className="flex gap-3 items-center">
+                <input
+                  value={keyword}
+                  onChange={(e) => setKeyword(e.target.value)}
+                  placeholder="Nhập tiêu đề / đáp án..."
+                  className="w-full px-4 py-2 rounded-xl border border-gray-200 bg-white text-gray-800 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-purple-400"
+                  onKeyDown={(e) => e.key === "Enter" && handleSearch()}
+                />
+
+                <select value={difficultyFilter} onChange={(e) => setDifficultyFilter(e.target.value)} className="px-4 py-2 rounded-xl border border-gray-200 text-sm">
+                  <option value="">Chọn độ khó</option>
+                  <option value="EASY">Dễ</option>
+                  <option value="MEDIUM">Trung bình</option>
+                  <option value="HARD">Khó</option>
+                </select>
+
+                <select value={typeFilter} onChange={(e) => setTypeFilter(e.target.value)} className="px-4 py-2 rounded-xl border border-gray-200 text-sm">
+                  <option value="">Chọn loại câu hỏi</option>
+                  <option value="TRUE_FALSE">Đúng/Sai</option>
+                </select>
+
+                <select value={categoryFilter} onChange={(e) => setCategoryFilter(e.target.value)} className="px-4 py-2 rounded-xl border border-gray-200 text-sm">
+                  <option value="">Chọn danh mục</option>
+                  {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                </select>
+              </div>
+
+              <div className="flex justify-end gap-2">
+                <button onClick={handleSearch} className="px-6 py-2 rounded-xl text-white text-sm font-semibold" style={{ backgroundColor: SEARCH_BAR_BG }} disabled={loading}>
                   Tìm kiếm
                 </button>
-              </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                {/* Độ khó */}
-                <div>
-                  <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1 block">Độ khó</label>
-                  <select
-                    value={filters.difficulty}
-                    onChange={(e) => setFilters(prev => ({ ...prev, difficulty: e.target.value }))}
-                    className="w-full px-4 py-2 rounded-xl border border-gray-200 bg-white text-gray-800 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-purple-400 cursor-pointer"
-                  >
-                    <option value="">Chọn độ khó</option>
-                    <option value="EASY">Dễ</option>
-                    <option value="MEDIUM">Trung bình</option>
-                    <option value="HARD">Khó</option>
-                  </select>
-                </div>
-
-                {/* Loại câu hỏi */}
-                <div>
-                  <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1 block">Loại câu hỏi</label>
-                  <select
-                    value={filters.type}
-                    onChange={(e) => setFilters(prev => ({ ...prev, type: e.target.value }))}
-                    className="w-full px-4 py-2 rounded-xl border border-gray-200 bg-white text-gray-800 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-purple-400 cursor-pointer"
-                  >
-                    <option value="">Chọn loại câu hỏi</option>
-                    <option value="MULTIPLE_CHOICE">Lựa chọn nhiều đáp án</option>
-                    <option value="TRUE_FALSE">Đúng/Sai</option>
-                    <option value="FILL_IN_BLANK">Điền vào chỗ trống</option>
-                  </select>
-                </div>
-
-                {/* Danh mục */}
-                <div>
-                  <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1 block">Danh mục</label>
-                  <select
-                    value={filters.category}
-                    onChange={(e) => setFilters(prev => ({ ...prev, category: e.target.value }))}
-                    className="w-full px-4 py-2 rounded-xl border border-gray-200 bg-white text-gray-800 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-purple-400 cursor-pointer"
-                  >
-                    <option value="">Chọn danh mục</option>
-                    <option value="1">Toán</option>
-                    <option value="2">Văn</option>
-                    <option value="3">Anh</option>
-                  </select>
-                </div>
-              </div>
-
-              <div className="flex justify-end gap-2 mt-4">
-                <button
-                  onClick={handleAddQuestion}
-                  className="px-6 py-2 rounded-xl text-white text-sm font-semibold shadow-lg hover:brightness-110 transition whitespace-nowrap flex items-center gap-2"
-                  style={{ backgroundColor: BUTTON_COLOR }}
-                  disabled={loading}
-                >
-                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <line x1="12" y1="5" x2="12" y2="19" />
-                    <line x1="5" y1="12" x2="19" y2="12" />
-                  </svg>
-                  Thêm câu hỏi
+                <button onClick={openAdd} className="px-6 py-2 rounded-xl text-white text-sm font-semibold flex items-center gap-2" style={{ backgroundColor: BUTTON_COLOR }} disabled={loading}>
+                  <PlusIcon /> Thêm câu hỏi
                 </button>
               </div>
             </div>
           </div>
-
         </div>
 
-        {/* Bảng danh sách */}
-        <div
-          className="bg-white rounded-2xl border border-white/60 shadow-[0_25px_60px_rgba(131,56,236,0.12)] overflow-hidden"
-          style={{ boxShadow: TABLE_SHADOW }}
-        >
-          {/* Tiêu đề bảng */}
+        {/* Table */}
+        <div className="bg-white rounded-2xl border border-white/60 shadow-[0_25px_60px_rgba(131,56,236,0.12)] overflow-hidden" style={{ boxShadow: TABLE_SHADOW }}>
           <div className="p-5 border-b border-gray-100 bg-gradient-to-r from-white to-purple-50/60">
             <p className="text-sm text-gray-600 font-medium flex flex-wrap items-center gap-2">
-              <span className="text-xs px-3 py-1 rounded-full bg-white shadow-inner">
-                Trang {currentPage} / {totalPages}
-              </span>
+              <span className="text-xs px-3 py-1 rounded-full bg-white shadow-inner">Trang {page + 1}/{totalPages}</span>
             </p>
           </div>
 
-          {/* Bảng */}
           <div className="overflow-x-auto">
-            {!loading && user && (
-              <QuestionTable
-                questions={questions}
-                loading={loading}
-                onEdit={handleEdit}
-                onDelete={handleDelete}
-                currentUserName={user?.username}
-                currentUserRole={user?.role}
-              />
-            )}
+            <table className="w-full min-w-[860px] text-sm text-gray-700">
+              <thead className="bg-[#F7F4FF] border-b border-gray-100 uppercase text-[0.65rem] tracking-wide text-gray-600">
+                <tr>
+                  <th className="px-4 py-3 text-left w-16">STT</th>
+                  <th className="px-4 py-3 text-left">Tiêu đề</th>
+                  <th className="px-4 py-3 text-left w-40">Loại câu hỏi</th>
+                  <th className="px-4 py-3 text-left w-28">Độ khó</th>
+                  <th className="px-4 py-3 text-left hidden sm:table-cell">Đáp án</th>
+                  <th className="px-4 py-3 text-left hidden md:table-cell">Người tạo</th>
+                  <th className="px-4 py-3 text-left w-40 hidden lg:table-cell">Danh mục</th>
+                  <th className="px-4 py-3 text-center w-40">Thao tác</th>
+                </tr>
+              </thead>
+
+              <tbody className="divide-y divide-gray-100">
+                {loading && filtered.length === 0 ? (
+                  <tr><td colSpan={8} className="px-4 py-10 text-center text-gray-500">Đang tải dữ liệu...</td></tr>
+                ) : filtered.length === 0 ? (
+                  <tr><td colSpan={8} className="px-4 py-10 text-center text-gray-500">Không tìm thấy câu hỏi phù hợp</td></tr>
+                ) : (
+                  filtered.map((q, idx) => (
+                    <tr key={q.id} className="hover:bg-purple-50/50 transition">
+                      <td className="px-4 py-3">{page * PAGE_SIZE + idx + 1}</td>
+                      <td className="px-4 py-3 font-medium text-gray-900 max-w-xs overflow-hidden text-ellipsis whitespace-nowrap">{q.title}</td>
+                      <td className="px-4 py-3">{sentenceCase(q.type?.replaceAll("_", " ") || "")}</td>
+                      <td className="px-4 py-3">{sentenceCase(q.difficulty?.toLowerCase?.() || "")}</td>
+                      <td className="px-4 py-3 hidden sm:table-cell">{q.answer}</td>
+                      <td className="px-4 py-3 hidden md:table-cell">{q.createdBy || "N/A"}</td>
+                      <td className="px-4 py-3 hidden lg:table-cell">{q.categoryName || ""}</td>
+                      <td className="px-4 py-3">
+                        <div className="flex items-center justify-center gap-2">
+                          <button onClick={() => openEdit(q)} className="px-3 py-1.5 rounded-full text-xs font-semibold bg-blue-100 text-blue-800 border border-blue-200 hover:bg-blue-200 transition">Sửa</button>
+                          <button onClick={() => handleDelete(q.id)} className="px-3 py-1.5 rounded-full text-xs font-semibold bg-rose-500 text-white shadow hover:bg-rose-600 transition">Xóa</button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
           </div>
 
-          {/* Phân trang */}
-          {!loading && totalPages > 0 && (
+          {/* Pagination */}
+          {totalElements > 0 && (
             <div className="p-5 border-t border-gray-100 flex justify-center items-center gap-2 text-sm text-gray-500 bg-white">
-              <button
-                onClick={() => setCurrentPage(1)}
-                disabled={currentPage === 1 || loading}
-                className="px-3 py-1 rounded-full text-gray-400 hover:text-purple-700 hover:bg-purple-50 disabled:opacity-40 disabled:cursor-not-allowed transition"
-              >
-                «
-              </button>
+              <button onClick={() => { if (page !== 0) setPage(0); }} disabled={page === 0 || loading} className="px-3 py-1 rounded-full text-gray-400 hover:text-purple-700 hover:bg-purple-50 disabled:opacity-40 disabled:cursor-not-allowed transition">«</button>
+              <button onClick={() => setPage(p => Math.max(0, p - 1))} disabled={page === 0 || loading} className="px-3 py-1 rounded-full text-gray-400 hover:text-purple-700 hover:bg-purple-50 disabled:opacity-40 disabled:cursor-not-allowed transition">‹</button>
 
-              <button
-                onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
-                disabled={currentPage === 1 || loading}
-                className="px-3 py-1 rounded-full text-gray-400 hover:text-purple-700 hover:bg-purple-50 disabled:opacity-40 disabled:cursor-not-allowed transition"
-              >
-                ‹
-              </button>
-
-              {Array.from({ length: totalPages }, (_, i) => (
-                <button
-                  key={i}
-                  onClick={() => setCurrentPage(i + 1)}
-                  disabled={loading}
-                  className={`w-8 h-8 flex items-center justify-center rounded-full text-sm font-semibold transition-colors
-                    ${
-                      currentPage === i + 1
-                        ? 'bg-purple-700 text-white shadow-lg'
-                        : 'text-gray-600 hover:bg-purple-50'
-                    }
-                  `}
-                >
-                  {i + 1}
-                </button>
+              {/* Show up to 7 page buttons (centered around current) */}
+              {Array.from({ length: totalPages }, (_, i) => i).slice(Math.max(0, page - 3), Math.min(totalPages, page + 4)).map(i => (
+                <button key={i} onClick={() => setPage(i)} disabled={loading} className={`w-8 h-8 flex items-center justify-center rounded-full text-sm font-semibold transition-colors ${page === i ? 'bg-purple-700 text-white shadow-lg' : 'text-gray-600 hover:bg-purple-50'}`}>{i + 1}</button>
               ))}
 
-              <button
-                onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
-                disabled={currentPage === totalPages || loading}
-                className="px-3 py-1 rounded-full text-gray-400 hover:text-purple-700 hover:bg-purple-50 disabled:opacity-40 disabled:cursor-not-allowed transition"
-              >
-                ›
-              </button>
-
-              <button
-                onClick={() => setCurrentPage(totalPages)}
-                disabled={currentPage === totalPages || loading}
-                className="px-3 py-1 rounded-full text-gray-400 hover:text-purple-700 hover:bg-purple-50 disabled:opacity-40 disabled:cursor-not-allowed transition"
-              >
-                »
-              </button>
+              <button onClick={() => setPage(p => Math.min(totalPages - 1, p + 1))} disabled={page === totalPages - 1 || loading} className="px-3 py-1 rounded-full text-gray-400 hover:text-purple-700 hover:bg-purple-50 disabled:opacity-40 disabled:cursor-not-allowed transition">›</button>
+              <button onClick={() => { if (page !== totalPages - 1) setPage(totalPages - 1); }} disabled={page === totalPages - 1 || loading} className="px-3 py-1 rounded-full text-gray-400 hover:text-purple-700 hover:bg-purple-50 disabled:opacity-40 disabled:cursor-not-allowed transition">»</button>
             </div>
           )}
         </div>
       </div>
+
+      {/* Modal: Create / Edit */}
+      <QuestionModal
+        open={modalOpen}
+        onClose={() => { setModalOpen(false); setEditingQuestion(null); }}
+        onSubmit={async (payload) => {
+          // delegate to handler that can use editingQuestion
+          await handleSubmitQuestion(payload);
+        }}
+        categories={categories}
+        editing={editingQuestion}
+      />
     </div>
   );
 }
