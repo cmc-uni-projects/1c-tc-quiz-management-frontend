@@ -8,6 +8,7 @@ import {Autocomplete, AutocompleteItem} from "@nextui-org/react";
 import { useRouter } from 'next/router'; // Next.js 12 (hoặc next/navigation nếu là Next.js 13+);
 import Link from 'next/link';
 
+
 // TYPES
 type Category = {
   id: number;
@@ -50,6 +51,7 @@ interface QuestionFormData {
 // COMPONENT CHÍNH
 
 export default function CreateExamPage() {
+    
   // ======= STATE BÀI THI =======
   const [examCategory, setExamCategory] = useState("");
   const [examTitle, setExamTitle] = useState("");
@@ -63,10 +65,22 @@ export default function CreateExamPage() {
   const [openLibrary, setOpenLibrary] = useState(false);
   const [categories, setCategories] = useState<Category[]>([]);
   const [categoriesLoading, setCategoriesLoading] = useState(true);
+  const [participantLimit, setParticipantLimit] = useState<number | "">("");
+  
 
   // New state for question creation form
   const [showCreateQuestionForm, setShowCreateQuestionForm] = useState(false);
   const [isQuestionFormLoading, setIsQuestionFormLoading] = useState(false);
+
+  // === THÊM STATE CHO MODAL THÔNG TIN BÀI THI ===
+  const [showExamInfoModal, setShowExamInfoModal] = useState(false);
+  const [examInfo, setExamInfo] = useState({
+    title: "",
+    examCode: "", 
+    inviteLink: "", 
+    qrCodeUrl: "", 
+  });
+  // ===========================================
 
   // States for Question Library Modal
   const [libraryQuestions, setLibraryQuestions] = useState<Question[]>([]);
@@ -170,16 +184,16 @@ export default function CreateExamPage() {
 
   // ======= STATE CÂU HỎI =======
   const [questions, setQuestions] = useState<Question[]>([
-    
     {
       id: 1,
       title: "",
       questionType: 'single', // Default to 'single'
-      categoryId: "",
-      difficulty: "",
+      categoryId: categories.length > 0 ? categories[0].id.toString() : "", // Dùng category đầu tiên nếu có
+      difficulty: "Easy",
       answers: [
         { id: 1, text: "", isCorrect: false },
         { id: 2, text: "", isCorrect: true },
+        { id: 3, text: "", isCorrect: false },
       ],
     },
   ]);
@@ -207,7 +221,7 @@ export default function CreateExamPage() {
       const newQuestion: Question = {
         id: 0, // Temporary ID, will be replaced by addQuestion
         title: formData.title,
-        questionType: formData.type === 'SINGLE_CHOICE' ? 'single' : (formData.type === 'MULTIPLE_CHOICE' ? 'multi' : (formData.type === 'TRUE_FALSE' ? 'true_false' : '')),
+        questionType: formData.type === 'SINGLE_CHOICE' ? 'single' : (formData.type === 'MULTIPLE_CHOICE' ? 'multi' : (formData.type === 'TRUE_FALSE' ? 'true_false' : 'single')),
         categoryId: formData.categoryId,
         categoryName: categoryObj ? categoryObj.name : undefined, // Look up category name
         difficulty: formData.difficulty,
@@ -357,6 +371,30 @@ export default function CreateExamPage() {
       return;
     }
 
+    // =========================================================================
+    // PHẦN NÀY ĐÃ ĐƯỢC CHỈNH SỬA: TẠM THỜI MOCK (GIẢ LẬP) THÀNH CÔNG VỚI DỮ LIỆU CỨNG
+    // (Bỏ qua toàn bộ logic gọi API thật để test UI)
+    // =========================================================================
+
+    // Giả lập độ trễ tạo bài thi (tùy chọn)
+    await new Promise(resolve => setTimeout(resolve, 500)); 
+
+    const hardcodedCode = "ABCD12"; // Mã cứng 6 ký tự/số
+    const inviteLink = `https://mock-domain.com/join/${hardcodedCode}`;
+    const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(inviteLink)}`;
+
+    setExamInfo({
+        title: examTitle, // Lấy tên bài thi từ input
+        examCode: hardcodedCode, 
+        inviteLink: inviteLink, 
+        qrCodeUrl: qrCodeUrl, 
+    });
+
+    toastSuccess("Tạo bài thi thành công! (Dữ liệu giả lập)");
+    setShowExamInfoModal(true); // Hiển thị Modal
+
+    // >>> BỎ QUA TOÀN BỘ LOGIC GỌI API THẬT PHÍA DƯỚI CHO VIỆC TEST <<<
+    /*
     const createdQuestionIds: number[] = [];
 
     // Validate and create each question individually
@@ -447,6 +485,7 @@ export default function CreateExamPage() {
       console.error("Failed to create exam:", error);
       toastError(error.message || "Tạo bài thi thất bại.");
     }
+    */
   };
 
   return (
@@ -463,29 +502,27 @@ export default function CreateExamPage() {
           {/* ================== FORM TẠO BÀI THI ================== */}
           <section className="bg-white rounded-2xl shadow p-8 mb-6">
             <h2 className="text-2xl font-semibold text-center mb-8">
-              Tạo bài thi offline
+              Tạo bài thi online 
             </h2>
             <div className="flex justify-start gap-6 border-b border-gray-300 mb-8">
-                {/* Nút Bài thi Offline */}
-                <a href="/teacher/exam-offline">
-                    <button 
-                        // Vì đây là trang OFFLINE, ta đặt border-black cho nút này
-                        className="pb-2 font-medium border-b-2 border-black" 
-                    >
-                        Bài thi Offline
-                    </button>
-                </a>
+    {/* Nút Bài thi Offline */}
+    <a href="/teacher/exam-offline">
+        <button 
+            className="pb-2 font-medium text-gray-500 hover:text-black hover:border-b-2 hover:border-gray-200" 
+        >
+            Bài thi Offline
+        </button>
+    </a>
 
-                {/* Nút Bài thi Online */}
-                <a href="/teacher/exam-online">
-                    <button 
-                        // Vì đây không phải trang ONLINE, ta đặt màu xám
-                        className="pb-2 font-medium text-gray-500 hover:text-black hover:border-b-2 hover:border-gray-200" 
-                    >
-                        Bài thi Online
-                    </button>
-                </a>
-            </div>
+    {/* Nút Bài thi Online */}
+    <a href="/teacher/exam-online">
+        <button 
+            className="pb-2 font-medium border-b-2 border-black" // Nút ONLINE ACTIVE
+        >
+            Bài thi Online
+        </button>
+    </a>
+</div>
 
             {/* Các input đầu */}
             <div className="space-y-4 mb-6">
@@ -537,6 +574,27 @@ export default function CreateExamPage() {
                   className="w-full border px-3 py-2 rounded-md"
                 />
               </div>
+             <div>
+  <label className="block text-sm mb-2">
+    Giới hạn số người tham gia 
+    <span className="text-gray-500 text-xs ml-1"></span>
+  </label>
+  <input
+    type="number"
+    min="1"
+    step="1"
+    value={participantLimit}
+    onChange={(e) => {
+      const value = e.target.value;
+      if (value === "" || /^\d+$/.test(value)) {
+        setParticipantLimit(value === "" ? "" : Number(value));
+      }
+    }}
+    className="w-full px-4 py-3 border-2 border-gray-400 rounded-lg 
+               focus:border-purple-600 focus:ring-4 focus:ring-purple-100 
+               focus:outline-none transition-all font-medium"
+  />
+</div>
 
               <div>
                 <label className="block text-sm mb-1">Loại đề thi</label>
@@ -934,6 +992,90 @@ export default function CreateExamPage() {
     </div>
   </div>
 )}
+
+{/* ================== MODAL THÔNG TIN BÀI THI (DÙNG DỮ LIỆU CỨNG) ================== */}
+       {showExamInfoModal && (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+          <div className="bg-white rounded-xl p-8 relative w-[90%] max-w-lg shadow-2xl">
+            {/* Nút đóng */}
+            <button
+              onClick={() => setShowExamInfoModal(false)}
+              className="absolute top-4 right-4 text-gray-500 text-2xl hover:text-black"
+            >
+              &times;
+            </button>
+
+            <h3 className="text-2xl font-bold text-center mb-6 text-purple-700">
+              
+            </h3>
+            <p className="text-center text-gray-600 mb-6">
+              Sử dụng các thông tin sau để chia sẻ bài thi của bạn.
+            </p>
+
+            <div className="space-y-4">
+              {/* Tên bài thi */}
+              <div className="p-3 bg-purple-50 rounded-lg border-l-4 border-purple-400">
+                <p className="font-semibold text-sm text-purple-700">Tên bài thi</p>
+                <p className="text-lg font-medium text-gray-800">{examInfo.title}</p>
+              </div>
+
+              {/* Mã 6 số */}
+              <div className="p-3 bg-indigo-50 rounded-lg border-l-4 border-indigo-400 flex justify-between items-center">
+                <div>
+                  <p className="font-semibold text-sm text-indigo-700">Mã Tham Dự (6 số)</p>
+                  <p className="text-2xl font-extrabold tracking-widest text-indigo-800">
+                    {examInfo.examCode}
+                  </p>
+                </div>
+                <button
+                  onClick={() => navigator.clipboard.writeText(examInfo.examCode)}
+                  className="text-xs bg-indigo-500 text-white px-3 py-1 rounded hover:bg-indigo-600 transition"
+                >
+                  Sao chép
+                </button>
+              </div>
+
+              {/* Link Tham gia */}
+              <div className="p-3 bg-green-50 rounded-lg border-l-4 border-green-400">
+                <p className="font-semibold text-sm text-green-700">Link Tham gia</p>
+                <div className="flex items-center gap-2">
+                  <input
+                    readOnly
+                    value={examInfo.inviteLink}
+                    className="flex-1 p-1 bg-white border border-gray-300 rounded text-sm overflow-x-scroll"
+                  />
+                  <button
+                    onClick={() => navigator.clipboard.writeText(examInfo.inviteLink)}
+                    className="text-xs bg-green-500 text-white px-3 py-1 rounded hover:bg-green-600 transition whitespace-nowrap"
+                  >
+                    Sao chép
+                  </button>
+                </div>
+              </div>
+
+              {/* Mã QR */}
+              <div className="text-center pt-4">
+                <p className="font-semibold text-gray-700 mb-2">Quét Mã QR để tham gia</p>
+                <img
+                  src={examInfo.qrCodeUrl}
+                  alt="Mã QR tham gia bài thi"
+                  className="w-36 h-36 mx-auto border-4 border-gray-200 p-1 rounded-lg"
+                />
+              </div>
+            </div>
+
+            <div className="mt-8 flex justify-center">
+              <button
+                onClick={() => setShowExamInfoModal(false)}
+                className="px-6 py-2 bg-purple-700 text-white rounded-md hover:bg-purple-800 transition"
+              >
+                Bắt đầu
+              </button>
+            </div>
+
+          </div>
+        </div>
+      )}
 
         </main>
 
