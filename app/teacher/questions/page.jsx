@@ -132,6 +132,8 @@ function QuestionModal({ open, onClose, onSubmit, categories = [], editing = nul
           <div><label className="text-sm font-medium block mb-1">Loại câu hỏi</label>
             <select value={type} onChange={e=>setType(e.target.value)} className="w-full px-3 py-2 border rounded-lg">
               <option value="">-- Chọn loại --</option>
+              <option value="SINGLE">Trắc nghiệm (1 đáp án đúng)</option>
+              <option value="MULTIPLE">Trắc nghiệm (nhiều đáp án đúng)</option>
               <option value="TRUE_FALSE">Đúng / Sai</option>
             </select>
           </div>
@@ -278,10 +280,167 @@ export default function QuestionsPage() {
   }, [questions, debouncedKeyword]);
 
   /* --- Render --- */
-  return (
-    <div className="w-full min-h-screen py-6 sm:py-10 px-4 sm:px-8" style={{ backgroundColor: PAGE_BG }}>
-      <ToastNotification message={notification.message} type={notification.type} onClose={() => setNotification({ message:'', type:'' })} />
+return (
+  <div className="w-full min-h-screen py-6 sm:py-10 px-4 sm:px-8" style={{ backgroundColor: PAGE_BG }}>
+    <ToastNotification message={notification.message} type={notification.type} onClose={() => setNotification({ message:'', type:'' })} />
 
-      {/* Hero + Filters */}
-      <div className="max-w-6xl mx-auto space-y-6">
-        <
+    {/* Hero + Filters */}
+    <div className="max-w-6xl mx-auto space-y-6">
+      <div className="rounded-2xl shadow-2xl p-6 sm:p-8 text-white relative overflow-hidden" style={{ background: HERO_GRADIENT }}>
+        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+          <div>
+            <h1 className="text-3xl font-extrabold drop-shadow">Quản lý Câu hỏi</h1>
+            <p className="text-white/80 mt-1 text-sm">Tạo và quản lý câu hỏi của bạn</p>
+          </div>
+          <div className="flex items-center gap-2 text-sm font-semibold">
+            <span className="px-4 py-1 rounded-full bg-white/25 backdrop-blur">Tổng {totalElements} câu hỏi</span>
+          </div>
+        </div>
+
+        <div className="mt-6 bg-white/95 rounded-2xl p-4 shadow-inner">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-end">
+            <div className="flex gap-3 items-center">
+              <input
+                value={keyword}
+                onChange={(e) => setKeyword(e.target.value)}
+                placeholder="Nhập tiêu đề / đáp án..."
+                className="flex-1 px-4 py-2 rounded-xl border border-gray-200 text-gray-800 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-purple-400"
+              />
+
+              <select value={difficultyFilter} onChange={(e) => setDifficultyFilter(e.target.value)} className="px-4 py-2 rounded-xl border border-gray-200 text-gray-800 text-sm">
+                <option value="">Chọn độ khó</option>
+                <option value="EASY">Dễ</option>
+                <option value="MEDIUM">Trung bình</option>
+                <option value="HARD">Khó</option>
+              </select>
+
+              <select value={typeFilter} onChange={(e) => setTypeFilter(e.target.value)} className="px-4 py-2 rounded-xl border border-gray-200 text-gray-800 text-sm">
+                <option value="">Chọn loại câu hỏi</option>
+                <option value="SINGLE">Trắc nghiệm (1 đáp án)</option>
+                <option value="MULTIPLE">Trắc nghiệm (nhiều đáp án)</option>
+                <option value="TRUE_FALSE">Đúng/Sai</option>
+              </select>
+
+              <select value={categoryFilter} onChange={(e) => setCategoryFilter(e.target.value)} className="px-4 py-2 rounded-xl border border-gray-200 text-gray-800 text-sm">
+                <option value="">Chọn danh mục</option>
+                {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+              </select>
+            </div>
+
+            <div className="flex justify-end gap-2">
+              <button onClick={handleSearch} className="px-6 py-2 rounded-xl text-white text-sm font-semibold" style={{ backgroundColor: SEARCH_BAR_BG }} disabled={loading}>
+                <FilterIcon /> Tìm kiếm
+              </button>
+
+              <button onClick={openAdd} className="px-6 py-2 rounded-xl text-white text-sm font-semibold flex items-center gap-2" style={{ backgroundColor: BUTTON_COLOR }} disabled={loading}>
+                <PlusIcon /> Thêm câu hỏi
+              </button>
+            </div>
+          </div>
+
+          <div className="mt-3 flex items-center gap-2">
+            <input
+              type="checkbox"
+              id="mineOnly"
+              checked={mineOnly}
+              onChange={handleMineOnlyToggle}
+              className="w-4 h-4 text-purple-600 rounded focus:ring-purple-500"
+            />
+            <label htmlFor="mineOnly" className="text-sm text-gray-700 cursor-pointer">
+              Chỉ hiển thị câu hỏi của tôi
+            </label>
+          </div>
+        </div>
+      </div>
+
+      {/* Table */}
+      <div className="bg-white rounded-2xl border border-white/60 shadow-[0_25px_60px_rgba(131,56,236,0.12)] overflow-hidden" style={{ boxShadow: TABLE_SHADOW }}>
+        <div className="p-5 border-b border-gray-100 bg-gradient-to-r from-white to-purple-50/60">
+          <p className="text-sm text-gray-600 font-medium flex flex-wrap items-center gap-2">
+            <span className="text-xs px-3 py-1 rounded-full bg-white shadow-inner">Trang {page + 1}/{totalPages}</span>
+          </p>
+        </div>
+
+        <div className="overflow-x-auto">
+          <table className="w-full min-w-[860px] text-sm text-gray-700">
+            <thead className="bg-[#F7F4FF] border-b border-gray-100 uppercase text-[0.65rem] tracking-wide text-gray-600">
+              <tr>
+                <th className="px-4 py-3 text-left w-16">STT</th>
+                <th className="px-4 py-3 text-left">Tiêu đề</th>
+                <th className="px-4 py-3 text-left w-40">Loại câu hỏi</th>
+                <th className="px-4 py-3 text-left w-28">Độ khó</th>
+                <th className="px-4 py-3 text-left hidden sm:table-cell">Đáp án</th>
+                <th className="px-4 py-3 text-left hidden md:table-cell">Người tạo</th>
+                <th className="px-4 py-3 text-left w-40 hidden lg:table-cell">Danh mục</th>
+                <th className="px-4 py-3 text-center w-40">Thao tác</th>
+              </tr>
+            </thead>
+
+            <tbody className="divide-y divide-gray-100">
+              {loading && filtered.length === 0 ? (
+                <tr><td colSpan={8} className="px-4 py-10 text-center text-gray-500">Đang tải dữ liệu...</td></tr>
+              ) : filtered.length === 0 ? (
+                <tr><td colSpan={8} className="px-4 py-10 text-center text-gray-500">Không tìm thấy câu hỏi phù hợp</td></tr>
+              ) : (
+                filtered.map((q, idx) => (
+                  <tr key={q.id} className="hover:bg-purple-50/50 transition">
+                    <td className="px-4 py-3">{page * PAGE_SIZE + idx + 1}</td>
+                    <td className="px-4 py-3 font-medium text-gray-900 max-w-xs overflow-hidden text-ellipsis whitespace-nowrap">{q.title}</td>
+                    <td className="px-4 py-3">{sentenceCase(q.type?.replaceAll("_", " ") || "")}</td>
+                    <td className="px-4 py-3"><DifficultyBadge difficulty={q.difficulty} /></td>
+                    <td className="px-4 py-3 hidden sm:table-cell">{q.answer}</td>
+                    <td className="px-4 py-3 hidden md:table-cell">{q.createdBy || "N/A"}</td>
+                    <td className="px-4 py-3 hidden lg:table-cell">{q.categoryName || ""}</td>
+                    <td className="px-4 py-3">
+                      <div className="flex items-center justify-center gap-2">
+                        {canModify(q) && (
+                          <>
+                            <button onClick={() => openEdit(q)} className="px-3 py-1.5 rounded-full text-xs font-semibold bg-blue-100 text-blue-800 border border-blue-200 hover:bg-blue-200 transition">Sửa</button>
+                            <button onClick={() => setConfirmingDelete(q.id)} className="px-3 py-1.5 rounded-full text-xs font-semibold bg-rose-500 text-white shadow hover:bg-rose-600 transition">Xóa</button>
+                          </>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+
+        {/* Pagination */}
+        {totalElements > 0 && (
+          <div className="p-5 border-t border-gray-100 flex justify-center items-center gap-2 text-sm text-gray-500 bg-white">
+            <button onClick={() => setPage(0)} disabled={page === 0 || loading} className="px-3 py-1 rounded-full text-gray-400 hover:text-purple-700 hover:bg-purple-50 disabled:opacity-40 disabled:cursor-not-allowed transition">«</button>
+            <button onClick={() => setPage(p => Math.max(0, p - 1))} disabled={page === 0 || loading} className="px-3 py-1 rounded-full text-gray-400 hover:text-purple-700 hover:bg-purple-50 disabled:opacity-40 disabled:cursor-not-allowed transition">‹</button>
+
+            {Array.from({ length: totalPages }, (_, i) => i).slice(Math.max(0, page - 3), Math.min(totalPages, page + 4)).map(i => (
+              <button key={i} onClick={() => setPage(i)} disabled={loading} className={`w-8 h-8 flex items-center justify-center rounded-full text-sm font-semibold transition-colors ${page === i ? 'bg-purple-700 text-white shadow-lg' : 'text-gray-600 hover:bg-purple-50'}`}>{i + 1}</button>
+            ))}
+
+            <button onClick={() => setPage(p => Math.min(totalPages - 1, p + 1))} disabled={page === totalPages - 1 || loading} className="px-3 py-1 rounded-full text-gray-400 hover:text-purple-700 hover:bg-purple-50 disabled:opacity-40 disabled:cursor-not-allowed transition">›</button>
+            <button onClick={() => setPage(totalPages - 1)} disabled={page === totalPages - 1 || loading} className="px-3 py-1 rounded-full text-gray-400 hover:text-purple-700 hover:bg-purple-50 disabled:opacity-40 disabled:cursor-not-allowed transition">»</button>
+          </div>
+        )}
+      </div>
+    </div>
+
+    {/* Modals */}
+    <QuestionModal
+      open={modalOpen}
+      onClose={() => { setModalOpen(false); setEditingQuestion(null); }}
+      onSubmit={handleSubmitQuestion}
+      categories={categories}
+      editing={editingQuestion}
+    />
+
+    <ConfirmationModal
+      open={confirmingDelete !== null}
+      onClose={() => setConfirmingDelete(null)}
+      onConfirm={handleDeleteConfirmed}
+      title="Xác nhận xóa"
+      text="Bạn có chắc muốn xóa câu hỏi này?"
+    />
+  </div>
+);
+}
