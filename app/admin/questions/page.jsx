@@ -5,7 +5,7 @@ import Swal from "sweetalert2";
 import toast from "react-hot-toast";
 
 /* --- Constants (style/colors) --- */
-const API_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "/api";
+const API_URL = `${process.env.NEXT_PUBLIC_API_BASE_URL || ""}/api`;
 const PAGE_SIZE = 10;
 const PAGE_BG = "#F4F2FF";
 const HERO_GRADIENT = "linear-gradient(135deg, #FFB6FF 0%, #8A46FF 100%)";
@@ -72,6 +72,13 @@ const XIcon = (props) => (
   </svg>
 );
 
+/* --- Helper functions --- */
+function sentenceCase(value) {
+  if (!value) return "";
+  return value.charAt(0).toUpperCase() + value.slice(1);
+}
+
+/* --- Difficulty Badge --- */
 function DifficultyBadge({ difficulty }) {
   const diff = difficulty?.toUpperCase();
   let colorClass = "bg-gray-100 text-gray-800"; // Default
@@ -105,7 +112,7 @@ function QuestionModal({ open, onClose, onSubmit, categories = [], editing = nul
   const [title, setTitle] = useState(editing?.title || "");
   const [type, setType] = useState(editing?.type || "");
   const [difficulty, setDifficulty] = useState(editing?.difficulty || "");
-  const [answer, setAnswer] = useState(editing?.answer || "");
+  const [answers, setAnswers] = useState(editing?.answers || [{ text: "", correct: false }]);
   const [categoryId, setCategoryId] = useState(editing?.categoryId || "");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -115,17 +122,77 @@ function QuestionModal({ open, onClose, onSubmit, categories = [], editing = nul
     setTitle(editing?.title || "");
     setType(editing?.type || "");
     setDifficulty(editing?.difficulty || "");
-    setAnswer(editing?.answer || "");
+    setAnswers(editing?.answers || [{ text: "", correct: false }]);
     setCategoryId(editing?.categoryId || "");
     setError("");
   }, [editing, open]);
+
+  // Handle answer changes
+  const handleAnswerTextChange = (index, value) => {
+    const newAnswers = [...answers];
+    newAnswers[index].text = value;
+    setAnswers(newAnswers);
+  };
+
+  const handleAnswerCorrectChange = (index, isCorrect) => {
+    const newAnswers = [...answers];
+    if (type === "SINGLE" || type === "TRUE_FALSE") {
+      // For single choice, only one can be correct
+      newAnswers.forEach((ans, i) => {
+        ans.correct = i === index;
+      });
+    } else {
+      // For multiple choice, toggle this answer
+      newAnswers[index].correct = isCorrect;
+    }
+    setAnswers(newAnswers);
+  };
+
+  const addAnswer = () => {
+    if (type === "TRUE_FALSE") return; // Don't add more answers for true/false
+    setAnswers([...answers, { text: "", correct: false }]);
+  };
+
+  const removeAnswer = (index) => {
+    if (answers.length <= 2) return; // Keep at least 2 answers
+    const newAnswers = answers.filter((_, i) => i !== index);
+    setAnswers(newAnswers);
+  };
+
+  // Initialize answers when type changes
+  useEffect(() => {
+    if (type === "TRUE_FALSE") {
+      setAnswers([
+        { text: "Đúng", correct: false },
+        { text: "Sai", correct: false }
+      ]);
+    } else if (type === "SINGLE" && answers.length < 2) {
+      setAnswers([
+        { text: "", correct: false },
+        { text: "", correct: false }
+      ]);
+    } else if (type === "MULTIPLE" && answers.length < 2) {
+      setAnswers([
+        { text: "", correct: false },
+        { text: "", correct: false }
+      ]);
+    }
+  }, [type]);
 
   const validate = () => {
     if (!title.trim()) return "Tiêu đề là bắt buộc";
     if (!type) return "Chọn loại câu hỏi";
     if (!difficulty) return "Chọn độ khó";
-    if (!answer.trim()) return "Chọn/nhập đáp án";
     if (!categoryId) return "Chọn danh mục";
+    
+    // Validate answers
+    const validAnswers = answers.filter(ans => ans.text.trim());
+    if (validAnswers.length < 2) return "Cần ít nhất 2 đáp án";
+    
+    const correctAnswers = validAnswers.filter(ans => ans.correct);
+    if (correctAnswers.length === 0) return "Cần chọn ít nhất 1 đáp án đúng";
+    if (type === "SINGLE" && correctAnswers.length > 1) return "Câu hỏi 1 lựa chọn chỉ có 1 đáp án đúng";
+    
     return "";
   };
 
@@ -136,12 +203,14 @@ function QuestionModal({ open, onClose, onSubmit, categories = [], editing = nul
 
     try {
       setLoading(true);
+      const validAnswers = answers.filter(ans => ans.text.trim());
       const payload = {
         title: title.trim(),
         type,
         difficulty,
-        answer: answer.trim(),
         categoryId,
+        answers: validAnswers,
+        correctAnswer: validAnswers.find(ans => ans.correct)?.text || "",
       };
       await onSubmit(payload); // parent handles API calls and state update
       setLoading(false);
@@ -170,6 +239,8 @@ function QuestionModal({ open, onClose, onSubmit, categories = [], editing = nul
             <label className="text-sm font-medium block mb-1">Loại câu hỏi</label>
             <select value={type} onChange={(e) => setType(e.target.value)} className="w-full px-3 py-2 border rounded-lg">
               <option value="">-- Chọn loại --</option>
+              <option value="SINGLE">Trắc nghiệm (1 đáp án đúng)</option>
+              <option value="MULTIPLE">Trắc nghiệm (nhiều đáp án đúng)</option>
               <option value="TRUE_FALSE">Đúng / Sai</option>
             </select>
           </div>
@@ -186,8 +257,50 @@ function QuestionModal({ open, onClose, onSubmit, categories = [], editing = nul
 
           <div>
             <label className="text-sm font-medium block mb-1">Đáp án</label>
-            <input value={answer} onChange={(e) => setAnswer(e.target.value)} className="w-full px-3 py-2 border rounded-lg" />
-            <p className="text-xs text-gray-500 mt-1">Với trắc nghiệm: nhập đáp án đúng (ví dụ: A hoặc 1). Với đúng/sai: nhập 'Đúng' hoặc 'Sai'.</p>
+            <div className="space-y-2">
+              {answers.map((answer, index) => (
+                <div key={index} className="flex items-center gap-2">
+                  <input
+                    type={type === "MULTIPLE" ? "checkbox" : "radio"}
+                    name="correctAnswer"
+                    checked={answer.correct}
+                    onChange={(e) => handleAnswerCorrectChange(index, e.target.checked)}
+                    className="w-4 h-4 text-purple-600 rounded focus:ring-purple-500"
+                  />
+                  <input
+                    type="text"
+                    value={answer.text}
+                    onChange={(e) => handleAnswerTextChange(index, e.target.value)}
+                    placeholder={`Đáp án ${index + 1}`}
+                    className="flex-1 px-3 py-2 border rounded-lg"
+                    disabled={type === "TRUE_FALSE"}
+                  />
+                  {type !== "TRUE_FALSE" && answers.length > 2 && (
+                    <button
+                      type="button"
+                      onClick={() => removeAnswer(index)}
+                      className="px-2 py-1 text-red-600 hover:bg-red-50 rounded"
+                    >
+                      <XIcon />
+                    </button>
+                  )}
+                </div>
+              ))}
+            </div>
+            {type !== "TRUE_FALSE" && (
+              <button
+                type="button"
+                onClick={addAnswer}
+                className="mt-2 px-3 py-1 text-purple-600 border border-purple-200 rounded-lg hover:bg-purple-50 text-sm"
+              >
+                <PlusIcon /> Thêm đáp án
+              </button>
+            )}
+            <p className="text-xs text-gray-500 mt-1">
+              {type === "TRUE_FALSE" ? "Câu hỏi đúng/sai có sẵn 2 đáp án." : 
+               type === "SINGLE" ? "Chọn 1 đáp án đúng duy nhất." : 
+               "Có thể chọn nhiều đáp án đúng."}
+            </p>
           </div>
 
           <div>
@@ -305,7 +418,7 @@ export default function QuestionsPage() {
     // keep client-side small filtering for UX on current page
     const kw = keyword.trim().toLowerCase();
     if (!kw) return questions;
-    return questions.filter(q => q.title?.toLowerCase().includes(kw) || String(q.answer || "").toLowerCase().includes(kw));
+    return questions.filter(q => q.title?.toLowerCase().includes(kw) || String(q.correctAnswer || q.answer || "").toLowerCase().includes(kw));
   }, [questions, keyword]);
 
   /* --- Open modal create --- */
@@ -326,12 +439,12 @@ export default function QuestionsPage() {
       if (editingQuestion) {
         await fetchApi(`${API_URL}/questions/edit/${editingQuestion.id}`, {
           method: "PATCH",
-          body: payload,
+          body: payload, // Use full payload with answers array
         });
-        setQuestions(prev => prev.map(p => p.id === editingQuestion.id ? { ...p, ...payload } : p));
+        setQuestions(prev => prev.map(p => p.id === editingQuestion.id ? { ...p, ...payload, answer: payload.correctAnswer } : p));
         toast.success("Cập nhật câu hỏi thành công");
       } else {
-        const created = await fetchApi(`${API_URL}/questions`, {
+        const created = await fetchApi(`${API_URL}/questions/create`, {
           method: "POST",
           body: payload,
         });
@@ -375,12 +488,6 @@ export default function QuestionsPage() {
     });
   };
 
-  /* --- helper for role badge (copied concept from categories) --- */
-  function sentenceCase(value) {
-    if (!value) return "";
-    return value.charAt(0).toUpperCase() + value.slice(1);
-  }
-
   return (
     <div className="w-full min-h-screen py-6 sm:py-10 px-4 sm:px-8" style={{ backgroundColor: PAGE_BG }}>
       <div className="max-w-6xl mx-auto space-y-6">
@@ -417,6 +524,8 @@ export default function QuestionsPage() {
 
                 <select value={typeFilter} onChange={(e) => setTypeFilter(e.target.value)} className="px-4 py-2 rounded-xl border border-gray-200 text-gray-800 text-sm">
                   <option value="">Chọn loại câu hỏi</option>
+                  <option value="SINGLE">Trắc nghiệm (1 đáp án)</option>
+                  <option value="MULTIPLE">Trắc nghiệm (nhiều đáp án)</option>
                   <option value="TRUE_FALSE">Đúng/Sai</option>
                 </select>
 
@@ -474,7 +583,7 @@ export default function QuestionsPage() {
                       <td className="px-4 py-3 font-medium text-gray-900 max-w-xs overflow-hidden text-ellipsis whitespace-nowrap">{q.title}</td>
                       <td className="px-4 py-3">{sentenceCase(q.type?.replaceAll("_", " ") || "")}</td>
                       <td className="px-4 py-3"><DifficultyBadge difficulty={q.difficulty} /></td>
-                      <td className="px-4 py-3 hidden sm:table-cell">{q.answer}</td>
+                      <td className="px-4 py-3 hidden sm:table-cell">{q.correctAnswer || q.answer}</td>
                       <td className="px-4 py-3 hidden md:table-cell">{q.createdBy || "N/A"}</td>
                       <td className="px-4 py-3 hidden lg:table-cell">{q.categoryName || ""}</td>
                       <td className="px-4 py-3">
