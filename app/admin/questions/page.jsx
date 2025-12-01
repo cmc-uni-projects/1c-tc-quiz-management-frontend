@@ -72,6 +72,34 @@ const XIcon = (props) => (
   </svg>
 );
 
+function DifficultyBadge({ difficulty }) {
+  const diff = difficulty?.toUpperCase();
+  let colorClass = "bg-gray-100 text-gray-800"; // Default
+
+  switch (diff) {
+    case "EASY":
+      colorClass = "bg-green-100 text-green-800";
+      break;
+    case "MEDIUM":
+      colorClass = "bg-yellow-100 text-yellow-800";
+      break;
+    case "HARD":
+      colorClass = "bg-red-100 text-red-800";
+      break;
+    default:
+      break;
+  }
+
+  // Format lại chữ (Dễ, Trung bình, Khó)
+  const text = diff ? sentenceCase(diff.toLowerCase()) : "N/A";
+
+  return (
+    <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-medium ${colorClass}`}>
+      {text}
+    </span>
+  );
+}
+
 /* --- Modal component for Create/Edit (internal) --- */
 function QuestionModal({ open, onClose, onSubmit, categories = [], editing = null }) {
   const [title, setTitle] = useState(editing?.title || "");
@@ -376,23 +404,23 @@ export default function QuestionsPage() {
                   value={keyword}
                   onChange={(e) => setKeyword(e.target.value)}
                   placeholder="Nhập tiêu đề / đáp án..."
-                  className="w-full px-4 py-2 rounded-xl border border-gray-200 bg-white text-gray-800 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-purple-400"
+                  className="flex-1 px-4 py-2 rounded-xl border border-gray-200 text-gray-800 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-purple-400"
                   onKeyDown={(e) => e.key === "Enter" && handleSearch()}
                 />
 
-                <select value={difficultyFilter} onChange={(e) => setDifficultyFilter(e.target.value)} className="px-4 py-2 rounded-xl border border-gray-200 text-sm">
+                <select value={difficultyFilter} onChange={(e) => setDifficultyFilter(e.target.value)} className="px-4 py-2 rounded-xl border border-gray-200 text-gray-800 text-sm">
                   <option value="">Chọn độ khó</option>
                   <option value="EASY">Dễ</option>
                   <option value="MEDIUM">Trung bình</option>
                   <option value="HARD">Khó</option>
                 </select>
 
-                <select value={typeFilter} onChange={(e) => setTypeFilter(e.target.value)} className="px-4 py-2 rounded-xl border border-gray-200 text-sm">
+                <select value={typeFilter} onChange={(e) => setTypeFilter(e.target.value)} className="px-4 py-2 rounded-xl border border-gray-200 text-gray-800 text-sm">
                   <option value="">Chọn loại câu hỏi</option>
                   <option value="TRUE_FALSE">Đúng/Sai</option>
                 </select>
 
-                <select value={categoryFilter} onChange={(e) => setCategoryFilter(e.target.value)} className="px-4 py-2 rounded-xl border border-gray-200 text-sm">
+                <select value={categoryFilter} onChange={(e) => setCategoryFilter(e.target.value)} className="px-4 py-2 rounded-xl border border-gray-200 text-gray-800 text-sm">
                   <option value="">Chọn danh mục</option>
                   {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
                 </select>
@@ -445,7 +473,7 @@ export default function QuestionsPage() {
                       <td className="px-4 py-3">{page * PAGE_SIZE + idx + 1}</td>
                       <td className="px-4 py-3 font-medium text-gray-900 max-w-xs overflow-hidden text-ellipsis whitespace-nowrap">{q.title}</td>
                       <td className="px-4 py-3">{sentenceCase(q.type?.replaceAll("_", " ") || "")}</td>
-                      <td className="px-4 py-3">{sentenceCase(q.difficulty?.toLowerCase?.() || "")}</td>
+                      <td className="px-4 py-3"><DifficultyBadge difficulty={q.difficulty} /></td>
                       <td className="px-4 py-3 hidden sm:table-cell">{q.answer}</td>
                       <td className="px-4 py-3 hidden md:table-cell">{q.createdBy || "N/A"}</td>
                       <td className="px-4 py-3 hidden lg:table-cell">{q.categoryName || ""}</td>
