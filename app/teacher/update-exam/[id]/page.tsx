@@ -111,7 +111,7 @@ export default function UpdateExamPage() {
                         text: a.text,
                         isCorrect: a.correct || false, // Note: backend might return 'correct' or 'isCorrect' depending on DTO
                     })),
-                    isReadOnly: false
+                    isReadOnly: true
                 })) || [];
 
                 // If no questions, add a default empty one
