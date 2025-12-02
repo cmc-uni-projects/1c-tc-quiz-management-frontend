@@ -10,7 +10,10 @@ import {
   FolderIcon,
   DocumentTextIcon,
   QuestionMarkCircleIcon,
-  ClipboardDocumentListIcon
+  ClipboardDocumentListIcon,
+  ChevronDownIcon,
+  ListBulletIcon,
+  PlusCircleIcon
 } from "@heroicons/react/24/outline";
 
 const LOGO_TEXT_COLOR = "#E33AEC";
@@ -38,11 +41,11 @@ const TeacherAuthGuard = ({ children }: { children: React.ReactNode }) => {
     }
 
     if (redirectPath) {
-        setIsRedirecting(true);
-        if (toastMessage) {
-            toast.error(toastMessage);
-        }
-        router.push(redirectPath);
+      setIsRedirecting(true);
+      if (toastMessage) {
+        toast.error(toastMessage);
+      }
+      router.push(redirectPath);
     }
 
   }, [user, isLoading, isAuthenticated, router, isRedirecting]);
@@ -68,13 +71,20 @@ const TeacherAuthGuard = ({ children }: { children: React.ReactNode }) => {
 /** @type {React.FC} */
 const TeacherSidebar = () => {
   const pathname = usePathname();
+  const router = useRouter();
 
   const navItems = [
     { href: '/teacher/teacherhome', label: 'Trang chủ' },
     { href: '/teacher/categories', label: 'Danh mục câu hỏi' },
-    { href: '/teacher/list-exam', label: 'Danh sách bài thi' },   
     { href: '/teacher/questions', label: 'Quản lý câu hỏi' },
-    { href: '/teacher/exam-offline', label: 'Quản lý bài thi' },
+    {
+      label: 'Quản lý bài thi',
+      href: '/teacher/exams',
+      submenu: [
+        { label: "Danh sách bài thi", href: "/teacher/list-exam" },
+        { label: "Tạo bài thi", href: "/teacher/exam-offline" },
+      ],
+    },
   ];
 
   // Icon mapping for menu items
@@ -84,8 +94,6 @@ const TeacherSidebar = () => {
         return <HomeIcon className="w-5 h-5" />;
       case 'Danh mục câu hỏi':
         return <FolderIcon className="w-5 h-5" />;
-      case 'Danh sách bài thi':
-        return <DocumentTextIcon className="w-5 h-5" />;
       case 'Quản lý câu hỏi':
         return <QuestionMarkCircleIcon className="w-5 h-5" />;
       case 'Quản lý bài thi':
@@ -95,24 +103,113 @@ const TeacherSidebar = () => {
     }
   };
 
+  const [userToggledSubmenu, setUserToggledSubmenu] = useState<string | null>(null);
+
+  const handleToggleSubmenu = (label: string) => {
+    setUserToggledSubmenu(userToggledSubmenu === label ? null : label);
+  };
+
+  const isActive = (item: any): boolean => {
+    if (!item || !item.href) return false;
+    if (item.href === "/teacher/teacherhome") return pathname === "/teacher/teacherhome";
+
+    let shouldBeActive = pathname.startsWith(item.href);
+    if (item.submenu) {
+      shouldBeActive = item.submenu.some((subItem: any) =>
+        pathname.startsWith(subItem.href)
+      ) || shouldBeActive;
+    }
+    return shouldBeActive;
+  };
+
+  const getActiveSubmenu = (): string | null => {
+    for (const item of navItems) {
+      if (item.submenu) {
+        if (item.submenu.some(subItem => pathname.startsWith(subItem.href))) {
+          return item.label;
+        }
+      }
+    }
+    return null;
+  };
+
+  const activeSubmenu = userToggledSubmenu !== null ? userToggledSubmenu : getActiveSubmenu();
+
+  const handleNavigation = (href: string, e: React.MouseEvent) => {
+    e.preventDefault();
+    router.push(href);
+  }
+
   return (
     <aside className="w-56 border-r border-zinc-200 bg-white flex flex-col">
-      
       <nav className="flex-1 px-4 py-4 text-sm font-medium text-zinc-700 space-y-1">
-        {navItems.map((item) => (
-          <Link
-            key={item.href}
-            href={item.href}
-            className={`flex items-center rounded-lg px-3 py-2 transition-colors duration-150 ${
-              pathname === item.href
-                ? 'bg-zinc-100 text-purple-700 font-semibold'
-                : 'hover:bg-zinc-50'
-            }`}
-          >
-            {getIcon(item.label)}
-            <span className="ml-3">{item.label}</span>
-          </Link>
-        ))}
+        {navItems.map((item) => {
+          const hasSubmenu = !!item.submenu;
+          const isCurrentActive = isActive(item);
+          const isOpen = activeSubmenu === item.label || (hasSubmenu && isCurrentActive);
+
+          if (hasSubmenu) {
+            return (
+              <div key={item.label}>
+                <button
+                  onClick={() => handleToggleSubmenu(item.label)}
+                  className={`flex items-center w-full rounded-lg px-3 py-2 text-left transition-colors duration-150
+                      ${isCurrentActive ? "bg-zinc-100 text-purple-700 font-semibold" : "hover:bg-zinc-50"}
+                    `}
+                >
+                  {getIcon(item.label)}
+                  <span className="ml-3">{item.label}</span>
+                  <ChevronDownIcon className={`w-4 h-4 ml-auto transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} />
+                </button>
+
+                <div
+                  className={`overflow-hidden transition-all duration-300 ease-in-out ${isOpen ? "max-h-40 opacity-100" : "max-h-0 opacity-0"
+                    }`}
+                >
+                  {item.submenu && item.submenu.map((subItem) => {
+                    const subIsActive = pathname.startsWith(subItem.href);
+                    return (
+                      <a
+                        key={subItem.label}
+                        href={subItem.href}
+                        onClick={(e) => handleNavigation(subItem.href, e)}
+                        className={`mt-1 ml-4 flex items-center w-full rounded-lg px-3 py-1.5 text-xs transition-colors duration-150
+                            ${subIsActive ? "bg-zinc-100 text-purple-700 font-semibold" : "hover:bg-zinc-50"}
+                          `}
+                      >
+                        <span className="w-5 h-5 mr-3 flex items-center justify-center">
+                          {subItem.label === "Danh sách bài thi" ? (
+                            <ListBulletIcon className="w-4 h-4" />
+                          ) : subItem.label === "Tạo bài thi" ? (
+                            <PlusCircleIcon className="w-4 h-4" />
+                          ) : (
+                            <DocumentTextIcon className="w-4 h-4" />
+                          )}
+                        </span>
+                        <span>{subItem.label}</span>
+                      </a>
+                    );
+                  })}
+                </div>
+              </div>
+            );
+          }
+
+          return (
+            <a
+              key={item.href}
+              href={item.href}
+              onClick={(e) => handleNavigation(item.href, e)}
+              className={`flex items-center rounded-lg px-3 py-2 transition-colors duration-150 ${isCurrentActive
+                  ? 'bg-zinc-100 text-purple-700 font-semibold'
+                  : 'hover:bg-zinc-50'
+                }`}
+            >
+              {getIcon(item.label)}
+              <span className="ml-3">{item.label}</span>
+            </a>
+          );
+        })}
       </nav>
     </aside>
   );
@@ -124,7 +221,7 @@ const TeacherTopBar = () => {
     <header className="w-full border-b border-zinc-200 bg-white shadow-sm">
       <div className="flex items-center justify-between px-4 py-2 md:py-3">
         <div className="flex items-center">
-            <h1 className="text-xl font-semibold text-zinc-800">Bảng điều khiển Giáo viên</h1>
+          <h1 className="text-xl font-semibold text-zinc-800">Bảng điều khiển Giáo viên</h1>
         </div>
 
         <div className="flex-1"></div>
