@@ -14,7 +14,9 @@ import {
   AcademicCapIcon,
   UserIcon,
   QuestionMarkCircleIcon,
-  ClipboardDocumentListIcon
+  ClipboardDocumentListIcon,
+  ListBulletIcon,
+  PlusCircleIcon
 } from "@heroicons/react/24/outline";
 
 interface NavItem {
@@ -67,11 +69,11 @@ const AdminAuthGuard = ({ children }: AdminAuthGuardProps) => {
     }
 
     if (redirectPath) {
-        hasRedirectedRef.current = true;
-        if (toastMessage) {
-            toast.error(toastMessage);
-        }
-        router.push(redirectPath);
+      hasRedirectedRef.current = true;
+      if (toastMessage) {
+        toast.error(toastMessage);
+      }
+      router.push(redirectPath);
     }
 
   }, [user, isLoading, isAuthenticated, router]);
@@ -114,7 +116,14 @@ const AdminSidebar = () => {
     { name: "Duyệt tài khoản giáo viên", href: "/admin/approve-teachers" },
     { name: "Danh mục", href: "/admin/categories" },
     { name: "Câu hỏi", href: "/admin/questions" },
-    { name: "Quản lý bài thi", href: "/admin/exam-offline" },
+    {
+      name: "Quản lý bài thi",
+      href: "/admin/exams",
+      submenu: [
+        { name: "Danh sách bài thi", href: "/admin/list-exam" },
+        { name: "Tạo bài thi", href: "/admin/exam-offline" },
+      ],
+    },
   ];
 
   // Icon mapping for menu items
@@ -149,7 +158,7 @@ const AdminSidebar = () => {
    */
   const isActive = (item: NavItem): boolean => {
     if (!item || typeof currentPathname !== 'string' || !item.href || typeof item.href !== 'string') {
-        return false;
+      return false;
     }
 
     if (item.href === "/admin") {
@@ -225,9 +234,8 @@ const AdminSidebar = () => {
                   </button>
 
                   <div
-                    className={`overflow-hidden transition-all duration-300 ease-in-out ${
-                      isOpen ? "max-h-40 opacity-100" : "max-h-0 opacity-0"
-                    }`}
+                    className={`overflow-hidden transition-all duration-300 ease-in-out ${isOpen ? "max-h-40 opacity-100" : "max-h-0 opacity-0"
+                      }`}
                   >
                     {item.submenu && item.submenu.map((subItem) => {
                       // Kiểm tra an toàn cho subItem.href
@@ -246,6 +254,12 @@ const AdminSidebar = () => {
                           <span className="w-5 h-5 mr-3 flex items-center justify-center">
                             {subItem.name === "Giáo viên" ? (
                               <AcademicCapIcon className="w-4 h-4" />
+                            ) : subItem.name === "Học sinh" ? (
+                              <UserIcon className="w-4 h-4" />
+                            ) : subItem.name === "Danh sách bài thi" ? (
+                              <ListBulletIcon className="w-4 h-4" />
+                            ) : subItem.name === "Tạo bài thi" ? (
+                              <PlusCircleIcon className="w-4 h-4" />
                             ) : (
                               <UserIcon className="w-4 h-4" />
                             )}
@@ -285,7 +299,7 @@ const AdminTopBar = () => {
     <header className="w-full border-b border-zinc-200 bg-white shadow-sm">
       <div className="flex items-center justify-between px-4 py-2 md:py-3">
         <div className="flex items-center">
-            <h1 className="text-xl font-semibold text-zinc-800">Bảng điều khiển Admin</h1>
+          <h1 className="text-xl font-semibold text-zinc-800">Bảng điều khiển Admin</h1>
         </div>
 
         <div className="flex-1"></div>
