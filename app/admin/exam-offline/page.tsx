@@ -203,7 +203,7 @@ export default function CreateExamPage() {
       // 2. Fetch Questions
       const searchParams = new URLSearchParams({
         categoryId: examCategory,
-        difficulty: examType, 
+        difficulty: examType,
         size: questionCount.toString(),
         page: '0'
       });
