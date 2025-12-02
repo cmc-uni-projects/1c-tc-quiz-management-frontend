@@ -110,8 +110,8 @@ export default function TeacherExamListPage() {
   // Draft: No questions (questionCount == 0)
   const draftExams = sortedExams.filter((x) => x.questionCount === 0);
 
-  // Pending: Has questions (questionCount > 0)
-  const pendingExams = sortedExams.filter((x) => x.questionCount > 0);
+  // Ready: Has questions (questionCount > 0)
+  const readyExams = sortedExams.filter((x) => x.questionCount > 0);
 
   const deleteExam = async (id: number) => {
     if (!confirm("Bạn có chắc chắn muốn xóa bài thi này?")) return;
@@ -147,14 +147,60 @@ export default function TeacherExamListPage() {
           </button>
         </div>
 
-        {/* ========== ĐANG CHỜ (Pending - Has Questions) ========== */}
-        <h2 className="text-xl font-semibold mb-4">Đang chờ</h2>
+        {/* ========== ĐANG TẠO (Draft - No Questions) ========== */}
+        <h2 className="text-xl font-semibold mb-4">Đang tạo</h2>
 
-        {pendingExams.length === 0 ? (
-          <p className="text-gray-500 mb-8">Không có bài thi nào đang chờ.</p>
+        {draftExams.length === 0 ? (
+          <p className="text-gray-500 mb-8">Không có bài thi nháp.</p>
         ) : (
           <div className="flex flex-wrap gap-6 mb-8">
-            {pendingExams.map((exam) => (
+            {draftExams.map((exam) => (
+              <div
+                key={exam.examId}
+                className="w-64 bg-white rounded-lg shadow p-4 relative border border-gray-100 border-l-4 border-l-yellow-400"
+              >
+                <p className="font-semibold text-lg mb-2 truncate" title={exam.title}>{exam.title}</p>
+                <div className="text-sm space-y-1 text-gray-600">
+                  <p className="flex items-center gap-2">
+                    <ClockIcon /> Bắt đầu: {exam.startTime ? new Date(exam.startTime).toLocaleString('vi-VN', { hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit', year: 'numeric' }) : 'N/A'}
+                  </p>
+                  <p className="flex items-center gap-2">
+                    <ClockIcon /> Kết thúc: {exam.endTime ? new Date(exam.endTime).toLocaleString('vi-VN', { hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit', year: 'numeric' }) : 'N/A'}
+                  </p>
+                  <p>⏳ Thời gian: {exam.durationMinutes} phút</p>
+                  <p className="text-yellow-600 font-medium">⚠ Chưa có câu hỏi</p>
+                </div>
+
+                <div className="flex items-center justify-between mt-3">
+                  <button
+                    onClick={() => router.push(`/teacher/update-exam/${exam.examId}`)} // Redirect to add questions
+                    className="text-sm bg-yellow-100 text-yellow-700 px-3 py-1 rounded hover:bg-yellow-200"
+                  >
+                    Tiếp tục tạo
+                  </button>
+                  <button
+                    onClick={() => deleteExam(exam.examId)}
+                    className="text-gray-400 hover:text-red-500"
+                    title="Xóa nháp"
+                  >
+                    <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12" /></svg>
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* ========== DANH SÁCH BÀI THI (Ready - Has Questions) ========== */}
+        <h2 className="text-xl font-semibold mb-4">
+          Danh sách bài thi
+        </h2>
+
+        {readyExams.length === 0 ? (
+          <p className="text-gray-500">Chưa có bài thi nào.</p>
+        ) : (
+          <div className="flex flex-wrap gap-6">
+            {readyExams.map((exam) => (
               <div
                 key={exam.examId}
                 className="w-64 bg-white rounded-lg shadow p-4 relative border border-gray-100"
@@ -176,7 +222,7 @@ export default function TeacherExamListPage() {
                 {/* Trạng thái + nút menu */}
                 <div className="flex items-center justify-between mt-3">
                   <span className="flex-1 text-center text-green-600 font-medium">
-                    Đang chờ
+                    Sẵn sàng
                   </span>
                   <button
                     onClick={() =>
@@ -219,56 +265,6 @@ export default function TeacherExamListPage() {
             ))}
           </div>
         )}
-
-        {/* ========== ĐANG TẠO (Draft - No Questions) ========== */}
-        <h2 className="text-xl font-semibold mt-10 mb-4">Đang tạo</h2>
-
-        {draftExams.length === 0 ? (
-          <p className="text-gray-500">Không có bài thi nháp.</p>
-        ) : (
-          <div className="flex flex-wrap gap-6">
-            {draftExams.map((exam) => (
-              <div
-                key={exam.examId}
-                className="w-64 bg-white rounded-lg shadow p-4 relative border border-gray-100 border-l-4 border-l-yellow-400"
-              >
-                <p className="font-semibold text-lg mb-2 truncate" title={exam.title}>{exam.title}</p>
-                <div className="text-sm space-y-1 text-gray-600">
-                  <p className="flex items-center gap-2">
-                    <ClockIcon /> Bắt đầu: {exam.startTime ? new Date(exam.startTime).toLocaleString('vi-VN', { hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit', year: 'numeric' }) : 'N/A'}
-                  </p>
-                  <p className="flex items-center gap-2">
-                    <ClockIcon /> Kết thúc: {exam.endTime ? new Date(exam.endTime).toLocaleString('vi-VN', { hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit', year: 'numeric' }) : 'N/A'}
-                  </p>
-                  <p>⏳ Thời gian: {exam.durationMinutes} phút</p>
-                  <p className="text-yellow-600 font-medium">⚠ Chưa có câu hỏi</p>
-                </div>
-
-                <div className="flex items-center justify-between mt-3">
-                  <button
-                    onClick={() => router.push(`/teacher/update-exam/${exam.examId}`)} // Redirect to add questions
-                    className="text-sm bg-yellow-100 text-yellow-700 px-3 py-1 rounded hover:bg-yellow-200"
-                  >
-                    Tiếp tục tạo
-                  </button>
-                  <button
-                    onClick={() => deleteExam(exam.examId)}
-                    className="text-gray-400 hover:text-red-500"
-                    title="Xóa nháp"
-                  >
-                    <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12" /></svg>
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-
-        {/* ========== DANH SÁCH BÀI THI (TIÊU ĐỀ THÔI, CHƯA CÓ CARD) ========== */}
-        <h2 className="text-xl font-semibold mt-10 mb-4">
-          Danh sách bài thi
-        </h2>
-        {/* Hiện tại chưa hiển thị card nào ở phần này theo figma */}
         {openShare && (
           <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
             <div className="bg-white w-[520px] rounded-xl p-6 relative">
