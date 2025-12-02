@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { fetchApi } from '@/lib/apiClient'; // Import fetchApi
-import { toastError } from '@/lib/toast'; // Import toastError
+import { toastError, toastSuccess } from '@/lib/toast'; // Import toastError
 
 // TYPES
 
@@ -28,9 +28,9 @@ type Question = {
 
 // API Endpoints
 const ENDPOINTS = {
-    types: '/api/questions/question-types',
-    difficulties: '/api/questions/difficulties',
-    categories: '/api/categories',
+  types: '/questions/question-types',
+  difficulties: '/questions/difficulties',
+  categories: '/categories',
 };
 
 // Helper function to fetch data
@@ -38,7 +38,12 @@ const fetchOptions = async (url: string, fallback: Option[] = []) => {
   try {
     const res = await fetchApi(url);
     // Assuming the API returns an array of objects with 'id' and 'name'
-    const data = Array.isArray(res) ? res.map((item: any) => ({ id: item.id || item.name, name: item.name })) : fallback;
+    const data = Array.isArray(res) ? res.map((item: any) => {
+      if (typeof item === 'string') {
+        return { id: item, name: item };
+      }
+      return { id: item.id || item.name, name: item.name };
+    }) : fallback;
     return data;
   } catch (error) {
     console.error(`Error fetching options from ${url}:`, error);
@@ -52,6 +57,7 @@ const fetchOptions = async (url: string, fallback: Option[] = []) => {
 
 export default function CreateExamPage() {
   // ======= STATE BÀI THI =======
+  const [examCategory, setExamCategory] = useState("");
   const [examTitle, setExamTitle] = useState("");
   const [questionCount, setQuestionCount] = useState<number | "">("");
   const [examType, setExamType] = useState(""); // This will store difficulty ID/name for the exam
@@ -77,7 +83,18 @@ export default function CreateExamPage() {
         fetchOptions(ENDPOINTS.types),
       ]);
       setCategoryOptions(categories);
-      setDifficultyOptions(difficulties);
+
+      const difficultyMap: Record<string, string> = {
+        'Easy': 'Dễ',
+        'Medium': 'Trung bình',
+        'Hard': 'Khó'
+      };
+      const mappedDifficulties = difficulties.map((d: Option) => ({
+        ...d,
+        name: difficultyMap[d.name] || d.name
+      }));
+      setDifficultyOptions(mappedDifficulties);
+
       setQuestionTypeOptions(types);
       setLoadingOptions(false);
     };
@@ -86,40 +103,7 @@ export default function CreateExamPage() {
 
 
   // ======= STATE CÂU HỎI =======
-  const [questions, setQuestions] = useState<Question[]>([
-    {
-      id: 1,
-      title: "",
-      questionType: "",
-      category: "",
-      difficulty: "",
-      answers: [
-        { id: 1, text: "", isCorrect: false },
-        { id: 2, text: "", isCorrect: true }, 
-      ],
-    },
-  ]);
-
-
-  // XỬ LÝ CÂU HỎI
-
-  const addQuestion = () => {
-    const newId = questions.length > 0 ? questions[questions.length - 1].id + 1 : 1;
-    setQuestions([
-      ...questions,
-      {
-        id: newId,
-        title: "",
-        questionType: "",
-        category: "",
-        difficulty: "",
-        answers: [
-          { id: 1, text: "", isCorrect: false },
-          { id: 2, text: "", isCorrect: false },
-        ],
-      },
-    ]);
-  };
+  const [questions, setQuestions] = useState<Question[]>([]);
 
   const removeQuestion = (questionId: number) => {
     if (questions.length === 1) {
@@ -138,9 +122,9 @@ export default function CreateExamPage() {
       questions.map((q) =>
         q.id === qid
           ? {
-              ...q,
-              [field]: value,
-            }
+            ...q,
+            [field]: value,
+          }
           : q
       )
     );
@@ -169,9 +153,9 @@ export default function CreateExamPage() {
       questions.map((q) =>
         q.id === qid
           ? {
-              ...q,
-              answers: q.answers.length > 2 ? q.answers.filter((a) => a.id !== aid) : q.answers, // Keep at least 2 answers
-            }
+            ...q,
+            answers: q.answers.length > 2 ? q.answers.filter((a) => a.id !== aid) : q.answers, // Keep at least 2 answers
+          }
           : q
       )
     );
@@ -182,67 +166,93 @@ export default function CreateExamPage() {
       questions.map((q) =>
         q.id === qid
           ? {
-              ...q,
-              answers: q.answers.map((a) =>
-                a.id === aid ? { ...a, text: value } : a
-              ),
-            }
+            ...q,
+            answers: q.answers.map((a) =>
+              a.id === aid ? { ...a, text: value } : a
+            ),
+          }
           : q
       )
     );
   };
 
-  const setCorrectAnswer = (qid: number, aid: number) => {
-    setQuestions(
-      questions.map((q) =>
-        q.id === qid
-          ? {
-              ...q,
-              answers: q.answers.map((a) => ({
-                ...a,
-                isCorrect: a.id === aid,
-              })),
-            }
-          : q
-      )
-    );
+  const handleCreateExam = async () => {
+    // 1. Validation
+    if (!examTitle.trim()) {
+      toastError("Vui lòng nhập tên bài thi");
+      return;
+    }
+    if (!examCategory) {
+      toastError("Vui lòng chọn danh mục");
+      return;
+    }
+    if (!questionCount || Number(questionCount) <= 0) {
+      toastError("Số lượng câu hỏi phải lớn hơn 0");
+      return;
+    }
+    if (!examType) {
+      toastError("Vui lòng chọn độ khó");
+      return;
+    }
+    if (!duration || Number(duration) <= 0) {
+      toastError("Thời gian làm bài phải lớn hơn 0");
+      return;
+    }
+
+    try {
+      // 2. Fetch Questions
+      const searchParams = new URLSearchParams({
+        categoryId: examCategory,
+        difficulty: examType, 
+        size: questionCount.toString(),
+        page: '0'
+      });
+
+      const questionsRes = await fetchApi(`/questions/search?${searchParams.toString()}`);
+      const questionsFound = questionsRes.content || [];
+
+      if (questionsFound.length === 0) {
+        toastSuccess(`Không tìm thấy câu hỏi nào. Đang tạo bài thi trống...`);
+      } else if (questionsFound.length < Number(questionCount)) {
+        // Silent proceed for partial matches
+      }
+
+      const questionIds = questionsFound.map((q: any) => q.id);
+
+      // 3. Create Exam
+      const examPayload = {
+        title: examTitle,
+        categoryId: examCategory,
+        durationMinutes: Number(duration),
+        startTime: startTime && startDate ? `${startDate}T${startTime}:00` : null,
+        endTime: endTime && endDate ? `${endDate}T${endTime}:00` : null,
+        questionIds: questionIds,
+        description: `Bài thi ${examType} - ${questionsFound.length} câu hỏi`
+      };
+
+      await fetchApi('/exams/create', {
+        method: 'POST',
+        body: examPayload
+      });
+
+      toastSuccess("Tạo bài thi thành công!");
+      // Reset form or redirect? For now just notify.
+
+    } catch (error: any) {
+      console.error("Error creating exam:", error);
+      toastError(error.message || "Có lỗi xảy ra khi tạo bài thi");
+    }
   };
 
   return (
     <div className="min-h-screen flex bg-[#F5F5F5] text-gray-900">
 
-      {/* ====================== SIDEBAR ====================== */}
-      <aside className="w-56 bg-[#F8F5FB] border-r border-gray-200 flex flex-col">
-        <nav className="flex-1 py-4 text-sm">
-          <ul className="space-y-1">
-            <li>
-              <a href="#" className="block px-6 py-2 hover:bg-white">
-                Trang chủ
-              </a>
-            </li>
-            <li>
-              <a href="#" className="block px-6 py-2 hover:bg-white">
-                Danh mục câu hỏi
-              </a>
-            </li>
-            <li>
-              <a href="#" className="block px-6 py-2 hover:bg-white">
-                Quản lý câu hỏi
-              </a>
-            </li>
-            <li>
-              <a href="#" className="block px-6 py-2 hover:bg-white">
-                Quản lý bài thi
-              </a>
-            </li>
-          </ul>
-        </nav>
-      </aside>
+
 
       {/* ====================== MAIN ====================== */}
       <div className="flex-1 flex flex-col">
 
-        
+
 
         {/* ====================== CONTENT ====================== */}
         <main className="flex-1 overflow-y-auto px-10 py-8">
@@ -287,6 +297,21 @@ export default function CreateExamPage() {
                 >
                   <option value="">{loadingOptions ? "Đang tải..." : "Chọn độ khó"}</option>
                   {difficultyOptions.map(opt => (
+                    <option key={opt.id} value={opt.id}>{opt.name}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm mb-1">Danh mục bài thi</label>
+                <select
+                  value={examCategory}
+                  onChange={(e) => setExamCategory(e.target.value)}
+                  className="w-full border px-3 py-2 rounded-md bg-white"
+                  disabled={loadingOptions}
+                >
+                  <option value="">{loadingOptions ? "Đang tải..." : "Chọn danh mục"}</option>
+                  {categoryOptions.map(opt => (
                     <option key={opt.id} value={opt.id}>{opt.name}</option>
                   ))}
                 </select>
@@ -356,130 +381,7 @@ export default function CreateExamPage() {
             </div>
           </section>
 
-          {/* ================== THÊM CÂU HỎI ================== */}
-          <section className="bg-white rounded-2xl shadow p-8">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold">Thêm câu hỏi</h3>
-              <button
-                onClick={addQuestion}
-                className="px-5 py-2 bg-[#A53AEC] text-white rounded-full"
-              >
-                Thêm câu hỏi
-              </button>
-            </div>
 
-            <div className="space-y-6">
-              {questions.map((q, index) => (
-                <div key={q.id} className="p-4">
-
-                  {/* Header */}
-                  {/* Input câu hỏi */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
-                    <input
-                      type="text"
-                      placeholder="Nhập tiêu đề..."
-                      value={q.title}
-                      onChange={(e) =>
-                        updateQuestionField(q.id, "title", e.target.value)
-                      }
-                      className="border px-3 py-2 rounded-md"
-                    />
-
-                    <select
-                      value={q.questionType}
-                      onChange={(e) =>
-                        updateQuestionField(q.id, "questionType", e.target.value)
-                      }
-                      className="border px-3 py-2 rounded-md bg-white"
-                      disabled={loadingOptions}
-                    >
-                      <option value="">{loadingOptions ? "Đang tải..." : "Loại câu hỏi"}</option>
-                      {questionTypeOptions.map(opt => (
-                        <option key={opt.id} value={opt.id}>{opt.name}</option>
-                      ))}
-                    </select>
-                  </div>
-
-                  {/* Danh mục + độ khó */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-4">
-                    <select
-                      value={q.category}
-                      onChange={(e) =>
-                        updateQuestionField(q.id, "category", e.target.value)
-                      }
-                      className="border px-3 py-2 rounded-md bg-white"
-                      disabled={loadingOptions}
-                    >
-                      <option value="">{loadingOptions ? "Đang tải..." : "Danh mục câu hỏi"}</option>
-                      {categoryOptions.map(opt => (
-                        <option key={opt.id} value={opt.id}>{opt.name}</option>
-                      ))}
-                    </select>
-
-                    <select
-                      value={q.difficulty}
-                      onChange={(e) =>
-                        updateQuestionField(q.id, "difficulty", e.target.value)
-                      }
-                      className="border px-3 py-2 rounded-md bg-white"
-                      disabled={loadingOptions}
-                    >
-                      <option value="">{loadingOptions ? "Đang tải..." : "Độ khó"}</option>
-                      {difficultyOptions.map(opt => (
-                        <option key={opt.id} value={opt.id}>{opt.name}</option>
-                      ))}
-                    </select>
-                  </div>
-
-                  {/* Danh sách đáp án */}
-                  <div className="space-y-2 mb-4">
-                    {q.answers.map((a) => (
-                      <div key={a.id} className="flex items-center gap-2">
-                        <input
-                          type="radio"
-                          checked={a.isCorrect}
-                          onChange={() => setCorrectAnswer(q.id, a.id)}
-                        />
-
-                        <input
-                          type="text"
-                          value={a.text}
-                          placeholder={`Đáp án ${a.id}`}
-                          onChange={(e) =>
-                            updateAnswerText(q.id, a.id, e.target.value)
-                          }
-                          className="flex-1 border px-3 py-2 rounded-md"
-                        />
-
-                        <button
-                          onClick={() => removeAnswer(q.id, a.id)}
-                          className="p-2 hover:bg-gray-200 rounded-md"
-                        >
-                          🗑
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-
-                  {/* Buttons */}
-                  <div className="flex gap-3">
-                    <button
-                      onClick={() => addAnswer(q.id)}
-                      className="px-4 py-1.5 border border-purple-500 text-purple-600 rounded-md"
-                    >
-                      Thêm đáp án
-                    </button>
-                    <button
-                      onClick={() => removeQuestion(q.id)}
-                      className="px-4 py-1.5 border border-red-500 text-red-600 rounded-md"
-                    >
-                      Xóa câu hỏi
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </section>
 
           {/* NÚT LƯU – ĐĂNG BÀI */}
           <div className="mt-6 flex justify-end gap-4">
@@ -487,7 +389,10 @@ export default function CreateExamPage() {
               Lưu
             </button>
 
-            <button className="px-6 py-2 bg-purple-700 text-white rounded-md">
+            <button
+              onClick={handleCreateExam}
+              className="px-6 py-2 bg-purple-700 text-white rounded-md"
+            >
               Đăng bài
             </button>
           </div>
