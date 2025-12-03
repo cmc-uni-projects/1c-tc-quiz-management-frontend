@@ -107,6 +107,26 @@ function DifficultyBadge({ difficulty }) {
   );
 }
 
+function VisibilityBadge({ visibility }) {
+  const vis = visibility?.toUpperCase();
+  let colorClass = "bg-gray-100 text-gray-800";
+
+  switch (vis) {
+    case "PUBLIC":
+      colorClass = "bg-sky-100 text-sky-800";
+      break;
+    case "PRIVATE":
+      colorClass = "bg-orange-100 text-orange-800";
+      break;
+  }
+
+  return (
+    <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-medium ${colorClass}`}>
+      {vis ? sentenceCase(vis.toLowerCase()) : "N/A"}
+    </span>
+  );
+}
+
 /* --- Modal component for Create/Edit (internal) --- */
 function QuestionModal({ open, onClose, onSubmit, categories = [], editing = null }) {
   const [title, setTitle] = useState(editing?.title || "");
@@ -114,6 +134,7 @@ function QuestionModal({ open, onClose, onSubmit, categories = [], editing = nul
   const [difficulty, setDifficulty] = useState(editing?.difficulty || "");
   const [answers, setAnswers] = useState(editing?.answers || [{ text: "", correct: false }]);
   const [categoryId, setCategoryId] = useState(editing?.categoryId || "");
+  const [visibility, setVisibility] = useState(editing?.visibility || "PRIVATE");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -124,6 +145,7 @@ function QuestionModal({ open, onClose, onSubmit, categories = [], editing = nul
     setDifficulty(editing?.difficulty || "");
     setAnswers(editing?.answers || [{ text: "", correct: false }]);
     setCategoryId(editing?.categoryId || "");
+    setVisibility(editing?.visibility || "PRIVATE");
     setError("");
   }, [editing, open]);
 
@@ -209,6 +231,7 @@ function QuestionModal({ open, onClose, onSubmit, categories = [], editing = nul
         type,
         difficulty,
         categoryId,
+        visibility,
         answers: validAnswers,
         correctAnswer: validAnswers.find(ans => ans.correct)?.text || "",
       };
@@ -311,6 +334,14 @@ function QuestionModal({ open, onClose, onSubmit, categories = [], editing = nul
             </select>
           </div>
 
+          <div>
+            <label className="text-sm font-medium block mb-1">Visibility</label>
+            <select value={visibility} onChange={(e) => setVisibility(e.target.value)} className="w-full px-3 py-2 border rounded-lg">
+                <option value="PRIVATE">Private</option>
+                <option value="PUBLIC">Public</option>
+            </select>
+          </div>
+
           {error && <div className="text-red-600 text-sm font-medium">{error}</div>}
 
           <div className="flex justify-end gap-3 pt-2">
@@ -335,6 +366,7 @@ export default function QuestionsPage() {
   const [difficultyFilter, setDifficultyFilter] = useState("");
   const [typeFilter, setTypeFilter] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("");
+  const [visibilityFilter, setVisibilityFilter] = useState("");
 
   const [page, setPage] = useState(0);
   const [totalPages, setTotalPages] = useState(1);
@@ -360,7 +392,7 @@ export default function QuestionsPage() {
   }, []);
 
   useEffect(() => {
-    fetchQuestions(page, keyword, difficultyFilter, typeFilter, categoryFilter);
+    fetchQuestions(page, keyword, difficultyFilter, typeFilter, categoryFilter, visibilityFilter);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [page]);
 
@@ -374,7 +406,7 @@ export default function QuestionsPage() {
     }
   };
 
-  const fetchQuestions = useCallback(async (pageParam = 0, kw = "", diff = "", type = "", cat = "") => {
+  const fetchQuestions = useCallback(async (pageParam = 0, kw = "", diff = "", type = "", cat = "", vis = "") => {
     try {
       setLoading(true);
       const params = new URLSearchParams();
@@ -385,6 +417,7 @@ export default function QuestionsPage() {
       if (diff) params.set("difficulty", diff);
       if (type) params.set("type", type);
       if (cat) params.set("categoryId", cat);
+      if (vis) params.set("visibility", vis);
 
       const url = `${API_URL}/questions/search?${params.toString()}`;
       const data = await fetchApi(url);
@@ -411,7 +444,7 @@ export default function QuestionsPage() {
   /* --- Handlers for filters/search --- */
   const handleSearch = () => {
     setPage(0);
-    fetchQuestions(0, keyword, difficultyFilter, typeFilter, categoryFilter);
+    fetchQuestions(0, keyword, difficultyFilter, typeFilter, categoryFilter, visibilityFilter);
   };
 
   const filtered = useMemo(() => {
@@ -454,7 +487,7 @@ export default function QuestionsPage() {
           body: payload,
         });
         toast.success("Tạo câu hỏi thành công");
-        await fetchQuestions(0, keyword, difficultyFilter, typeFilter, categoryFilter);
+        await fetchQuestions(0, keyword, difficultyFilter, typeFilter, categoryFilter, visibilityFilter);
       }
       setModalOpen(false);
       setEditingQuestion(null);
@@ -538,6 +571,12 @@ export default function QuestionsPage() {
                   <option value="">Chọn danh mục</option>
                   {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
                 </select>
+
+                <select value={visibilityFilter} onChange={(e) => setVisibilityFilter(e.target.value)} className="px-4 py-2 rounded-xl border border-gray-200 text-gray-800 text-sm">
+                  <option value="">All Visibilities</option>
+                  <option value="PRIVATE">Private</option>
+                  <option value="PUBLIC">Public</option>
+                </select>
               </div>
 
               <div className="flex justify-end gap-2">
@@ -569,6 +608,7 @@ export default function QuestionsPage() {
                   <th className="px-4 py-3 text-left">Tiêu đề</th>
                   <th className="px-4 py-3 text-left w-40">Loại câu hỏi</th>
                   <th className="px-4 py-3 text-left w-28">Độ khó</th>
+                  <th className="px-4 py-3 text-left w-28">Visibility</th>
                   <th className="px-4 py-3 text-left hidden sm:table-cell">Đáp án</th>
                   <th className="px-4 py-3 text-left hidden md:table-cell">Người tạo</th>
                   <th className="px-4 py-3 text-left w-40 hidden lg:table-cell">Danh mục</th>
@@ -578,9 +618,9 @@ export default function QuestionsPage() {
 
               <tbody className="divide-y divide-gray-100">
                 {loading && filtered.length === 0 ? (
-                  <tr><td colSpan={8} className="px-4 py-10 text-center text-gray-500">Đang tải dữ liệu...</td></tr>
+                  <tr><td colSpan={9} className="px-4 py-10 text-center text-gray-500">Đang tải dữ liệu...</td></tr>
                 ) : filtered.length === 0 ? (
-                  <tr><td colSpan={8} className="px-4 py-10 text-center text-gray-500">Không tìm thấy câu hỏi phù hợp</td></tr>
+                  <tr><td colSpan={9} className="px-4 py-10 text-center text-gray-500">Không tìm thấy câu hỏi phù hợp</td></tr>
                 ) : (
                   filtered.map((q, idx) => (
                     <tr key={q.id} className="hover:bg-purple-50/50 transition">
@@ -588,6 +628,7 @@ export default function QuestionsPage() {
                       <td className="px-4 py-3 font-medium text-gray-900 max-w-xs overflow-hidden text-ellipsis whitespace-nowrap">{q.title}</td>
                       <td className="px-4 py-3">{sentenceCase(q.type?.replaceAll("_", " ") || "")}</td>
                       <td className="px-4 py-3"><DifficultyBadge difficulty={q.difficulty} /></td>
+                      <td className="px-4 py-3"><VisibilityBadge visibility={q.visibility} /></td>
                       <td className="px-4 py-3 hidden sm:table-cell">{q.correctAnswer || q.answer}</td>
                       <td className="px-4 py-3 hidden md:table-cell">{q.createdBy || "N/A"}</td>
                       <td className="px-4 py-3 hidden lg:table-cell">{q.categoryName || ""}</td>
