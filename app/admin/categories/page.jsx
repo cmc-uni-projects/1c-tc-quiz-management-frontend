@@ -336,19 +336,21 @@ export default function CategoriesPage() {
       }
     }).then((result) => {
       if (result.isConfirmed) {
-        try {
-          setLoading(true);
-          fetchApi(`${API_URL}/categories/delete/${id}`, { method: "DELETE" });
+        (async () => {
+          try {
+            setLoading(true);
+            await fetchApi(`${API_URL}/categories/delete/${id}`, { method: "DELETE" });
 
-          // Xóa khỏi local state
-          setCategories((prev) => prev.filter((c) => c.id !== id));
-          toast.success("Đã xóa danh mục thành công");
-        } catch (e) {
-          console.error(e);
-          toast.error(e?.message || "Không thể xóa danh mục");
-        } finally {
-          setLoading(false);
-        }
+            // Xóa khỏi local state
+            setCategories((prev) => prev.filter((c) => c.id !== id));
+            toast.success("Đã xóa danh mục thành công");
+          } catch (e) {
+            console.error(e);
+            toast.error(e?.message || "Không thể xóa danh mục");
+          } finally {
+            setLoading(false);
+          }
+        })();
       }
     });
   };
