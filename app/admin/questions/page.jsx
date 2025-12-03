@@ -366,7 +366,7 @@ export default function QuestionsPage() {
 
   const fetchCategories = async () => {
     try {
-      const data = await fetchApi(`${API_URL}/categories`);
+      const data = await fetchApi(`${API_URL}/categories/all`);
       const content = Array.isArray(data) ? data : data?.content || [];
       setCategories(content);
     } catch (e) {
@@ -429,7 +429,12 @@ export default function QuestionsPage() {
 
   /* --- Open modal edit --- */
   const openEdit = (q) => {
-    setEditingQuestion(q);
+    const category = categories.find(c => c.name === q.categoryName);
+    const questionWithCategoryId = {
+        ...q,
+        categoryId: category ? category.id : null
+    };
+    setEditingQuestion(questionWithCategoryId);
     setModalOpen(true);
   };
 
@@ -441,7 +446,7 @@ export default function QuestionsPage() {
           method: "PATCH",
           body: payload, // Use full payload with answers array
         });
-        setQuestions(prev => prev.map(p => p.id === editingQuestion.id ? { ...p, ...payload, answer: payload.correctAnswer } : p));
+        setQuestions(prev => prev.map(p => p.id === editingQuestion.id ? { ...p, ...payload, answers: payload.answers } : p));
         toast.success("Cập nhật câu hỏi thành công");
       } else {
         const created = await fetchApi(`${API_URL}/questions/create`, {
