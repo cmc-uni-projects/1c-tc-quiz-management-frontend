@@ -30,7 +30,7 @@ type Question = {
 const ENDPOINTS = {
   types: '/questions/question-types',
   difficulties: '/questions/difficulties',
-  categories: '/categories',
+  categories: '/categories/all',
 };
 
 // Helper function to fetch data
