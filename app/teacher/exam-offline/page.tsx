@@ -145,7 +145,8 @@ export default function CreateExamPage() {
         startTime: startTime && startDate ? `${startDate}T${startTime}:00` : null,
         endTime: endTime && endDate ? `${endDate}T${endTime}:00` : null,
         questionIds: questionIds,
-        description: `Bài thi ${examType}`
+        description: `Bài thi ${examType}`,
+        examLevel: examType.toUpperCase() // Map to backend Enum: EASY, MEDIUM, HARD
       };
 
       await fetchApi('/exams/create', {

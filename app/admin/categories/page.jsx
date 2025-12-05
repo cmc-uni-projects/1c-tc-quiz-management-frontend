@@ -137,10 +137,8 @@ export default function CategoriesPage() {
   const creatorBadgeClass = (role) => {
     switch ((role || "").toUpperCase()) {
       case "ADMIN":
-        // Admin: sắc hồng/tím nổi bật
         return "bg-fuchsia-100 text-fuchsia-700 border border-fuchsia-200";
       case "TEACHER":
-        // Giáo viên: sắc xanh lá dễ phân biệt
         return "bg-emerald-100 text-emerald-700 border border-emerald-200";
       default:
         return "bg-gray-100 text-gray-700 border border-gray-200";
@@ -174,7 +172,6 @@ export default function CategoriesPage() {
         });
         url = `${API_URL}/categories/search?${params.toString()}`;
       } else {
-        // Nếu có keyword, giả định tìm kiếm theo 'name'
         const params = new URLSearchParams({
           name: q,
           page: String(pageParam),
@@ -199,7 +196,7 @@ export default function CategoriesPage() {
         setTotalPages(1);
         setTotalElements(0);
       }
-      setPage(pageParam); // Set lại trang hiện tại (đã được fetch)
+      setPage(pageParam); 
 
     } catch (e) {
       console.error("Error fetching categories:", e);
@@ -207,7 +204,7 @@ export default function CategoriesPage() {
     } finally {
       setLoading(false);
     }
-  }, [keyword, page]); // Thêm `page` và `keyword` vào dependencies để tránh lỗi lint
+  }, [keyword, page]);
 
   // Load khi page thay đổi
   useEffect(() => {
@@ -217,15 +214,14 @@ export default function CategoriesPage() {
   // Tìm kiếm: reset về trang 0 và gọi lại fetchCategories với keyword hiện tại
   const handleSearch = () => {
     if (page === 0) {
-      fetchCategories(0, keyword); // Nếu đang ở trang 0 thì fetch luôn
+      fetchCategories(0, keyword); 
     } else {
-      setPage(0); // Nếu không ở trang 0 thì setPage(0), useEffect sẽ trigger fetchCategories
+      setPage(0); 
     }
   };
 
   const filtered = useMemo(() => {
     // Vẫn giữ lọc client để người dùng gõ thấy hiệu ứng trong danh sách trang hiện tại
-    // Đây chỉ là lọc hiển thị, dữ liệu thực được lọc/phân trang từ backend (fetchCategories)
     const kw = keyword.trim().toLowerCase();
     if (!kw) return categories;
     return categories.filter((c) => c.name?.toLowerCase().includes(kw));
@@ -294,7 +290,7 @@ export default function CategoriesPage() {
         // Create
         const body = { name: form.name.trim(), description: form.description?.trim() || "" };
         // API call to create, note: the response may contain the new object
-        await fetchApi(`${API_URL}/categories`, {
+        await fetchApi(`${API_URL}/categories/create`, {
           method: "POST",
           body: body,
         });
