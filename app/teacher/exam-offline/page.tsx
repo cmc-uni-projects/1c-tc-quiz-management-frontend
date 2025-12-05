@@ -71,7 +71,7 @@ export default function CreateExamPage() {
       setLoadingOptions(true);
       try {
         const [categoriesRes, difficultiesRes] = await Promise.all([
-          fetchApi('/categories'),
+          fetchApi('/categories/all'),
           fetchApi('/questions/difficulties'),
         ]);
 
