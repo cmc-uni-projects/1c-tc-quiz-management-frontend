@@ -30,6 +30,7 @@ interface ExamFormValues {
     title: string;
     durationMinutes: number;
     categoryId: string | number;
+    examLevel: string; // NEW: Exam Difficulty
     startTime: string; // HH:mm
     startDate: string; // YYYY-MM-DD
     endTime: string;   // HH:mm
@@ -42,6 +43,11 @@ interface Category {
     name: string;
 }
 
+interface Option {
+    id: string;
+    name: string;
+}
+
 // ===== VALIDATION SCHEMA =====
 const validationSchema = Yup.object().shape({
     title: Yup.string().required("Tiêu đề bài thi là bắt buộc"),
@@ -49,6 +55,7 @@ const validationSchema = Yup.object().shape({
         .required("Thời gian làm bài là bắt buộc")
         .min(1, "Thời gian phải lớn hơn 0"),
     categoryId: Yup.string().required("Danh mục là bắt buộc"),
+    examLevel: Yup.string().required("Độ khó là bắt buộc"), // NEW Validation
     questions: Yup.array().of(
         Yup.object().shape({
             title: Yup.string().required("Tiêu đề câu hỏi là bắt buộc"),
@@ -64,7 +71,7 @@ const validationSchema = Yup.object().shape({
                 .test(
                     "one-correct",
                     "Phải có ít nhất 1 đáp án đúng",
-                    (answers) => answers?.some((a) => a.isCorrect) || false
+                    (answers) => answers?.some((a: any) => a.isCorrect) || false
                 ),
         })
     ),
@@ -75,6 +82,7 @@ export default function AdminUpdateExamPage() {
     const router = useRouter();
     const [loading, setLoading] = useState(true);
     const [categories, setCategories] = useState<Category[]>([]);
+    const [difficultyOptions, setDifficultyOptions] = useState<Option[]>([]);
     const [initialValues, setInitialValues] = useState<ExamFormValues | null>(null);
 
     // Library State
@@ -89,9 +97,28 @@ export default function AdminUpdateExamPage() {
     useEffect(() => {
         const fetchData = async () => {
             try {
-                // 1. Fetch Categories
-                const cats = await fetchApi("/categories");
+                // 1. Fetch Categories & Difficulties
+                const [cats, difficulties] = await Promise.all([
+                    fetchApi("/categories/all"),
+                    fetchApi("/questions/difficulties")
+                ]);
                 setCategories(cats);
+
+                // Map difficulties (assuming response is array of strings or objects)
+                const difficultyMap: Record<string, string> = {
+                    'Easy': 'Dễ',
+                    'Medium': 'Trung bình',
+                    'Hard': 'Khó',
+                    'EASY': 'Dễ',
+                    'MEDIUM': 'Trung bình',
+                    'HARD': 'Khó'
+                };
+
+                const formattedDifficulties = Array.isArray(difficulties) ? difficulties.map((d: any) => {
+                    const val = typeof d === 'string' ? d : d.name;
+                    return { id: val, name: difficultyMap[val] || val };
+                }) : [];
+                setDifficultyOptions(formattedDifficulties);
 
                 // 2. Fetch Exam Details
                 const exam = await fetchApi(`/exams/get/${id}`);
@@ -109,12 +136,12 @@ export default function AdminUpdateExamPage() {
                     answers: eq.question.answers.map((a: any) => ({
                         id: a.id,
                         text: a.text,
-                        isCorrect: a.correct || false, // Note: backend might return 'correct' or 'isCorrect' depending on DTO
+                        isCorrect: a.correct || false,
                     })),
                     isReadOnly: true
                 })) || [];
 
-                // If no questions, add a default empty one
+                // Empty default if needed... omitted for brevity or keeping original logic
                 if (mappedQuestions.length === 0) {
                     mappedQuestions.push({
                         title: "",
@@ -133,6 +160,7 @@ export default function AdminUpdateExamPage() {
                     title: exam.title,
                     durationMinutes: exam.durationMinutes,
                     categoryId: exam.category?.id || "",
+                    examLevel: exam.examLevel || "", // Map examLevel
                     startTime: startTimeObj.toTimeString().slice(0, 5),
                     startDate: startTimeObj.toISOString().slice(0, 10),
                     endTime: endTimeObj.toTimeString().slice(0, 5),
@@ -213,13 +241,13 @@ export default function AdminUpdateExamPage() {
                     title: q.title,
                     type: q.type,
                     difficulty: q.difficulty,
-                    categoryId: q.categoryId || values.categoryId, // Fallback to exam category
+                    categoryId: q.categoryId || values.categoryId,
                     answers: q.answers.map((a) => ({
-                        id: a.id, // Include ID if updating
+                        id: a.id,
                         text: a.text,
                         correct: a.isCorrect,
                     })),
-                    correctAnswer: "", // Optional/Legacy?
+                    correctAnswer: "",
                 };
 
                 let savedQ;
@@ -231,15 +259,12 @@ export default function AdminUpdateExamPage() {
                     });
                 } else {
                     // Create new
-                    // For creation, we might need 'createdBy' if backend requires it, 
-                    // but usually backend gets it from token.
                     savedQ = await fetchApi("/questions/create", {
                         method: "POST",
-                        body: JSON.stringify({ ...payload, createdBy: "Admin" }), // Changed to Admin
+                        body: JSON.stringify({ ...payload, createdBy: "Admin" }),
                     });
                 }
 
-                // Backend returns QuestionResponseDto which has 'id'
                 if (savedQ && savedQ.id) {
                     questionIds.push(savedQ.id);
                 }
@@ -250,10 +275,11 @@ export default function AdminUpdateExamPage() {
                 title: values.title,
                 durationMinutes: values.durationMinutes,
                 categoryId: values.categoryId,
+                examLevel: values.examLevel, // Include examLevel
                 startTime: `${values.startDate}T${values.startTime}:00`,
                 endTime: `${values.endDate}T${values.endTime}:00`,
                 questionIds: questionIds,
-                description: "", // Optional
+                description: "",
             };
 
             await fetchApi(`/exams/edit/${id}`, {
@@ -262,7 +288,7 @@ export default function AdminUpdateExamPage() {
             });
 
             toastSuccess("Cập nhật bài thi thành công!");
-            router.push("/admin/list-exam"); // Redirect to Admin list
+            router.push("/admin/list-exam");
         } catch (error: any) {
             console.error("Submit error:", error);
             toastError(error.message || "Có lỗi xảy ra khi lưu bài thi.");
@@ -316,6 +342,24 @@ export default function AdminUpdateExamPage() {
                                         ))}
                                     </Field>
                                     <ErrorMessage name="categoryId" component="div" className="text-red-500 text-xs mt-1" />
+                                </div>
+
+                                {/* Loại đề thi / Difficulty */}
+                                <div>
+                                    <label className="block text-sm font-medium mb-1">Loại đề thi</label>
+                                    <Field
+                                        as="select"
+                                        name="examLevel"
+                                        className="w-full border px-3 py-2 rounded-md bg-white"
+                                    >
+                                        <option value="">Chọn độ khó</option>
+                                        {difficultyOptions.map((opt) => (
+                                            <option key={opt.id} value={opt.id}>
+                                                {opt.name}
+                                            </option>
+                                        ))}
+                                    </Field>
+                                    <ErrorMessage name="examLevel" component="div" className="text-red-500 text-xs mt-1" />
                                 </div>
 
                                 {/* Thời gian làm bài */}

@@ -30,6 +30,7 @@ interface ExamFormValues {
     title: string;
     durationMinutes: number;
     categoryId: string | number;
+    examLevel: string; // NEW: Exam Difficulty
     startTime: string; // HH:mm
     startDate: string; // YYYY-MM-DD
     endTime: string;   // HH:mm
@@ -42,6 +43,11 @@ interface Category {
     name: string;
 }
 
+interface Option {
+    id: string;
+    name: string;
+}
+
 // ===== VALIDATION SCHEMA =====
 const validationSchema = Yup.object().shape({
     title: Yup.string().required("Tiêu đề bài thi là bắt buộc"),
@@ -49,6 +55,7 @@ const validationSchema = Yup.object().shape({
         .required("Thời gian làm bài là bắt buộc")
         .min(1, "Thời gian phải lớn hơn 0"),
     categoryId: Yup.string().required("Danh mục là bắt buộc"),
+    examLevel: Yup.string().required("Độ khó là bắt buộc"), // NEW Validation
     questions: Yup.array().of(
         Yup.object().shape({
             title: Yup.string().required("Tiêu đề câu hỏi là bắt buộc"),
@@ -64,7 +71,7 @@ const validationSchema = Yup.object().shape({
                 .test(
                     "one-correct",
                     "Phải có ít nhất 1 đáp án đúng",
-                    (answers) => answers?.some((a) => a.isCorrect) || false
+                    (answers) => answers?.some((a: any) => a.isCorrect) || false
                 ),
         })
     ),
@@ -75,6 +82,7 @@ export default function UpdateExamPage() {
     const router = useRouter();
     const [loading, setLoading] = useState(true);
     const [categories, setCategories] = useState<Category[]>([]);
+    const [difficultyOptions, setDifficultyOptions] = useState<Option[]>([]);
     const [initialValues, setInitialValues] = useState<ExamFormValues | null>(null);
 
     // Library State
@@ -89,9 +97,28 @@ export default function UpdateExamPage() {
     useEffect(() => {
         const fetchData = async () => {
             try {
-                // 1. Fetch Categories
-                const cats = await fetchApi("/categories");
+                // 1. Fetch Categories & Difficulties
+                const [cats, difficulties] = await Promise.all([
+                    fetchApi("/categories/all"),
+                    fetchApi("/questions/difficulties")
+                ]);
                 setCategories(cats);
+
+                // Map difficulties
+                const difficultyMap: Record<string, string> = {
+                    'Easy': 'Dễ',
+                    'Medium': 'Trung bình',
+                    'Hard': 'Khó',
+                    'EASY': 'Dễ',
+                    'MEDIUM': 'Trung bình',
+                    'HARD': 'Khó'
+                };
+
+                const formattedDifficulties = Array.isArray(difficulties) ? difficulties.map((d: any) => {
+                    const val = typeof d === 'string' ? d : d.name;
+                    return { id: val, name: difficultyMap[val] || val };
+                }) : [];
+                setDifficultyOptions(formattedDifficulties);
 
                 // 2. Fetch Exam Details
                 const exam = await fetchApi(`/exams/get/${id}`);
@@ -109,12 +136,12 @@ export default function UpdateExamPage() {
                     answers: eq.question.answers.map((a: any) => ({
                         id: a.id,
                         text: a.text,
-                        isCorrect: a.correct || false, // Note: backend might return 'correct' or 'isCorrect' depending on DTO
+                        isCorrect: a.correct || false,
                     })),
                     isReadOnly: true
                 })) || [];
 
-                // If no questions, add a default empty one
+                // Empty default
                 if (mappedQuestions.length === 0) {
                     mappedQuestions.push({
                         title: "",
@@ -133,6 +160,7 @@ export default function UpdateExamPage() {
                     title: exam.title,
                     durationMinutes: exam.durationMinutes,
                     categoryId: exam.category?.id || "",
+                    examLevel: exam.examLevel || "", // Map examLevel
                     startTime: startTimeObj.toTimeString().slice(0, 5),
                     startDate: startTimeObj.toISOString().slice(0, 10),
                     endTime: endTimeObj.toTimeString().slice(0, 5),
@@ -160,7 +188,7 @@ export default function UpdateExamPage() {
             if (searchType) params.append("type", searchType);
 
             const data = await fetchApi(`/questions/search?${params.toString()}`);
-            // Map API response to Question interface
+
             const mapped = data.content.map((q: any) => {
                 const mappedAnswers = q.answers.map((a: any) => ({
                     id: a.id,
@@ -168,7 +196,7 @@ export default function UpdateExamPage() {
                     isCorrect: a.correct
                 }));
 
-                // Fallback: If no answer is marked correct, check q.correctAnswer
+                // Fallback
                 if (!mappedAnswers.some((a: any) => a.isCorrect) && q.correctAnswer) {
                     mappedAnswers.forEach((a: any) => {
                         if (a.text === q.correctAnswer || a.text.toLowerCase() === q.correctAnswer.toLowerCase()) {
@@ -183,10 +211,10 @@ export default function UpdateExamPage() {
                     type: q.type,
                     difficulty: q.difficulty,
                     categoryId: q.category?.id,
-                    categoryName: q.categoryName || q.category?.name, // Map category name
-                    createdBy: q.createdBy, // Map creator
+                    categoryName: q.categoryName || q.category?.name,
+                    createdBy: q.createdBy,
                     answers: mappedAnswers,
-                    isReadOnly: true // Mark as read-only
+                    isReadOnly: true
                 };
             });
             setLibraryQuestions(mapped);
@@ -203,7 +231,6 @@ export default function UpdateExamPage() {
 
             // 1. Process Questions (Create/Update)
             for (const q of values.questions) {
-                // If ReadOnly, just push ID and skip update
                 if (q.isReadOnly && q.id) {
                     questionIds.push(q.id);
                     continue;
@@ -213,13 +240,13 @@ export default function UpdateExamPage() {
                     title: q.title,
                     type: q.type,
                     difficulty: q.difficulty,
-                    categoryId: q.categoryId || values.categoryId, // Fallback to exam category
+                    categoryId: q.categoryId || values.categoryId,
                     answers: q.answers.map((a) => ({
-                        id: a.id, // Include ID if updating
+                        id: a.id,
                         text: a.text,
                         correct: a.isCorrect,
                     })),
-                    correctAnswer: "", // Optional/Legacy?
+                    correctAnswer: "",
                 };
 
                 let savedQ;
@@ -231,15 +258,12 @@ export default function UpdateExamPage() {
                     });
                 } else {
                     // Create new
-                    // For creation, we might need 'createdBy' if backend requires it, 
-                    // but usually backend gets it from token.
                     savedQ = await fetchApi("/questions/create", {
                         method: "POST",
-                        body: JSON.stringify({ ...payload, createdBy: "Teacher" }), // Placeholder
+                        body: JSON.stringify({ ...payload, createdBy: "Teacher" }),
                     });
                 }
 
-                // Backend returns QuestionResponseDto which has 'id'
                 if (savedQ && savedQ.id) {
                     questionIds.push(savedQ.id);
                 }
@@ -250,10 +274,11 @@ export default function UpdateExamPage() {
                 title: values.title,
                 durationMinutes: values.durationMinutes,
                 categoryId: values.categoryId,
+                examLevel: values.examLevel, // Include examLevel
                 startTime: `${values.startDate}T${values.startTime}:00`,
                 endTime: `${values.endDate}T${values.endTime}:00`,
                 questionIds: questionIds,
-                description: "", // Optional
+                description: "",
             };
 
             await fetchApi(`/exams/edit/${id}`, {
@@ -316,6 +341,24 @@ export default function UpdateExamPage() {
                                         ))}
                                     </Field>
                                     <ErrorMessage name="categoryId" component="div" className="text-red-500 text-xs mt-1" />
+                                </div>
+
+                                {/* Loại đề thi / Difficulty */}
+                                <div>
+                                    <label className="block text-sm font-medium mb-1">Loại đề thi</label>
+                                    <Field
+                                        as="select"
+                                        name="examLevel"
+                                        className="w-full border px-3 py-2 rounded-md bg-white"
+                                    >
+                                        <option value="">Chọn độ khó</option>
+                                        {difficultyOptions.map((opt) => (
+                                            <option key={opt.id} value={opt.id}>
+                                                {opt.name}
+                                            </option>
+                                        ))}
+                                    </Field>
+                                    <ErrorMessage name="examLevel" component="div" className="text-red-500 text-xs mt-1" />
                                 </div>
 
                                 {/* Thời gian làm bài */}

@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { fetchApi } from "@/lib/apiClient";
 import { toastError, toastSuccess } from "@/lib/toast";
-import {Autocomplete, AutocompleteItem} from "@nextui-org/react";
+import { Autocomplete, AutocompleteItem } from "@nextui-org/react";
 import { useRouter } from 'next/router'; // Next.js 12 (hoặc next/navigation nếu là Next.js 13+);
 import Link from 'next/link';
 
@@ -50,7 +50,7 @@ interface QuestionFormData {
 // COMPONENT CHÍNH
 
 export default function CreateExamPage() {
-    
+
   // ======= STATE BÀI THI =======
   const [examCategory, setExamCategory] = useState("");
   const [examTitle, setExamTitle] = useState("");
@@ -65,7 +65,7 @@ export default function CreateExamPage() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [categoriesLoading, setCategoriesLoading] = useState(true);
   const [participantLimit, setParticipantLimit] = useState<number | "">("");
-  
+
 
   // New state for question creation form
   const [showCreateQuestionForm, setShowCreateQuestionForm] = useState(false);
@@ -75,9 +75,9 @@ export default function CreateExamPage() {
   const [showExamInfoModal, setShowExamInfoModal] = useState(false);
   const [examInfo, setExamInfo] = useState({
     title: "",
-    examCode: "", 
-    inviteLink: "", 
-    qrCodeUrl: "", 
+    examCode: "",
+    inviteLink: "",
+    qrCodeUrl: "",
   });
   // ===========================================
 
@@ -142,7 +142,7 @@ export default function CreateExamPage() {
     const fetchDropdownData = async () => {
       try {
         const [categoriesRes, typesRes, difficultiesRes] = await Promise.all([
-          fetchApi('/categories'),
+          fetchApi('/categories/all'),
           fetchApi('/questions/question-types'), // Returns ["SINGLE", "MULTIPLE", "TRUE_FALSE"]
           fetchApi('/questions/difficulties'), // Returns ["Easy", "Medium", "Hard"]
         ]);
@@ -151,12 +151,12 @@ export default function CreateExamPage() {
 
         // Format question types for dropdown
         const formattedTypes = typesRes.map((t: string) => {
-            const typeMap: { [key: string]: string } = {
-                'SINGLE': 'single',
-                'MULTIPLE': 'multi',
-                'TRUE_FALSE': 'true_false'
-            };
-            return { id: typeMap[t] || t, name: t.replace('_', ' ') };
+          const typeMap: { [key: string]: string } = {
+            'SINGLE': 'single',
+            'MULTIPLE': 'multi',
+            'TRUE_FALSE': 'true_false'
+          };
+          return { id: typeMap[t] || t, name: t.replace('_', ' ') };
         });
         setLibraryQuestionTypes(formattedTypes);
 
@@ -281,12 +281,12 @@ export default function CreateExamPage() {
       questions.map((q) =>
         q.id === qid
           ? {
-              ...q,
-              answers: [
-                ...q.answers,
-                { id: q.answers.length + 1, text: "", isCorrect: false },
-              ],
-            }
+            ...q,
+            answers: [
+              ...q.answers,
+              { id: q.answers.length + 1, text: "", isCorrect: false },
+            ],
+          }
           : q
       )
     );
@@ -297,9 +297,9 @@ export default function CreateExamPage() {
       questions.map((q) =>
         q.id === qid
           ? {
-              ...q,
-              answers: q.answers.length > 1 ? q.answers.filter((a) => a.id !== aid) : q.answers,
-            }
+            ...q,
+            answers: q.answers.length > 1 ? q.answers.filter((a) => a.id !== aid) : q.answers,
+          }
           : q
       )
     );
@@ -310,11 +310,11 @@ export default function CreateExamPage() {
       questions.map((q) =>
         q.id === qid
           ? {
-              ...q,
-              answers: q.answers.map((a) =>
-                a.id === aid ? { ...a, text: value } : a
-              ),
-            }
+            ...q,
+            answers: q.answers.map((a) =>
+              a.id === aid ? { ...a, text: value } : a
+            ),
+          }
           : q
       )
     );
@@ -325,30 +325,30 @@ export default function CreateExamPage() {
       questions.map((q) =>
         q.id === qid
           ? {
-              ...q,
-              answers: q.answers.map((a) => ({
-                ...a,
-                isCorrect: a.id === aid,
-              })),
-            }
+            ...q,
+            answers: q.answers.map((a) => ({
+              ...a,
+              isCorrect: a.id === aid,
+            })),
+          }
           : q
       )
     );
   };
   const toggleCorrectAnswer = (qid: number, aid: number) => {
-  setQuestions(
-    questions.map((q) =>
-      q.id === qid
-        ? {
+    setQuestions(
+      questions.map((q) =>
+        q.id === qid
+          ? {
             ...q,
             answers: q.answers.map((a) =>
               a.id === aid ? { ...a, isCorrect: !a.isCorrect } : a
             ),
           }
-        : q
-    )
-  );
-};
+          : q
+      )
+    );
+  };
 
 
   const handleSubmitExam = async () => {
@@ -376,17 +376,17 @@ export default function CreateExamPage() {
     // =========================================================================
 
     // Giả lập độ trễ tạo bài thi (tùy chọn)
-    await new Promise(resolve => setTimeout(resolve, 500)); 
+    await new Promise(resolve => setTimeout(resolve, 500));
 
     const hardcodedCode = "ABCD12"; // Mã cứng 6 ký tự/số
     const inviteLink = `https://mock-domain.com/join/${hardcodedCode}`;
     const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(inviteLink)}`;
 
     setExamInfo({
-        title: examTitle, // Lấy tên bài thi từ input
-        examCode: hardcodedCode, 
-        inviteLink: inviteLink, 
-        qrCodeUrl: qrCodeUrl, 
+      title: examTitle, // Lấy tên bài thi từ input
+      examCode: hardcodedCode,
+      inviteLink: inviteLink,
+      qrCodeUrl: qrCodeUrl,
     });
 
     toastSuccess("Tạo bài thi thành công! (Dữ liệu giả lập)");
@@ -493,7 +493,7 @@ export default function CreateExamPage() {
       {/* ====================== MAIN ====================== */}
       <div className="flex-1 flex flex-col">
 
-        
+
 
         {/* ====================== CONTENT ====================== */}
         <main className="flex-1 overflow-y-auto px-10 py-8">
@@ -501,27 +501,27 @@ export default function CreateExamPage() {
           {/* ================== FORM TẠO BÀI THI ================== */}
           <section className="bg-white rounded-2xl shadow p-8 mb-6">
             <h2 className="text-2xl font-semibold text-center mb-8">
-              Tạo bài thi online 
+              Tạo bài thi online
             </h2>
             <div className="flex justify-start gap-6 border-b border-gray-300 mb-8">
-    {/* Nút Bài thi Offline */}
-    <a href="/teacher/exam-offline">
-        <button 
-            className="pb-2 font-medium text-gray-500 hover:text-black hover:border-b-2 hover:border-gray-200" 
-        >
-            Bài thi Offline
-        </button>
-    </a>
+              {/* Nút Bài thi Offline */}
+              <a href="/teacher/exam-offline">
+                <button
+                  className="pb-2 font-medium text-gray-500 hover:text-black hover:border-b-2 hover:border-gray-200"
+                >
+                  Bài thi Offline
+                </button>
+              </a>
 
-    {/* Nút Bài thi Online */}
-    <a href="/teacher/exam-online">
-        <button 
-            className="pb-2 font-medium border-b-2 border-black" // Nút ONLINE ACTIVE
-        >
-            Bài thi Online
-        </button>
-    </a>
-</div>
+              {/* Nút Bài thi Online */}
+              <a href="/teacher/exam-online">
+                <button
+                  className="pb-2 font-medium border-b-2 border-black" // Nút ONLINE ACTIVE
+                >
+                  Bài thi Online
+                </button>
+              </a>
+            </div>
 
             {/* Các input đầu */}
             <div className="space-y-4 mb-6">
@@ -573,27 +573,27 @@ export default function CreateExamPage() {
                   className="w-full border px-3 py-2 rounded-md"
                 />
               </div>
-             <div>
-  <label className="block text-sm mb-2">
-    Giới hạn số người tham gia 
-    <span className="text-gray-500 text-xs ml-1"></span>
-  </label>
-  <input
-    type="number"
-    min="1"
-    step="1"
-    value={participantLimit}
-    onChange={(e) => {
-      const value = e.target.value;
-      if (value === "" || /^\d+$/.test(value)) {
-        setParticipantLimit(value === "" ? "" : Number(value));
-      }
-    }}
-    className="w-full px-4 py-3 border-2 border-gray-400 rounded-lg 
+              <div>
+                <label className="block text-sm mb-2">
+                  Giới hạn số người tham gia
+                  <span className="text-gray-500 text-xs ml-1"></span>
+                </label>
+                <input
+                  type="number"
+                  min="1"
+                  step="1"
+                  value={participantLimit}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    if (value === "" || /^\d+$/.test(value)) {
+                      setParticipantLimit(value === "" ? "" : Number(value));
+                    }
+                  }}
+                  className="w-full px-4 py-3 border-2 border-gray-400 rounded-lg 
                focus:border-purple-600 focus:ring-4 focus:ring-purple-100 
                focus:outline-none transition-all font-medium"
-  />
-</div>
+                />
+              </div>
 
               <div>
                 <label className="block text-sm mb-1">Loại đề thi</label>
@@ -603,9 +603,9 @@ export default function CreateExamPage() {
                   className="w-full border px-3 py-2 rounded-md bg-white"
                 >
                   <option value="">Chọn loại</option>
-                   <option value="easy">Dễ</option>
-                   <option value="medium">Trung bình</option>
-                   <option value="hard">Khó</option>
+                  <option value="easy">Dễ</option>
+                  <option value="medium">Trung bình</option>
+                  <option value="hard">Khó</option>
                 </select>
               </div>
             </div>
@@ -618,7 +618,7 @@ export default function CreateExamPage() {
                 </label>
 
                 <div className="flex items-center gap-2">
-                 <span className="text-sm">Khoảng thời gian:</span>
+                  <span className="text-sm">Khoảng thời gian:</span>
                   <input
                     type="number"
                     value={duration}
@@ -696,20 +696,20 @@ export default function CreateExamPage() {
           <section className="bg-white rounded-2xl shadow p-8">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-semibold">Các câu hỏi đã tạo</h3>
-            <div className="flex items-center gap-2">
-            <button
-            onClick={() => setOpenLibrary(true)}
-            className="px-5 py-2 border-2 border-[#A53AEC] text-[#A53AEC] bg-white rounded-full"
-            >
-            Thêm từ thư viện
-            </button>
-              <button
-                onClick={() => setShowCreateQuestionForm(true)}
-                className="px-5 py-2 bg-[#A53AEC] text-white rounded-full"
-              >
-                Tạo câu hỏi mới
-              </button>
-            </div>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setOpenLibrary(true)}
+                  className="px-5 py-2 border-2 border-[#A53AEC] text-[#A53AEC] bg-white rounded-full"
+                >
+                  Thêm từ thư viện
+                </button>
+                <button
+                  onClick={() => setShowCreateQuestionForm(true)}
+                  className="px-5 py-2 bg-[#A53AEC] text-white rounded-full"
+                >
+                  Tạo câu hỏi mới
+                </button>
+              </div>
             </div>
             <div className="space-y-6">
               {questions.map((q, index) => (
@@ -767,43 +767,43 @@ export default function CreateExamPage() {
                   </div>
 
                   {/* Danh sách đáp án */}
-                 <div className="space-y-2 mb-4">
-                 {q.answers.map((a) => (
-                 <div key={a.id} className="flex items-center gap-2">
+                  <div className="space-y-2 mb-4">
+                    {q.answers.map((a) => (
+                      <div key={a.id} className="flex items-center gap-2">
 
-                 {q.questionType === "multi" ? (
-                 <input
-                 type="checkbox"
-                 checked={a.isCorrect}
-                 onChange={() => toggleCorrectAnswer(q.id, a.id)}
-                 className="form-checkbox h-4 w-4 text-purple-600 border-gray-300 rounded"
-                />
-                ) : (
-               <input
-               type="radio"
-               name={`question-${q.id}`}
-               checked={a.isCorrect}
-               onChange={() => setCorrectAnswer(q.id, a.id)}
-               />
-               )}
-              <input
-              type="text"
-              value={a.text}
-              placeholder={`Đáp án ${a.id}`}
-              onChange={(e) =>
-              updateAnswerText(q.id, a.id, e.target.value)
-              }
-              className="flex-1 border px-3 py-2 rounded-md"
-              />
-              <button
-              onClick={() => removeAnswer(q.id, a.id)}
-              className="p-2 hover:bg-gray-200 rounded-md"
-              >
-              🗑
-             </button>
-             </div>
-            ))}
-            </div>
+                        {q.questionType === "multi" ? (
+                          <input
+                            type="checkbox"
+                            checked={a.isCorrect}
+                            onChange={() => toggleCorrectAnswer(q.id, a.id)}
+                            className="form-checkbox h-4 w-4 text-purple-600 border-gray-300 rounded"
+                          />
+                        ) : (
+                          <input
+                            type="radio"
+                            name={`question-${q.id}`}
+                            checked={a.isCorrect}
+                            onChange={() => setCorrectAnswer(q.id, a.id)}
+                          />
+                        )}
+                        <input
+                          type="text"
+                          value={a.text}
+                          placeholder={`Đáp án ${a.id}`}
+                          onChange={(e) =>
+                            updateAnswerText(q.id, a.id, e.target.value)
+                          }
+                          className="flex-1 border px-3 py-2 rounded-md"
+                        />
+                        <button
+                          onClick={() => removeAnswer(q.id, a.id)}
+                          className="p-2 hover:bg-gray-200 rounded-md"
+                        >
+                          🗑
+                        </button>
+                      </div>
+                    ))}
+                  </div>
                   {/* Buttons */}
                   <div className="flex gap-3 justify-end">
                     <button
@@ -837,244 +837,244 @@ export default function CreateExamPage() {
               Đăng bài
             </button>
           </div>
-       {/* ================== MODAL THƯ VIỆN ================== */}
-{openLibrary && (
-  <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-    
-    <div className="bg-white rounded-xl p-6 relative w-[95%] max-w-[1350px] min-h-[80vh] max-h-[90vh] flex flex-col">
+          {/* ================== MODAL THƯ VIỆN ================== */}
+          {openLibrary && (
+            <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+
+              <div className="bg-white rounded-xl p-6 relative w-[95%] max-w-[1350px] min-h-[80vh] max-h-[90vh] flex flex-col">
 
 
-      {/* Nút đóng */}
-      <button
-        onClick={() => setOpenLibrary(false)}
-        className="absolute top-3 right-4 text-gray-500 text-lg hover:text-black"
-      >
-        x
-      </button>
-
-      <h3 className="text-xl font-semibold mb-4">Thư viện câu hỏi</h3>
-
-      {/* ===== FILTER ===== */}
-      <div className="flex flex-wrap gap-3 mb-4 items-center">
-
-        <input
-          placeholder="Nhập tiêu đề / đáp án..."
-          className="w-[300px] h-[40px] rounded-full border border-gray-300 px-4 text-sm"
-          value={libraryFilters.search}
-          onChange={(e) => setLibraryFilters(prev => ({ ...prev, search: e.target.value }))}
-          onKeyDown={(e) => e.key === 'Enter' && setLibraryCurrentPage(1)}
-        />
-
-        <select
-          className="h-[40px] px-4 rounded-full border border-gray-300 text-sm"
-          value={libraryFilters.difficulty}
-          onChange={(e) => setLibraryFilters(prev => ({ ...prev, difficulty: e.target.value }))}
-        >
-          <option value="">Chọn độ khó</option>
-          {libraryDifficulties.map(opt => <option key={opt.id} value={opt.id}>{opt.name}</option>)}
-        </select>
-
-        <select
-          className="h-[40px] px-4 rounded-full border border-gray-300 text-sm"
-          value={libraryFilters.type}
-          onChange={(e) => setLibraryFilters(prev => ({ ...prev, type: e.target.value }))}
-        >
-          <option value="">Chọn loại câu hỏi</option>
-          {libraryQuestionTypes.map(opt => <option key={opt.id} value={opt.id}>{opt.name}</option>)}
-        </select>
-
-        <select
-          className="h-[40px] px-4 rounded-full border border-gray-300 text-sm"
-          value={libraryFilters.categoryId}
-          onChange={(e) => setLibraryFilters(prev => ({ ...prev, categoryId: e.target.value }))}
-        >
-          <option value="">Chọn danh mục</option>
-          {categories.map(cat => <option key={cat.id} value={cat.id.toString()}>{cat.name}</option>)}
-        </select>
-
-        <button
-          onClick={() => setLibraryCurrentPage(1)} // Reset to first page on filter apply
-          className="bg-[#A53AEC] text-white px-5 py-2 rounded-full text-sm"
-          disabled={libraryLoading}
-        >
-          Tìm kiếm
-        </button>
-      </div>
-
-      {/* ===== TABLE ===== */}
-    <div className="border border-gray-200 rounded-lg overflow-hidden flex-grow relative">
-        {libraryLoading && (
-            <div className="absolute inset-0 bg-white bg-opacity-75 flex items-center justify-center">
-                <p className="text-gray-600">Đang tải câu hỏi...</p>
-            </div>
-        )}
-        <table className="w-full border-collapse text-center text-sm">
-          <thead className="border-b bg-gray-50 sticky top-0">
-            <tr>
-              <th className="py-2 border-r">STT</th>
-              <th className="border-r">Tiêu đề</th>
-              <th className="border-r">Loại câu hỏi</th>
-              <th className="border-r">Độ khó</th>
-              <th className="border-r">Danh mục</th>
-              <th className="border-r">Người tạo</th>
-              <th>Thao tác</th>
-            </tr>
-          </thead>
-
-          <tbody>
-            {libraryQuestions.length === 0 && !libraryLoading && (
-                <tr>
-                    <td colSpan={7} className="py-8 text-gray-500">Không tìm thấy câu hỏi nào.</td>
-                </tr>
-            )}
-            {libraryQuestions.map((q, index) => (
-              <tr key={q.id} className="border-b hover:bg-gray-50">
-                <td className="py-2 border-r">{index + 1 + (libraryCurrentPage - 1) * 10}</td>
-                <td className="border-r text-left px-2">{q.title}</td>
-                <td className="border-r">{q.questionType}</td>
-                <td className="border-r">{q.difficulty}</td>
-                <td className="border-r">{q.categoryName || q.categoryId}</td>
-                <td className="border-r">TBD</td> {/* Người tạo - Assuming 'createdBy' is not in Question type */}
-                <td>
-                  <button
-                    onClick={() => addQuestion(q)}
-                    className="bg-green-500 text-white px-3 py-1 rounded-md text-xs hover:bg-green-600"
-                  >
-                    Thêm
-                  </button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-
-      {/* ===== PAGINATION ===== */}
-      {libraryTotalPages > 1 && (
-        <div className="flex justify-center gap-3 mt-4">
-          <button
-            onClick={() => setLibraryCurrentPage(1)}
-            disabled={libraryCurrentPage === 1 || libraryLoading}
-            className="border border-blue-500 text-blue-500 px-2 py-1 rounded-md"
-          >
-            ≪
-          </button>
-          <button
-            onClick={() => setLibraryCurrentPage(prev => Math.max(1, prev - 1))}
-            disabled={libraryCurrentPage === 1 || libraryLoading}
-            className="border border-blue-500 text-blue-500 px-2 py-1 rounded-md"
-          >
-            ‹
-          </button>
-
-          <span className="px-4 py-1 bg-purple-600 text-white font-bold rounded-md shadow-md">
-            {libraryCurrentPage} / {libraryTotalPages}
-          </span>
-
-          <button
-            onClick={() => setLibraryCurrentPage(prev => Math.min(libraryTotalPages, prev + 1))}
-            disabled={libraryCurrentPage === libraryTotalPages || libraryLoading}
-            className="border border-blue-500 text-blue-500 px-2 py-1 rounded-md"
-          >
-            ›
-          </button>
-          <button
-            onClick={() => setLibraryCurrentPage(libraryTotalPages)}
-            disabled={libraryCurrentPage === libraryTotalPages || libraryLoading}
-            className="border border-blue-500 text-blue-500 px-2 py-1 rounded-md"
-          >
-            ≫
-          </button>
-        </div>
-      )}
-
-    </div>
-  </div>
-)}
-
-{/* ================== MODAL THÔNG TIN BÀI THI (DÙNG DỮ LIỆU CỨNG) ================== */}
-       {showExamInfoModal && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-          <div className="bg-white rounded-xl p-8 relative w-[90%] max-w-lg shadow-2xl">
-            {/* Nút đóng */}
-            <button
-              onClick={() => setShowExamInfoModal(false)}
-              className="absolute top-4 right-4 text-gray-500 text-2xl hover:text-black"
-            >
-              &times;
-            </button>
-
-            <h3 className="text-2xl font-bold text-center mb-6 text-purple-700">
-              
-            </h3>
-            <p className="text-center text-gray-600 mb-6">
-              Sử dụng các thông tin sau để chia sẻ bài thi của bạn.
-            </p>
-
-            <div className="space-y-4">
-              {/* Tên bài thi */}
-              <div className="p-3 bg-purple-50 rounded-lg border-l-4 border-purple-400">
-                <p className="font-semibold text-sm text-purple-700">Tên bài thi</p>
-                <p className="text-lg font-medium text-gray-800">{examInfo.title}</p>
-              </div>
-
-              {/* Mã 6 số */}
-              <div className="p-3 bg-indigo-50 rounded-lg border-l-4 border-indigo-400 flex justify-between items-center">
-                <div>
-                  <p className="font-semibold text-sm text-indigo-700">Mã Tham Dự (6 số)</p>
-                  <p className="text-2xl font-extrabold tracking-widest text-indigo-800">
-                    {examInfo.examCode}
-                  </p>
-                </div>
+                {/* Nút đóng */}
                 <button
-                  onClick={() => navigator.clipboard.writeText(examInfo.examCode)}
-                  className="text-xs bg-indigo-500 text-white px-3 py-1 rounded hover:bg-indigo-600 transition"
+                  onClick={() => setOpenLibrary(false)}
+                  className="absolute top-3 right-4 text-gray-500 text-lg hover:text-black"
                 >
-                  Sao chép
+                  x
                 </button>
-              </div>
 
-              {/* Link Tham gia */}
-              <div className="p-3 bg-green-50 rounded-lg border-l-4 border-green-400">
-                <p className="font-semibold text-sm text-green-700">Link Tham gia</p>
-                <div className="flex items-center gap-2">
+                <h3 className="text-xl font-semibold mb-4">Thư viện câu hỏi</h3>
+
+                {/* ===== FILTER ===== */}
+                <div className="flex flex-wrap gap-3 mb-4 items-center">
+
                   <input
-                    readOnly
-                    value={examInfo.inviteLink}
-                    className="flex-1 p-1 bg-white border border-gray-300 rounded text-sm overflow-x-scroll"
+                    placeholder="Nhập tiêu đề / đáp án..."
+                    className="w-[300px] h-[40px] rounded-full border border-gray-300 px-4 text-sm"
+                    value={libraryFilters.search}
+                    onChange={(e) => setLibraryFilters(prev => ({ ...prev, search: e.target.value }))}
+                    onKeyDown={(e) => e.key === 'Enter' && setLibraryCurrentPage(1)}
                   />
-                  <button
-                    onClick={() => navigator.clipboard.writeText(examInfo.inviteLink)}
-                    className="text-xs bg-green-500 text-white px-3 py-1 rounded hover:bg-green-600 transition whitespace-nowrap"
+
+                  <select
+                    className="h-[40px] px-4 rounded-full border border-gray-300 text-sm"
+                    value={libraryFilters.difficulty}
+                    onChange={(e) => setLibraryFilters(prev => ({ ...prev, difficulty: e.target.value }))}
                   >
-                    Sao chép
+                    <option value="">Chọn độ khó</option>
+                    {libraryDifficulties.map(opt => <option key={opt.id} value={opt.id}>{opt.name}</option>)}
+                  </select>
+
+                  <select
+                    className="h-[40px] px-4 rounded-full border border-gray-300 text-sm"
+                    value={libraryFilters.type}
+                    onChange={(e) => setLibraryFilters(prev => ({ ...prev, type: e.target.value }))}
+                  >
+                    <option value="">Chọn loại câu hỏi</option>
+                    {libraryQuestionTypes.map(opt => <option key={opt.id} value={opt.id}>{opt.name}</option>)}
+                  </select>
+
+                  <select
+                    className="h-[40px] px-4 rounded-full border border-gray-300 text-sm"
+                    value={libraryFilters.categoryId}
+                    onChange={(e) => setLibraryFilters(prev => ({ ...prev, categoryId: e.target.value }))}
+                  >
+                    <option value="">Chọn danh mục</option>
+                    {categories.map(cat => <option key={cat.id} value={cat.id.toString()}>{cat.name}</option>)}
+                  </select>
+
+                  <button
+                    onClick={() => setLibraryCurrentPage(1)} // Reset to first page on filter apply
+                    className="bg-[#A53AEC] text-white px-5 py-2 rounded-full text-sm"
+                    disabled={libraryLoading}
+                  >
+                    Tìm kiếm
                   </button>
                 </div>
-              </div>
 
-              {/* Mã QR */}
-              <div className="text-center pt-4">
-                <p className="font-semibold text-gray-700 mb-2">Quét Mã QR để tham gia</p>
-                <img
-                  src={examInfo.qrCodeUrl}
-                  alt="Mã QR tham gia bài thi"
-                  className="w-36 h-36 mx-auto border-4 border-gray-200 p-1 rounded-lg"
-                />
+                {/* ===== TABLE ===== */}
+                <div className="border border-gray-200 rounded-lg overflow-hidden flex-grow relative">
+                  {libraryLoading && (
+                    <div className="absolute inset-0 bg-white bg-opacity-75 flex items-center justify-center">
+                      <p className="text-gray-600">Đang tải câu hỏi...</p>
+                    </div>
+                  )}
+                  <table className="w-full border-collapse text-center text-sm">
+                    <thead className="border-b bg-gray-50 sticky top-0">
+                      <tr>
+                        <th className="py-2 border-r">STT</th>
+                        <th className="border-r">Tiêu đề</th>
+                        <th className="border-r">Loại câu hỏi</th>
+                        <th className="border-r">Độ khó</th>
+                        <th className="border-r">Danh mục</th>
+                        <th className="border-r">Người tạo</th>
+                        <th>Thao tác</th>
+                      </tr>
+                    </thead>
+
+                    <tbody>
+                      {libraryQuestions.length === 0 && !libraryLoading && (
+                        <tr>
+                          <td colSpan={7} className="py-8 text-gray-500">Không tìm thấy câu hỏi nào.</td>
+                        </tr>
+                      )}
+                      {libraryQuestions.map((q, index) => (
+                        <tr key={q.id} className="border-b hover:bg-gray-50">
+                          <td className="py-2 border-r">{index + 1 + (libraryCurrentPage - 1) * 10}</td>
+                          <td className="border-r text-left px-2">{q.title}</td>
+                          <td className="border-r">{q.questionType}</td>
+                          <td className="border-r">{q.difficulty}</td>
+                          <td className="border-r">{q.categoryName || q.categoryId}</td>
+                          <td className="border-r">TBD</td> {/* Người tạo - Assuming 'createdBy' is not in Question type */}
+                          <td>
+                            <button
+                              onClick={() => addQuestion(q)}
+                              className="bg-green-500 text-white px-3 py-1 rounded-md text-xs hover:bg-green-600"
+                            >
+                              Thêm
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+
+                {/* ===== PAGINATION ===== */}
+                {libraryTotalPages > 1 && (
+                  <div className="flex justify-center gap-3 mt-4">
+                    <button
+                      onClick={() => setLibraryCurrentPage(1)}
+                      disabled={libraryCurrentPage === 1 || libraryLoading}
+                      className="border border-blue-500 text-blue-500 px-2 py-1 rounded-md"
+                    >
+                      ≪
+                    </button>
+                    <button
+                      onClick={() => setLibraryCurrentPage(prev => Math.max(1, prev - 1))}
+                      disabled={libraryCurrentPage === 1 || libraryLoading}
+                      className="border border-blue-500 text-blue-500 px-2 py-1 rounded-md"
+                    >
+                      ‹
+                    </button>
+
+                    <span className="px-4 py-1 bg-purple-600 text-white font-bold rounded-md shadow-md">
+                      {libraryCurrentPage} / {libraryTotalPages}
+                    </span>
+
+                    <button
+                      onClick={() => setLibraryCurrentPage(prev => Math.min(libraryTotalPages, prev + 1))}
+                      disabled={libraryCurrentPage === libraryTotalPages || libraryLoading}
+                      className="border border-blue-500 text-blue-500 px-2 py-1 rounded-md"
+                    >
+                      ›
+                    </button>
+                    <button
+                      onClick={() => setLibraryCurrentPage(libraryTotalPages)}
+                      disabled={libraryCurrentPage === libraryTotalPages || libraryLoading}
+                      className="border border-blue-500 text-blue-500 px-2 py-1 rounded-md"
+                    >
+                      ≫
+                    </button>
+                  </div>
+                )}
+
               </div>
             </div>
+          )}
 
-            <div className="mt-8 flex justify-center">
-              <button
-                onClick={() => setShowExamInfoModal(false)}
-                className="px-6 py-2 bg-purple-700 text-white rounded-md hover:bg-purple-800 transition"
-              >
-                Bắt đầu
-              </button>
+          {/* ================== MODAL THÔNG TIN BÀI THI (DÙNG DỮ LIỆU CỨNG) ================== */}
+          {showExamInfoModal && (
+            <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+              <div className="bg-white rounded-xl p-8 relative w-[90%] max-w-lg shadow-2xl">
+                {/* Nút đóng */}
+                <button
+                  onClick={() => setShowExamInfoModal(false)}
+                  className="absolute top-4 right-4 text-gray-500 text-2xl hover:text-black"
+                >
+                  &times;
+                </button>
+
+                <h3 className="text-2xl font-bold text-center mb-6 text-purple-700">
+
+                </h3>
+                <p className="text-center text-gray-600 mb-6">
+                  Sử dụng các thông tin sau để chia sẻ bài thi của bạn.
+                </p>
+
+                <div className="space-y-4">
+                  {/* Tên bài thi */}
+                  <div className="p-3 bg-purple-50 rounded-lg border-l-4 border-purple-400">
+                    <p className="font-semibold text-sm text-purple-700">Tên bài thi</p>
+                    <p className="text-lg font-medium text-gray-800">{examInfo.title}</p>
+                  </div>
+
+                  {/* Mã 6 số */}
+                  <div className="p-3 bg-indigo-50 rounded-lg border-l-4 border-indigo-400 flex justify-between items-center">
+                    <div>
+                      <p className="font-semibold text-sm text-indigo-700">Mã Tham Dự (6 số)</p>
+                      <p className="text-2xl font-extrabold tracking-widest text-indigo-800">
+                        {examInfo.examCode}
+                      </p>
+                    </div>
+                    <button
+                      onClick={() => navigator.clipboard.writeText(examInfo.examCode)}
+                      className="text-xs bg-indigo-500 text-white px-3 py-1 rounded hover:bg-indigo-600 transition"
+                    >
+                      Sao chép
+                    </button>
+                  </div>
+
+                  {/* Link Tham gia */}
+                  <div className="p-3 bg-green-50 rounded-lg border-l-4 border-green-400">
+                    <p className="font-semibold text-sm text-green-700">Link Tham gia</p>
+                    <div className="flex items-center gap-2">
+                      <input
+                        readOnly
+                        value={examInfo.inviteLink}
+                        className="flex-1 p-1 bg-white border border-gray-300 rounded text-sm overflow-x-scroll"
+                      />
+                      <button
+                        onClick={() => navigator.clipboard.writeText(examInfo.inviteLink)}
+                        className="text-xs bg-green-500 text-white px-3 py-1 rounded hover:bg-green-600 transition whitespace-nowrap"
+                      >
+                        Sao chép
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Mã QR */}
+                  <div className="text-center pt-4">
+                    <p className="font-semibold text-gray-700 mb-2">Quét Mã QR để tham gia</p>
+                    <img
+                      src={examInfo.qrCodeUrl}
+                      alt="Mã QR tham gia bài thi"
+                      className="w-36 h-36 mx-auto border-4 border-gray-200 p-1 rounded-lg"
+                    />
+                  </div>
+                </div>
+
+                <div className="mt-8 flex justify-center">
+                  <button
+                    onClick={() => setShowExamInfoModal(false)}
+                    className="px-6 py-2 bg-purple-700 text-white rounded-md hover:bg-purple-800 transition"
+                  >
+                    Bắt đầu
+                  </button>
+                </div>
+
+              </div>
             </div>
-
-          </div>
-        </div>
-      )}
+          )}
 
         </main>
 

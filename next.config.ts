@@ -14,10 +14,12 @@ const nextConfig: NextConfig = {
       },
 
       // 2. NEW: Proxy for /admin/* endpoints (admin-only actions like approve/reject)
-      {
+      // REMOVED: Conflics with frontend routes
+      /* {
         source: "/admin/:path*",
         destination: "http://localhost:8082/admin/:path*",
-      },
+      }, */
+
 
       // 3. Existing: /api/* endpoints
       {
