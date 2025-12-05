@@ -30,7 +30,7 @@ type Question = {
 const ENDPOINTS = {
   types: '/questions/question-types',
   difficulties: '/questions/difficulties',
-  categories: '/categories',
+  categories: '/categories/all',
 };
 
 // Helper function to fetch data
@@ -186,10 +186,7 @@ export default function CreateExamPage() {
       toastError("Vui lòng chọn danh mục");
       return;
     }
-    // if (!questionCount || Number(questionCount) <= 0) {
-    //   toastError("Số lượng câu hỏi phải lớn hơn 0");
-    //   return;
-    // }
+
     if (!examType) {
       toastError("Vui lòng chọn độ khó");
       return;
@@ -200,23 +197,7 @@ export default function CreateExamPage() {
     }
 
     try {
-      // 2. Fetch Questions - REMOVED automatic fetching
-      // const searchParams = new URLSearchParams({
-      //   categoryId: examCategory,
-      //   difficulty: examType,
-      //   size: questionCount.toString(),
-      //   page: '0'
-      // });
-
-      // const questionsRes = await fetchApi(`/questions/search?${searchParams.toString()}`);
-      // const questionsFound = questionsRes.content || [];
-
-      // if (questionsFound.length === 0) {
-      //   toastSuccess(`Không tìm thấy câu hỏi nào. Đang tạo bài thi trống...`);
-      // } else if (questionsFound.length < Number(questionCount)) {
-      //   // Silent proceed for partial matches
-      // }
-
+      // 2. Prepare question IDs
       const questionIds: number[] = []; // Empty initially
 
       // 3. Create Exam
@@ -227,7 +208,8 @@ export default function CreateExamPage() {
         startTime: startTime && startDate ? `${startDate}T${startTime}:00` : null,
         endTime: endTime && endDate ? `${endDate}T${endTime}:00` : null,
         questionIds: questionIds,
-        description: `Bài thi ${examType}`
+        description: `Bài thi ${examType}`,
+        examLevel: examType.toUpperCase() // Map to backend Enum: EASY, MEDIUM, HARD
       };
 
       await fetchApi('/exams/create', {
