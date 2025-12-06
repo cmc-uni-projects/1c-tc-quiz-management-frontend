@@ -5,7 +5,7 @@ import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
 import StudentLayout from '@/components/StudentLayout'; // Import layout mới
-import { apiClient } from '@/lib/apiClient'; // Giả định bạn có apiClient để gọi API
+import { fetchApi } from '@/lib/apiClient'; // Import fetchApi trực tiếp
 
 /* ===========================================================
     MAIN CONTENT
@@ -28,18 +28,19 @@ const ListExamsContent = () => {
     useEffect(() => {
         const fetchExams = async () => {
             try {
-                // Thay thế bằng endpoint API thực tế của bạn
-                // const response = await apiClient.get('/api/student/exams');
-                // setExams(response.data);
+                const response = await fetchApi('/student/exams/search');
+                // Backend returns Page<ExamResponseDto>. Content is in response.content
+                const data = response.content || response.data || [];
 
-                // Dữ liệu mẫu thay thế tạm thời cho API call
-                const mockExams: Exam[] = [
-                    { id: 101, title: 'Bài thi cuối kỳ Toán học', category: 'Toán học', duration: '60 phút', questionCount: 40 },
-                    { id: 102, title: 'Kiểm tra Tiếng Anh A1', category: 'Tiếng Anh', duration: '45 phút', questionCount: 30 },
-                    { id: 103, title: 'Ôn tập Vật Lý Chương 1', category: 'Vật Lý', duration: '30 phút', questionCount: 25 },
-                    { id: 104, title: 'Đánh giá Cơ bản Đại cương', category: 'Các môn đại cương', duration: '90 phút', questionCount: 50 },
-                ];
-                setExams(mockExams);
+                const mappedExams = Array.isArray(data) ? data.map((exam: any) => ({
+                    id: exam.examId,
+                    title: exam.title,
+                    category: exam.category?.name || 'Chưa phân loại',
+                    duration: `${exam.durationMinutes} phút`,
+                    questionCount: exam.questionCount || 0
+                })) : [];
+
+                setExams(mappedExams);
             } catch (error) {
                 console.error("Failed to fetch exams:", error);
                 toast.error("Không thể tải danh sách bài thi.");
@@ -58,27 +59,28 @@ const ListExamsContent = () => {
 
     return (
         <div className="bg-gray-50 p-8">
-            <h2 className="text-3xl font-bold text-gray-900 mb-8"></h2>
+            <h2 className="text-3xl font-bold text-gray-900 mb-8">Danh sách bài thi</h2>
 
             {/* Thanh tìm kiếm theo giao diện bạn cung cấp */}
             <div className='flex gap-4 mb-8 p-4 bg-white rounded-lg shadow-sm'>
                 <select className='border rounded-lg p-2 flex-1 max-w-xs'>
                     <option>Chọn danh mục</option>
+                    {/* Categories should also be dynamic ideally, but keeping static for now or can fetch */}
                     <option>Toán học</option>
                     <option>Tiếng Anh</option>
                 </select>
-                <input 
-                    type='text' 
+                <input
+                    type='text'
                     placeholder='Nhập tên bài thi...'
                     className='border rounded-lg p-2 flex-1'
                 />
-                <button 
+                <button
                     className='bg-pink-600 hover:bg-pink-700 text-white font-semibold py-2 px-6 rounded-lg transition'
                 >
                     Tìm kiếm
                 </button>
             </div>
-            
+
             {isLoading ? (
                 <div className="text-center py-10">
                     <div className="mx-auto h-8 w-8 animate-spin rounded-full border-purple-500 border-b-2" />
