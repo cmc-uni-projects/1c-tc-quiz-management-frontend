@@ -11,7 +11,7 @@ import { logout } from "@/lib/utils";
 const LOGO_TEXT_COLOR = "#E33AEC";
 
 /* ------------------------------ AUTH GUARD ------------------------------ */
-const StudentAuthGuard = ({ children }) => {
+const StudentAuthGuard = ({ children }: { children: React.ReactNode }) => {
   const { user, isLoading, isAuthenticated } = useUser();
   const router = useRouter();
   const [isRedirecting, setIsRedirecting] = useState(false);
@@ -84,32 +84,76 @@ const StudentTopBar = () => (
 );
 
 /* ------------------------------ MAIN CONTENT ------------------------------ */
+import { fetchApi } from "@/lib/apiClient";
+
+/* ------------------------------ MAIN CONTENT ------------------------------ */
 const StartExamContent = () => {
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  const subjectId = searchParams.get("subjectId") || "mockId";
-  const subjectTitle = searchParams.get("title") || "";
+  // Unified on 'examId' as passed from list-exams
+  const examId = searchParams.get("examId") || searchParams.get("subjectId");
+  const [loading, setLoading] = useState(true);
+  const [examDetails, setExamDetails] = useState<any>(null);
 
-  const examDetails = {
-    title: subjectTitle
-      ? `Bài kiểm tra môn ${subjectTitle}`
-      : "Bài kiểm tra mặc định",
-    startTime: "08:00 - 03/12/2025",
-    endTime: "09:00 - 03/12/2025",
-    duration: "45 phút",
-    questionCount: 20,
-    difficulty: "Dễ",
-  };
+  useEffect(() => {
+    if (!examId) return;
 
-  /* 🔥 KHÔI PHỤC CHỨC NĂNG CHUYỂN TRANG */
+    const fetchExamDetails = async () => {
+      try {
+        const data = await fetchApi(`/student/exams/${examId}`);
+
+        // Format timestamps
+        const formatTime = (timeStr: string) => {
+          if (!timeStr) return "N/A";
+          return new Date(timeStr).toLocaleString('vi-VN', {
+            hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit', year: 'numeric'
+          });
+        };
+
+        setExamDetails({
+          id: data.examId,
+          title: data.title,
+          startTime: formatTime(data.startTime),
+          endTime: formatTime(data.endTime),
+          duration: `${data.durationMinutes} phút`,
+          questionCount: data.questionCount || 0,
+          difficulty: data.examLevel || "Trung bình", // Default if missing
+        });
+      } catch (error) {
+        console.error("Failed to fetch exam details:", error);
+        toast.error("Không thể tải thông tin bài thi.");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchExamDetails();
+  }, [examId]);
+
   const handleStartExam = () => {
-    router.push(
-      `/student/do-exam?subjectId=${subjectId}&title=${encodeURIComponent(
-        subjectTitle
-      )}`
-    );
+    if (!examId) {
+      toast.error("Không tìm thấy bài thi");
+      return;
+    }
+    // Pass examId to do-exam page
+    router.push(`/student/do-exam?examId=${examId}`);
   };
+
+  if (loading) {
+    return (
+      <div className="flex h-screen items-center justify-center bg-white">
+        <div className="text-center">
+          <div className="mx-auto h-12 w-12 animate-spin rounded-full border-green-600 border-b-2" />
+          <p className="mt-4 text-lg font-semibold text-gray-700">Đang tải thông tin bài thi...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!examDetails) {
+    return <div className="text-center p-8">Không tìm thấy bài thi.</div>;
+  }
 
   return (
     <div className="bg-white flex flex-col" style={{ minHeight: "calc(100vh - 65px)" }}>

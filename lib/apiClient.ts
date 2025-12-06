@@ -38,10 +38,10 @@ export async function fetchApi(endpoint: string, options: FetchApiOptions = {}) 
 
   let body = options.body;
   if (body && typeof body === 'object' && !(body instanceof FormData)) {
-     if (headers['Content-Type'] === 'application/x-www-form-urlencoded') {
-     } else {
-       body = JSON.stringify(body);
-     }
+    if (headers['Content-Type'] === 'application/x-www-form-urlencoded') {
+    } else {
+      body = JSON.stringify(body);
+    }
   }
 
   const fullUrl = `${API_BASE_URL}${endpoint}`;
@@ -75,7 +75,9 @@ export async function fetchApi(endpoint: string, options: FetchApiOptions = {}) 
     }
 
     const errorData = await response.json().catch(() => ({ message: `Request failed with status ${response.status}` }));
-    throw new ApiError(errorData.message || `Request failed with status ${response.status}`, response.status);
+    // Backend returns { error: "..." } for most exceptions
+    const errorMessage = errorData.error || errorData.message || `Request failed with status ${response.status}`;
+    throw new ApiError(errorMessage, response.status);
   }
 
   const contentType = response.headers.get('content-type');
