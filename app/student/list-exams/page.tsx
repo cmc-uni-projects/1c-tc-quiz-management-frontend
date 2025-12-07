@@ -4,6 +4,7 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
+import Swal from 'sweetalert2';
 import StudentLayout from '@/components/StudentLayout'; // Import layout mới
 import { fetchApi } from '@/lib/apiClient'; // Import fetchApi trực tiếp
 
@@ -17,6 +18,9 @@ interface Exam {
     category: string;
     duration: string;
     questionCount: number;
+    level: string;
+    startTime: string;
+    endTime: string;
 }
 
 const ListExamsContent = () => {
@@ -32,12 +36,24 @@ const ListExamsContent = () => {
                 // Backend returns Page<ExamResponseDto>. Content is in response.content
                 const data = response.content || response.data || [];
 
+                const mapLevel = (level: string) => {
+                    const map: Record<string, string> = {
+                        'EASY': 'Dễ',
+                        'MEDIUM': 'Trung bình',
+                        'HARD': 'Khó'
+                    };
+                    return map[level] || level;
+                };
+
                 const mappedExams = Array.isArray(data) ? data.map((exam: any) => ({
                     id: exam.examId,
                     title: exam.title,
-                    category: exam.category?.name || 'Chưa phân loại',
+                    category: exam.category?.name,
                     duration: `${exam.durationMinutes} phút`,
-                    questionCount: exam.questionCount || 0
+                    questionCount: exam.questionCount || 0,
+                    level: mapLevel(exam.examLevel),
+                    startTime: exam.startTime ? new Date(exam.startTime).toLocaleString('vi-VN') : 'Tự do',
+                    endTime: exam.endTime ? new Date(exam.endTime).toLocaleString('vi-VN') : 'Tự do'
                 })) : [];
 
                 setExams(mappedExams);
@@ -52,9 +68,21 @@ const ListExamsContent = () => {
         fetchExams();
     }, []);
 
-    const handleStartExam = (examId: number) => {
-        // Chuyển hướng đến trang bắt đầu bài thi
-        router.push(`/student/startexam?examId=${examId}`);
+    const handleStartExam = (exam: Exam) => {
+        Swal.fire({
+            title: `Bắt đầu bài thi ${exam.title}?`,
+            text: "Bạn có chắc chắn muốn bắt đầu làm bài không?",
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonColor: '#E33AEC',
+            cancelButtonColor: '#d33',
+            confirmButtonText: 'Bắt đầu ngay',
+            cancelButtonText: 'Hủy'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                router.push(`/student/do-exam?examId=${exam.id}`);
+            }
+        });
     };
 
     return (
@@ -96,12 +124,17 @@ const ListExamsContent = () => {
                             >
                                 <div>
                                     <h3 className="text-xl font-semibold text-purple-700">{exam.title}</h3>
-                                    <p className="text-sm text-gray-500 mt-1">
-                                        <span className="font-medium text-gray-600">{exam.category}</span> | {exam.questionCount} câu hỏi | {exam.duration}
-                                    </p>
+                                    <div className="text-sm text-gray-500 mt-2 space-y-1">
+                                        <p><span className="font-semibold">Số lượng câu hỏi:</span> {exam.questionCount}</p>
+                                        <p><span className="font-semibold">Mức độ:</span> {exam.level}</p>
+                                        <p><span className="font-semibold">Thời gian làm bài:</span> {exam.duration}</p>
+                                        <p><span className="font-semibold">Thời gian bắt đầu:</span> {exam.startTime}</p>
+                                        <p><span className="font-semibold">Thời gian kết thúc:</span> {exam.endTime}</p>
+                                        <p><span className="font-semibold">Danh mục:</span> {exam.category}</p>
+                                    </div>
                                 </div>
                                 <button
-                                    onClick={() => handleStartExam(exam.id)}
+                                    onClick={() => handleStartExam(exam)}
                                     className="bg-pink-500 hover:bg-pink-600 text-white font-bold py-2 px-6 rounded-full transition duration-150"
                                 >
                                     Làm Bài

@@ -262,8 +262,8 @@ function QuestionModal({ open, onClose, onSubmit, categories = [], editing = nul
             <label className="text-sm font-medium block mb-1">Loại câu hỏi</label>
             <select value={type} onChange={(e) => setType(e.target.value)} className="w-full px-3 py-2 border rounded-lg">
               <option value="">-- Chọn loại --</option>
-              <option value="SINGLE">Trắc nghiệm (1 đáp án đúng)</option>
-              <option value="MULTIPLE">Trắc nghiệm (nhiều đáp án đúng)</option>
+              <option value="SINGLE">Một đáp án</option>
+              <option value="MULTIPLE">Nhiều đáp án</option>
               <option value="TRUE_FALSE">Đúng / Sai</option>
             </select>
           </div>
