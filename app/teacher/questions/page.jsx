@@ -71,6 +71,12 @@ const XIcon = (props) => (
     <path d="m6 6 12 12" />
   </svg>
 );
+const EyeIcon = (props) => (
+  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+    <path d="M2.062 12.348a1 1 0 0 1 0-.696 10.75 10.75 0 0 1 19.876 0 1 1 0 0 1 0 .696 10.75 10.75 0 0 1-19.876 0" />
+    <circle cx="12" cy="12" r="3" />
+  </svg>
+);
 
 /* --- Helper functions --- */
 function sentenceCase(value) {
@@ -251,13 +257,13 @@ function QuestionModal({ open, onClose, onSubmit, categories = [], editing = nul
   if (!open) return null;
   return (
     <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4" onClick={onClose}>
-      <div className="bg-white rounded-2xl w-full max-w-md p-6 shadow-2xl" onClick={(e) => e.stopPropagation()}>
-        <div className="flex items-center justify-between mb-4">
+      <div className="bg-white rounded-2xl w-full max-w-md shadow-2xl max-h-[90vh] flex flex-col" onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-center justify-between p-6 pb-0 mb-4 bg-white rounded-t-2xl z-10 shrink-0">
           <h3 className="text-xl font-bold">{editing ? "Cập nhật thông tin câu hỏi" : "Thêm câu hỏi mới"}</h3>
           <button onClick={onClose} className="text-gray-500 hover:text-gray-800"><XIcon /></button>
         </div>
 
-        <div className="space-y-3">
+        <div className="space-y-3 overflow-y-auto flex-1 px-6 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent">
           <div>
             <label className="text-sm font-medium block mb-1">Tiêu đề</label>
             <input value={title} onChange={(e) => setTitle(e.target.value)} className="w-full px-3 py-2 border rounded-lg" />
@@ -348,13 +354,87 @@ function QuestionModal({ open, onClose, onSubmit, categories = [], editing = nul
           </div>
 
           {error && <div className="text-red-600 text-sm font-medium">{error}</div>}
+        </div>
 
-          <div className="flex justify-end gap-3 pt-2">
-            <button onClick={onClose} className="px-4 py-2 border rounded-xl hover:bg-gray-100" disabled={loading}>Hủy</button>
-            <button onClick={handleSubmit} className="px-4 py-2 rounded-xl text-white" style={{ backgroundColor: BUTTON_COLOR }} disabled={loading}>
-              {loading ? (editing ? "Đang cập nhật..." : "Đang tạo...") : (editing ? "Cập nhật câu hỏi" : "Thêm câu hỏi")}
-            </button>
+        <div className="flex justify-end gap-3 p-6 pt-4 border-t border-gray-100 bg-white rounded-b-2xl shrink-0">
+          <button onClick={onClose} className="px-4 py-2 border rounded-xl hover:bg-gray-100" disabled={loading}>Hủy</button>
+          <button onClick={handleSubmit} className="px-4 py-2 rounded-xl text-white" style={{ backgroundColor: BUTTON_COLOR }} disabled={loading}>
+            {loading ? (editing ? "Đang cập nhật..." : "Đang tạo...") : (editing ? "Cập nhật câu hỏi" : "Thêm câu hỏi")}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* --- View Detail Modal --- */
+function QuestionDetailModal({ open, onClose, question }) {
+  if (!open || !question) return null;
+
+  return (
+    <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4" onClick={onClose}>
+      <div className="bg-white rounded-2xl w-full max-w-2xl shadow-2xl max-h-[90vh] flex flex-col" onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-center justify-between p-6 pb-0 mb-4 bg-white rounded-t-2xl z-10 shrink-0">
+          <h3 className="text-xl font-bold text-gray-800">Chi tiết câu hỏi</h3>
+          <button onClick={onClose} className="text-gray-500 hover:text-gray-800"><XIcon /></button>
+        </div>
+
+        <div className="space-y-4 overflow-y-auto flex-1 px-6 pb-6 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent">
+          {/* Header Info */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Loại câu hỏi</label>
+              <p className="font-medium text-gray-900 mt-1">
+                {question.type === "SINGLE" ? "Một đáp án" :
+                  question.type === "MULTIPLE" ? "Nhiều đáp án" :
+                    question.type === "TRUE_FALSE" ? "Đúng / Sai" : question.type}
+              </p>
+            </div>
+            <div>
+              <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Độ khó</label>
+              <div className="mt-1"><DifficultyBadge difficulty={question.difficulty} /></div>
+            </div>
+            <div>
+              <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Danh mục</label>
+              <p className="font-medium text-gray-900 mt-1">{question.categoryName || "___"}</p>
+            </div>
+            <div>
+              <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Trạng thái</label>
+              <div className="mt-1"><VisibilityBadge visibility={question.visibility} /></div>
+            </div>
+            <div>
+              <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Người tạo</label>
+              <p className="font-medium text-gray-900 mt-1">{question.createdBy || "N/A"}</p>
+            </div>
           </div>
+
+          <div className="pt-4 border-t border-gray-100">
+            <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider block mb-2">Nội dung câu hỏi</label>
+            <div className="bg-gray-50 p-4 rounded-xl border border-gray-200">
+              <p className="text-lg font-bold text-gray-800">{question.title}</p>
+            </div>
+          </div>
+
+          <div className="pt-2">
+            <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider block mb-2">Danh sách đáp án</label>
+            <div className="space-y-2">
+              {question.answers && question.answers.map((ans, idx) => (
+                <div key={idx} className={`p-3 rounded-lg border flex items-start gap-3 ${ans.correct ? "bg-green-50 border-green-200" : "bg-white border-gray-200"}`}>
+                  <div className={`mt-0.5 w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold border ${ans.correct ? "bg-green-500 text-white border-green-500" : "bg-gray-100 text-gray-500 border-gray-300"}`}>
+                    {String.fromCharCode(65 + idx)}
+                  </div>
+                  <div className="flex-1">
+                    <p className={`text-sm ${ans.correct ? "font-bold text-green-800" : "text-gray-700"}`}>{ans.text}</p>
+                  </div>
+                  {ans.correct && <span className="text-xs font-bold text-green-600 bg-green-100 px-2 py-0.5 rounded">Đúng</span>}
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        <div className="p-4 border-t border-gray-100 bg-gray-50 rounded-b-2xl shrink-0 flex justify-end">
+          <button onClick={onClose} className="px-5 py-2 bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold rounded-xl transition">Đóng</button>
         </div>
       </div>
     </div>
@@ -380,6 +460,9 @@ export default function QuestionsPage() {
 
   const [modalOpen, setModalOpen] = useState(false);
   const [editingQuestion, setEditingQuestion] = useState(null);
+
+  const [detailModalOpen, setDetailModalOpen] = useState(false);
+  const [viewingQuestion, setViewingQuestion] = useState(null);
 
   /* --- Load profile once (optional) --- */
   useEffect(() => {
@@ -474,6 +557,11 @@ export default function QuestionsPage() {
     };
     setEditingQuestion(questionWithCategoryId);
     setModalOpen(true);
+  };
+
+  const openDetail = (q) => {
+    setViewingQuestion(q);
+    setDetailModalOpen(true);
   };
 
   /* --- Submit create or update (parent handles API call) --- */
@@ -648,6 +736,7 @@ export default function QuestionsPage() {
                       <td className="px-4 py-3"><VisibilityBadge visibility={q.visibility} /></td>
                       <td className="px-4 py-3">
                         <div className="flex items-center justify-center gap-2">
+                          <button onClick={() => openDetail(q)} className="px-2 py-1.5 rounded-full text-xs font-semibold bg-gray-100 text-gray-600 border border-gray-200 hover:bg-gray-200 transition" title="Xem chi tiết"><EyeIcon /></button>
                           <button onClick={() => openEdit(q)} className="px-3 py-1.5 rounded-full text-xs font-semibold bg-blue-100 text-blue-800 border border-blue-200 hover:bg-blue-200 transition">Sửa</button>
                           <button onClick={() => handleDelete(q.id)} className="px-3 py-1.5 rounded-full text-xs font-semibold bg-rose-500 text-white shadow hover:bg-rose-600 transition">Xóa</button>
                         </div>
@@ -687,6 +776,12 @@ export default function QuestionsPage() {
         }}
         categories={categories}
         editing={editingQuestion}
+      />
+
+      <QuestionDetailModal
+        open={detailModalOpen}
+        onClose={() => { setDetailModalOpen(false); setViewingQuestion(null); }}
+        question={viewingQuestion}
       />
     </div>
   );
