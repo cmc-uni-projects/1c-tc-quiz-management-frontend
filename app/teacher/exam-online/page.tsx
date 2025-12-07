@@ -567,9 +567,12 @@ export default function CreateExamPage() {
                 <input
                   type="number"
                   value={questionCount}
-                  onChange={(e) =>
-                    setQuestionCount(e.target.value === "" ? "" : Number(e.target.value))
-                  }
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    if (value === "" || /^\d+$/.test(value)) {
+                      setQuestionCount(value === "" ? "" : Number(value));
+                    }
+                  }}
                   className="w-full border px-3 py-2 rounded-md"
                 />
               </div>
@@ -920,11 +923,12 @@ export default function CreateExamPage() {
                         <th>Thao tác</th>
                       </tr>
                     </thead>
-
                     <tbody>
                       {libraryQuestions.length === 0 && !libraryLoading && (
                         <tr>
-                          <td colSpan={7} className="py-8 text-gray-500">Không tìm thấy câu hỏi nào.</td>
+                          <td colSpan={7} className="py-8 text-gray-500">
+                            Không tìm thấy câu hỏi nào.
+                          </td>
                         </tr>
                       )}
                       {libraryQuestions.map((q, index) => (
@@ -934,7 +938,7 @@ export default function CreateExamPage() {
                           <td className="border-r">{q.questionType}</td>
                           <td className="border-r">{q.difficulty}</td>
                           <td className="border-r">{q.categoryName || q.categoryId}</td>
-                          <td className="border-r">TBD</td> {/* Người tạo - Assuming 'createdBy' is not in Question type */}
+                          <td className="border-r">TBD</td>
                           <td>
                             <button
                               onClick={() => addQuestion(q)}
