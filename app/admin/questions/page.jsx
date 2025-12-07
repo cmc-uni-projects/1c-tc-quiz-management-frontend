@@ -47,7 +47,7 @@ async function fetchApi(url, options = {}) {
     try {
       const parsed = isJson ? await response.json() : null;
       errorText = (parsed && (parsed.message || parsed.error)) || (isJson ? JSON.stringify(parsed) : await response.text());
-    } catch {}
+    } catch { }
     throw new Error(errorText.toString().substring(0, 300));
   }
 
@@ -67,8 +67,14 @@ const PlusIcon = (props) => (
 );
 const XIcon = (props) => (
   <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
-    <path d="M18 6 6 18"/>
-    <path d="m6 6 12 12"/>
+    <path d="M18 6 6 18" />
+    <path d="m6 6 12 12" />
+  </svg>
+);
+const EyeIcon = (props) => (
+  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+    <path d="M2.062 12.348a1 1 0 0 1 0-.696 10.75 10.75 0 0 1 19.876 0 1 1 0 0 1 0 .696 10.75 10.75 0 0 1-19.876 0" />
+    <circle cx="12" cy="12" r="3" />
   </svg>
 );
 
@@ -114,15 +120,23 @@ function VisibilityBadge({ visibility }) {
   switch (vis) {
     case "PUBLIC":
       colorClass = "bg-sky-100 text-sky-800";
-      break;
+      return (
+        <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-medium ${colorClass}`}>
+          Công khai
+        </span>
+      );
     case "PRIVATE":
       colorClass = "bg-orange-100 text-orange-800";
-      break;
+      return (
+        <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-medium ${colorClass}`}>
+          Riêng tư
+        </span>
+      );
   }
 
   return (
     <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-medium ${colorClass}`}>
-      {vis ? sentenceCase(vis.toLowerCase()) : "N/A"}
+      N/A
     </span>
   );
 }
@@ -206,15 +220,15 @@ function QuestionModal({ open, onClose, onSubmit, categories = [], editing = nul
     if (!type) return "Chọn loại câu hỏi";
     if (!difficulty) return "Chọn độ khó";
     if (!categoryId) return "Chọn danh mục";
-    
+
     // Validate answers
     const validAnswers = answers.filter(ans => ans.text.trim());
     if (validAnswers.length < 2) return "Cần ít nhất 2 đáp án";
-    
+
     const correctAnswers = validAnswers.filter(ans => ans.correct);
     if (correctAnswers.length === 0) return "Cần chọn ít nhất 1 đáp án đúng";
     if (type === "SINGLE" && correctAnswers.length > 1) return "Câu hỏi 1 lựa chọn chỉ có 1 đáp án đúng";
-    
+
     return "";
   };
 
@@ -246,13 +260,13 @@ function QuestionModal({ open, onClose, onSubmit, categories = [], editing = nul
   if (!open) return null;
   return (
     <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4" onClick={onClose}>
-      <div className="bg-white rounded-2xl w-full max-w-md p-6 shadow-2xl" onClick={(e) => e.stopPropagation()}>
-        <div className="flex items-center justify-between mb-4">
+      <div className="bg-white rounded-2xl w-full max-w-md shadow-2xl max-h-[90vh] flex flex-col" onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-center justify-between p-6 pb-0 mb-4 bg-white rounded-t-2xl z-10 shrink-0">
           <h3 className="text-xl font-bold">{editing ? "Cập nhật thông tin câu hỏi" : "Thêm câu hỏi mới"}</h3>
           <button onClick={onClose} className="text-gray-500 hover:text-gray-800"><XIcon /></button>
         </div>
 
-        <div className="space-y-3">
+        <div className="space-y-3 overflow-y-auto flex-1 px-6 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent">
           <div>
             <label className="text-sm font-medium block mb-1">Tiêu đề</label>
             <input value={title} onChange={(e) => setTitle(e.target.value)} className="w-full px-3 py-2 border rounded-lg" />
@@ -320,9 +334,9 @@ function QuestionModal({ open, onClose, onSubmit, categories = [], editing = nul
               </button>
             )}
             <p className="text-xs text-gray-500 mt-1">
-              {type === "TRUE_FALSE" ? "Câu hỏi đúng/sai có sẵn 2 đáp án." : 
-               type === "SINGLE" ? "Chọn 1 đáp án đúng duy nhất." : 
-               "Có thể chọn nhiều đáp án đúng."}
+              {type === "TRUE_FALSE" ? "Câu hỏi đúng/sai có sẵn 2 đáp án." :
+                type === "SINGLE" ? "Chọn 1 đáp án đúng duy nhất." :
+                  "Có thể chọn nhiều đáp án đúng."}
             </p>
           </div>
 
@@ -337,19 +351,94 @@ function QuestionModal({ open, onClose, onSubmit, categories = [], editing = nul
           <div>
             <label className="text-sm font-medium block mb-1">Visibility</label>
             <select value={visibility} onChange={(e) => setVisibility(e.target.value)} className="w-full px-3 py-2 border rounded-lg">
-                <option value="PRIVATE">Private</option>
-                <option value="PUBLIC">Public</option>
+              <option value="PRIVATE">Riêng tư (Chỉ mình tôi)</option>
+              <option value="PUBLIC">Công khai (Mọi người đều thấy)</option>
             </select>
           </div>
 
           {error && <div className="text-red-600 text-sm font-medium">{error}</div>}
+        </div>
 
-          <div className="flex justify-end gap-3 pt-2">
-            <button onClick={onClose} className="px-4 py-2 border rounded-xl hover:bg-gray-100" disabled={loading}>Hủy</button>
-            <button onClick={handleSubmit} className="px-4 py-2 rounded-xl text-white" style={{ backgroundColor: BUTTON_COLOR }} disabled={loading}>
-              {loading ? (editing ? "Đang cập nhật..." : "Đang tạo...") : (editing ? "Cập nhật câu hỏi" : "Thêm câu hỏi")}
-            </button>
+        <div className="flex justify-end gap-3 p-6 pt-4 border-t border-gray-100 bg-white rounded-b-2xl shrink-0">
+          <button onClick={onClose} className="px-4 py-2 border rounded-xl hover:bg-gray-100" disabled={loading}>Hủy</button>
+          <button onClick={handleSubmit} className="px-4 py-2 rounded-xl text-white" style={{ backgroundColor: BUTTON_COLOR }} disabled={loading}>
+            {loading ? (editing ? "Đang cập nhật..." : "Đang tạo...") : (editing ? "Cập nhật câu hỏi" : "Thêm câu hỏi")}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+
+}
+
+/* --- View Detail Modal --- */
+function QuestionDetailModal({ open, onClose, question }) {
+  if (!open || !question) return null;
+
+  return (
+    <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4" onClick={onClose}>
+      <div className="bg-white rounded-2xl w-full max-w-2xl shadow-2xl max-h-[90vh] flex flex-col" onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-center justify-between p-6 pb-0 mb-4 bg-white rounded-t-2xl z-10 shrink-0">
+          <h3 className="text-xl font-bold text-gray-800">Chi tiết câu hỏi</h3>
+          <button onClick={onClose} className="text-gray-500 hover:text-gray-800"><XIcon /></button>
+        </div>
+
+        <div className="space-y-4 overflow-y-auto flex-1 px-6 pb-6 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent">
+          {/* Header Info */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Loại câu hỏi</label>
+              <p className="font-medium text-gray-900 mt-1">
+                {question.type === "SINGLE" ? "Một đáp án" :
+                  question.type === "MULTIPLE" ? "Nhiều đáp án" :
+                    question.type === "TRUE_FALSE" ? "Đúng / Sai" : question.type}
+              </p>
+            </div>
+            <div>
+              <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Độ khó</label>
+              <div className="mt-1"><DifficultyBadge difficulty={question.difficulty} /></div>
+            </div>
+            <div>
+              <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Danh mục</label>
+              <p className="font-medium text-gray-900 mt-1">{question.categoryName || "___"}</p>
+            </div>
+            <div>
+              <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Trạng thái</label>
+              <div className="mt-1"><VisibilityBadge visibility={question.visibility} /></div>
+            </div>
+            <div>
+              <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Người tạo</label>
+              <p className="font-medium text-gray-900 mt-1">{question.createdBy || "N/A"}</p>
+            </div>
           </div>
+
+          <div className="pt-4 border-t border-gray-100">
+            <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider block mb-2">Nội dung câu hỏi</label>
+            <div className="bg-gray-50 p-4 rounded-xl border border-gray-200">
+              <p className="text-lg font-bold text-gray-800">{question.title}</p>
+            </div>
+          </div>
+
+          <div className="pt-2">
+            <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider block mb-2">Danh sách đáp án</label>
+            <div className="space-y-2">
+              {question.answers && question.answers.map((ans, idx) => (
+                <div key={idx} className={`p-3 rounded-lg border flex items-start gap-3 ${ans.correct ? "bg-green-50 border-green-200" : "bg-white border-gray-200"}`}>
+                  <div className={`mt-0.5 w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold border ${ans.correct ? "bg-green-500 text-white border-green-500" : "bg-gray-100 text-gray-500 border-gray-300"}`}>
+                    {String.fromCharCode(65 + idx)}
+                  </div>
+                  <div className="flex-1">
+                    <p className={`text-sm ${ans.correct ? "font-bold text-green-800" : "text-gray-700"}`}>{ans.text}</p>
+                  </div>
+                  {ans.correct && <span className="text-xs font-bold text-green-600 bg-green-100 px-2 py-0.5 rounded">Đúng</span>}
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        <div className="p-4 border-t border-gray-100 bg-gray-50 rounded-b-2xl shrink-0 flex justify-end">
+          <button onClick={onClose} className="px-5 py-2 bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold rounded-xl transition">Đóng</button>
         </div>
       </div>
     </div>
@@ -376,13 +465,16 @@ export default function QuestionsPage() {
   const [modalOpen, setModalOpen] = useState(false);
   const [editingQuestion, setEditingQuestion] = useState(null);
 
+  const [detailModalOpen, setDetailModalOpen] = useState(false);
+  const [viewingQuestion, setViewingQuestion] = useState(null);
+
   /* --- Load profile once (optional) --- */
   useEffect(() => {
     (async () => {
       try {
         const profile = await fetchApi(`${API_URL}/me`);
         setCurrentUser(profile);
-      } catch {}
+      } catch { }
     })();
   }, []);
 
@@ -464,11 +556,16 @@ export default function QuestionsPage() {
   const openEdit = (q) => {
     const category = categories.find(c => c.name === q.categoryName);
     const questionWithCategoryId = {
-        ...q,
-        categoryId: category ? category.id : null
+      ...q,
+      categoryId: category ? category.id : null
     };
     setEditingQuestion(questionWithCategoryId);
     setModalOpen(true);
+  };
+
+  const openDetail = (q) => {
+    setViewingQuestion(q);
+    setDetailModalOpen(true);
   };
 
   /* --- Submit create or update (parent handles API call) --- */
@@ -543,43 +640,45 @@ export default function QuestionsPage() {
           </div>
 
           <div className="mt-6 bg-white/95 rounded-2xl p-4 shadow-inner">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-end">
-              <div className="flex gap-3 items-center">
+            <div className="flex flex-col gap-4">
+              {/* Row 1: Filters */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
                 <input
                   value={keyword}
                   onChange={(e) => setKeyword(e.target.value)}
                   placeholder="Nhập tiêu đề / đáp án..."
-                  className="flex-1 px-4 py-2 rounded-xl border border-gray-200 text-gray-800 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-purple-400"
+                  className="w-full px-4 py-2 rounded-xl border border-gray-200 text-gray-800 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-purple-400"
                   onKeyDown={(e) => e.key === "Enter" && handleSearch()}
                 />
 
-                <select value={difficultyFilter} onChange={(e) => setDifficultyFilter(e.target.value)} className="px-4 py-2 rounded-xl border border-gray-200 text-gray-800 text-sm">
+                <select value={typeFilter} onChange={(e) => setTypeFilter(e.target.value)} className="w-full px-4 py-2 rounded-xl border border-gray-200 text-gray-800 text-sm">
+                  <option value="">Chọn loại câu hỏi</option>
+                  <option value="SINGLE">Một đáp án</option>
+                  <option value="MULTIPLE">Nhiều đáp án</option>
+                  <option value="TRUE_FALSE">Đúng/Sai</option>
+                </select>
+
+                <select value={difficultyFilter} onChange={(e) => setDifficultyFilter(e.target.value)} className="w-full px-4 py-2 rounded-xl border border-gray-200 text-gray-800 text-sm">
                   <option value="">Chọn độ khó</option>
                   <option value="EASY">Dễ</option>
                   <option value="MEDIUM">Trung bình</option>
                   <option value="HARD">Khó</option>
                 </select>
 
-                <select value={typeFilter} onChange={(e) => setTypeFilter(e.target.value)} className="px-4 py-2 rounded-xl border border-gray-200 text-gray-800 text-sm">
-                  <option value="">Chọn loại câu hỏi</option>
-                  <option value="SINGLE">Trắc nghiệm (1 đáp án)</option>
-                  <option value="MULTIPLE">Trắc nghiệm (nhiều đáp án)</option>
-                  <option value="TRUE_FALSE">Đúng/Sai</option>
-                </select>
-
-                <select value={categoryFilter} onChange={(e) => setCategoryFilter(e.target.value)} className="px-4 py-2 rounded-xl border border-gray-200 text-gray-800 text-sm">
+                <select value={categoryFilter} onChange={(e) => setCategoryFilter(e.target.value)} className="w-full px-4 py-2 rounded-xl border border-gray-200 text-gray-800 text-sm">
                   <option value="">Chọn danh mục</option>
                   {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
                 </select>
 
-                <select value={visibilityFilter} onChange={(e) => setVisibilityFilter(e.target.value)} className="px-4 py-2 rounded-xl border border-gray-200 text-gray-800 text-sm">
-                  <option value="">All Visibilities</option>
-                  <option value="PRIVATE">Private</option>
-                  <option value="PUBLIC">Public</option>
+                <select value={visibilityFilter} onChange={(e) => setVisibilityFilter(e.target.value)} className="w-full px-4 py-2 rounded-xl border border-gray-200 text-gray-800 text-sm">
+                  <option value="">Tất cả trạng thái</option>
+                  <option value="PRIVATE">Riêng tư</option>
+                  <option value="PUBLIC">Công khai</option>
                 </select>
               </div>
 
-              <div className="flex justify-end gap-2">
+              {/* Row 2: Buttons */}
+              <div className="flex justify-end gap-2 border-t border-gray-100 pt-4">
                 <button onClick={handleSearch} className="px-6 py-2 rounded-xl text-white text-sm font-semibold" style={{ backgroundColor: SEARCH_BAR_BG }} disabled={loading}>
                   Tìm kiếm
                 </button>
@@ -608,10 +707,9 @@ export default function QuestionsPage() {
                   <th className="px-4 py-3 text-left">Tiêu đề</th>
                   <th className="px-4 py-3 text-left w-40">Loại câu hỏi</th>
                   <th className="px-4 py-3 text-left w-28">Độ khó</th>
-                  <th className="px-4 py-3 text-left w-28">Visibility</th>
-                  <th className="px-4 py-3 text-left hidden sm:table-cell">Đáp án</th>
                   <th className="px-4 py-3 text-left hidden md:table-cell">Người tạo</th>
                   <th className="px-4 py-3 text-left w-40 hidden lg:table-cell">Danh mục</th>
+                  <th className="px-4 py-3 text-left w-28">Trạng thái</th>
                   <th className="px-4 py-3 text-center w-40">Thao tác</th>
                 </tr>
               </thead>
@@ -626,14 +724,23 @@ export default function QuestionsPage() {
                     <tr key={q.id} className="hover:bg-purple-50/50 transition">
                       <td className="px-4 py-3">{page * PAGE_SIZE + idx + 1}</td>
                       <td className="px-4 py-3 font-medium text-gray-900 max-w-xs overflow-hidden text-ellipsis whitespace-nowrap">{q.title}</td>
-                      <td className="px-4 py-3">{sentenceCase(q.type?.replaceAll("_", " ") || "")}</td>
+                      <td className="px-4 py-3">
+                        {(() => {
+                          switch (q.type) {
+                            case "SINGLE": return "Một đáp án";
+                            case "MULTIPLE": return "Nhiều đáp án";
+                            case "TRUE_FALSE": return "Đúng / Sai";
+                            default: return q.type;
+                          }
+                        })()}
+                      </td>
                       <td className="px-4 py-3"><DifficultyBadge difficulty={q.difficulty} /></td>
-                      <td className="px-4 py-3"><VisibilityBadge visibility={q.visibility} /></td>
-                      <td className="px-4 py-3 hidden sm:table-cell">{q.correctAnswer || q.answer}</td>
                       <td className="px-4 py-3 hidden md:table-cell">{q.createdBy || "N/A"}</td>
                       <td className="px-4 py-3 hidden lg:table-cell">{q.categoryName || ""}</td>
+                      <td className="px-4 py-3"><VisibilityBadge visibility={q.visibility} /></td>
                       <td className="px-4 py-3">
                         <div className="flex items-center justify-center gap-2">
+                          <button onClick={() => openDetail(q)} className="px-2 py-1.5 rounded-full text-xs font-semibold bg-gray-100 text-gray-600 border border-gray-200 hover:bg-gray-200 transition" title="Xem chi tiết"><EyeIcon /></button>
                           <button onClick={() => openEdit(q)} className="px-3 py-1.5 rounded-full text-xs font-semibold bg-blue-100 text-blue-800 border border-blue-200 hover:bg-blue-200 transition">Sửa</button>
                           <button onClick={() => handleDelete(q.id)} className="px-3 py-1.5 rounded-full text-xs font-semibold bg-rose-500 text-white shadow hover:bg-rose-600 transition">Xóa</button>
                         </div>
@@ -673,6 +780,12 @@ export default function QuestionsPage() {
         }}
         categories={categories}
         editing={editingQuestion}
+      />
+
+      <QuestionDetailModal
+        open={detailModalOpen}
+        onClose={() => { setDetailModalOpen(false); setViewingQuestion(null); }}
+        question={viewingQuestion}
       />
     </div>
   );
