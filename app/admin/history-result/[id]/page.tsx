@@ -61,7 +61,8 @@ export default function AdminHistoryResultPage() {
     const [loading, setLoading] = useState(true);
 
     // Helper: Map for fast lookup of selected answers
-    const [selectedAnswersMap, setSelectedAnswersMap] = useState<Record<number, number[]>>({});
+    // Helper: Map for fast lookup of selected answers: questionId -> { answerId: isCorrect }
+    const [selectedAnswersMap, setSelectedAnswersMap] = useState<Record<number, Record<number, boolean>>>({});
 
     useEffect(() => {
         if (!historyId) return;
@@ -85,14 +86,14 @@ export default function AdminHistoryResultPage() {
                 console.log("History Loaded:", historyData);
                 console.log("Student Answers:", historyData.studentAnswers);
 
-                // Map student answers for easy lookup: questionId -> [answerId1, answerId2...]
-                const answersMap: Record<number, number[]> = {};
+                // Map student answers for easy lookup: questionId -> { answerId: isCorrect }
+                const answersMap: Record<number, Record<number, boolean>> = {};
                 if (historyData.studentAnswers) {
                     historyData.studentAnswers.forEach(sa => {
                         if (!answersMap[sa.questionId]) {
-                            answersMap[sa.questionId] = [];
+                            answersMap[sa.questionId] = {};
                         }
-                        answersMap[sa.questionId].push(sa.answerId);
+                        answersMap[sa.questionId][sa.answerId] = sa.isCorrect;
                     });
                 }
                 setSelectedAnswersMap(answersMap);
@@ -192,7 +193,7 @@ export default function AdminHistoryResultPage() {
                 {/* --- QUESTIONS LIST --- */}
                 <div className="space-y-8">
                     {exam.examQuestions?.map(({ question: q }, index) => {
-                        const studentSelectedIds = selectedAnswersMap[q.id] || [];
+                        const studentSelectedIds = selectedAnswersMap[q.id]; // Now Record<number, boolean> | undefined
                         const isMultiple = q.type === 'MULTIPLE';
 
                         return (
@@ -206,11 +207,9 @@ export default function AdminHistoryResultPage() {
                                 {/* Answers */}
                                 <div className="space-y-2 ml-6">
                                     {q.answers.map((ans) => {
-                                        const isSelected = studentSelectedIds.includes(ans.id);
-
-                                        // Highlight logic
-                                        // If selected: check if right or wrong
-                                        // If not selected but correct: normal text
+                                        const selectedRecord = studentSelectedIds || {};
+                                        const isSelected = selectedRecord[ans.id] !== undefined;
+                                        const isSnapshotCorrect = isSelected ? selectedRecord[ans.id] : false;
 
                                         // Style classes
                                         let containerClass = "flex items-start gap-3 p-2 rounded-lg cursor-default ";
@@ -218,7 +217,7 @@ export default function AdminHistoryResultPage() {
                                         let iconColor = "text-gray-400"; // default circle/check
 
                                         if (isSelected) {
-                                            if (ans.correct) {
+                                            if (isSnapshotCorrect) { // Use snapshot correctness!
                                                 // Correct & Selected -> Green highlight + Background
                                                 containerClass += "bg-green-50 border border-green-200";
                                                 textClass = "text-green-700 font-semibold";
