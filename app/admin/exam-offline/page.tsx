@@ -176,7 +176,40 @@ export default function CreateExamPage() {
     );
   };
 
-  const handleCreateExam = async () => {
+  // TYPES
+  type QuestionTypeOption = { id: string; name: string };
+  type DifficultyOption = { id: string; name: string };
+
+  type ExamStatus = 'DRAFT' | 'PUBLISHED';
+
+  interface Category {
+    id: number;
+    name: string;
+  }
+
+  interface Question {
+    id: number;
+    title: string;
+    type: string;
+    level: string;
+    correctAnswer: string;
+    answers: { id: number; text: string; isCorrect: boolean }[];
+    category: { id: number; name: string };
+    difficulty?: string;
+    createdBy?: string;
+  }
+
+  interface Exam {
+    title: string;
+    description: string;
+    durationMinutes: number;
+    categoryId: number;
+    examLevel: string;
+    status: ExamStatus;
+  }
+  //... (keeping imports and other parts same, targeting handleCreateExam)
+
+  const handleCreateExam = async (status: ExamStatus) => {
     // 1. Validation
     if (!examTitle.trim()) {
       toastError("Vui lòng nhập tên bài thi");
@@ -196,6 +229,36 @@ export default function CreateExamPage() {
       return;
     }
 
+    if (!startDate || !startTime) {
+      toastError("Vui lòng chọn ngày và giờ bắt đầu");
+      return;
+    }
+    const now = new Date();
+    const startDateTime = new Date(`${startDate}T${startTime}:00`);
+    if (isNaN(startDateTime.getTime())) {
+      toastError("Thời gian bắt đầu không hợp lệ");
+      return;
+    }
+    if (startDateTime < now) {
+      toastError("Thời gian bắt đầu phải lớn hơn hoặc bằng thời gian hiện tại");
+      return;
+    }
+
+    if (!endDate || !endTime) {
+      toastError("Vui lòng chọn ngày và giờ kết thúc");
+      return;
+    }
+    const endDateTime = new Date(`${endDate}T${endTime}:00`);
+    if (isNaN(endDateTime.getTime())) {
+      toastError("Thời gian kết thúc không hợp lệ");
+      return;
+    }
+    if (endDateTime <= startDateTime) {
+      toastError("Thời gian kết thúc phải sau thời gian bắt đầu");
+      return;
+    }
+
+
     try {
       // 2. Prepare question IDs
       const questionIds: number[] = []; // Empty initially
@@ -205,11 +268,12 @@ export default function CreateExamPage() {
         title: examTitle,
         categoryId: examCategory,
         durationMinutes: Number(duration),
-        startTime: startTime && startDate ? `${startDate}T${startTime}:00` : null,
-        endTime: endTime && endDate ? `${endDate}T${endTime}:00` : null,
+        startTime: `${startDate}T${startTime}:00`,
+        endTime: `${endDate}T${endTime}:00`,
         questionIds: questionIds,
         description: `Bài thi ${examType}`,
-        examLevel: examType.toUpperCase() // Map to backend Enum: EASY, MEDIUM, HARD
+        examLevel: examType.toUpperCase(),
+        status: status
       };
 
       await fetchApi('/exams/create', {
@@ -217,8 +281,10 @@ export default function CreateExamPage() {
         body: examPayload
       });
 
-      toastSuccess("Tạo bài thi thành công!");
+      toastSuccess(status === 'DRAFT' ? "Đã lưu nháp!" : "Đã đăng bài thành công!");
       // Reset form or redirect? For now just notify.
+      // Redirect to list
+      window.location.href = '/admin/list-exam';
 
     } catch (error: any) {
       console.error("Error creating exam:", error);
@@ -228,18 +294,8 @@ export default function CreateExamPage() {
 
   return (
     <div className="min-h-screen flex bg-[#F5F5F5] text-gray-900">
-
-
-
-      {/* ====================== MAIN ====================== */}
       <div className="flex-1 flex flex-col">
-
-
-
-        {/* ====================== CONTENT ====================== */}
         <main className="flex-1 overflow-y-auto px-10 py-8">
-
-          {/* ================== FORM TẠO BÀI THI ================== */}
           <section className="bg-white rounded-2xl shadow p-8 mb-6">
             <h2 className="text-2xl font-semibold text-center mb-8">
               Tạo bài thi offline - Admin
@@ -256,18 +312,6 @@ export default function CreateExamPage() {
                   className="w-full border px-3 py-2 rounded-md"
                 />
               </div>
-
-              {/* <div>
-                <label className="block text-sm mb-1">Số lượng câu hỏi</label>
-                <input
-                  type="number"
-                  value={questionCount}
-                  onChange={(e) =>
-                    setQuestionCount(e.target.value === "" ? "" : Number(e.target.value))
-                  }
-                  className="w-full border px-3 py-2 rounded-md"
-                />
-              </div> */}
 
               <div>
                 <label className="block text-sm mb-1">Loại đề thi</label>
@@ -306,7 +350,6 @@ export default function CreateExamPage() {
                 <label className="block text-sm font-medium mb-1">
                   Thời gian nộp bài
                 </label>
-
                 <div className="flex items-center gap-2">
                   <span className="text-sm">Khoảng thời gian:</span>
                   <input
@@ -317,7 +360,7 @@ export default function CreateExamPage() {
                     }
                     className="w-20 border px-2 py-1 rounded-md"
                   />
-                  <span>Minute</span>
+                  <span>Phút</span>
                 </div>
               </div>
 
@@ -363,24 +406,23 @@ export default function CreateExamPage() {
             </div>
           </section>
 
-
-
           {/* NÚT LƯU – ĐĂNG BÀI */}
           <div className="mt-6 flex justify-end gap-4">
-            <button className="px-6 py-2 border border-purple-700 text-purple-700 rounded-md">
-              Lưu
+            <button
+              onClick={() => window.location.href = '/admin/list-exam'}
+              className="px-6 py-2 border border-purple-700 text-purple-700 rounded-md">
+              Hủy
             </button>
 
             <button
-              onClick={handleCreateExam}
+              onClick={() => handleCreateExam('DRAFT')}
               className="px-6 py-2 bg-purple-700 text-white rounded-md"
             >
-              Đăng bài
+              Tạo bài thi
             </button>
           </div>
         </main>
 
-        {/* ====================== FOOTER ====================== */}
         <footer className="h-12 bg-white border-t border-gray-200 flex items-center justify-center text-sm text-gray-500">
           © 2025 QuizzZone. Mọi quyền được bảo lưu.
         </footer>
