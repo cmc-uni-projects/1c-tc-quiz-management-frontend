@@ -94,7 +94,7 @@ const StudentHomeContent = () => {
 
         initFirebase();
     }, []);
-    
+
     // Lấy dữ liệu Môn học từ API (THAY THẾ DỮ LIỆU CỨNG)
     useEffect(() => {
         const fetchSubjects = async () => {
@@ -102,7 +102,7 @@ const StudentHomeContent = () => {
                 // Thay thế bằng endpoint API thực tế của bạn
                 // const response = await apiClient.get('/api/subjects');
                 // setSubjects(response.data);
-                
+
                 // Dữ liệu mẫu thay thế tạm thời cho API call
                 const mockSubjects: Subject[] = [
                     { id: 1, title: 'Toán học', subtitle: 'Giải tích', color: '#FBC02D', image: '/roles/Math.jpg' },
@@ -222,10 +222,4 @@ const StudentHomeContent = () => {
 /* ===========================================================
     WRAPPER EXPORT (Sử dụng Layout mới)
 =========================================================== */
-export default function StudentHomeWrapper() {
-    return (
-        <StudentLayout>
-            <StudentHomeContent />
-        </StudentLayout>
-    );
-}
+export default StudentHomeContent;

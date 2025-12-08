@@ -30,6 +30,12 @@ const ListExamsContent = () => {
     const [difficulty, setDifficulty] = useState<string>(''); // Default: All difficulties
     const [searchQuery, setSearchQuery] = useState('');
     const [selectedCategory, setSelectedCategory] = useState('');
+    const [categories, setCategories] = useState<{ id: number; name: string }[]>([]);
+
+    // Fetch Categories
+    useEffect(() => {
+        fetchApi("/categories/all").then(setCategories).catch(console.error);
+    }, []);
 
     // Lấy dữ liệu Bài thi từ API
     useEffect(() => {
@@ -105,8 +111,9 @@ const ListExamsContent = () => {
                     onChange={(e) => setSelectedCategory(e.target.value)}
                 >
                     <option value="">Tất cả danh mục</option>
-                    <option value="1">Toán học</option>
-                    <option value="2">Tiếng Anh</option>
+                    {categories.map((c) => (
+                        <option key={c.id} value={c.id}>{c.name}</option>
+                    ))}
                 </select>
 
                 <select
@@ -173,10 +180,4 @@ const ListExamsContent = () => {
 /* ===========================================================
     WRAPPER EXPORT (Sử dụng Layout mới)
 =========================================================== */
-export default function ListExamsWrapper() {
-    return (
-        <StudentLayout>
-            <ListExamsContent />
-        </StudentLayout>
-    );
-}
+export default ListExamsContent;

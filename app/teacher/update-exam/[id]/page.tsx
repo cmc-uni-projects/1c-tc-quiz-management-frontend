@@ -224,6 +224,9 @@ export default function UpdateExamPage() {
         }
     };
 
+    // State for submit action
+    const [submitAction, setSubmitAction] = useState<'DRAFT' | 'PUBLISHED'>('DRAFT');
+
     // Submit Handler
     const handleSubmit = async (values: ExamFormValues) => {
         try {
@@ -279,6 +282,7 @@ export default function UpdateExamPage() {
                 endTime: `${values.endDate}T${values.endTime}:00`,
                 questionIds: questionIds,
                 description: "",
+                status: submitAction // Use state
             };
 
             await fetchApi(`/exams/edit/${id}`, {
@@ -286,7 +290,7 @@ export default function UpdateExamPage() {
                 body: JSON.stringify(examPayload),
             });
 
-            toastSuccess("Cập nhật bài thi thành công!");
+            toastSuccess(submitAction === 'DRAFT' ? "Đã lưu nháp!" : "Đã đăng bài thành công!");
             router.push("/teacher/list-exam");
         } catch (error: any) {
             console.error("Submit error:", error);
@@ -566,15 +570,23 @@ export default function UpdateExamPage() {
                             <button
                                 type="button"
                                 onClick={() => router.back()}
-                                className="px-6 py-2 border border-gray-300 rounded-md hover:bg-gray-50"
+                                className="px-6 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition"
                             >
                                 Hủy
                             </button>
                             <button
                                 type="submit"
-                                className="px-6 py-2 bg-purple-700 text-white rounded-md hover:bg-purple-800"
+                                onClick={() => setSubmitAction('DRAFT')}
+                                className="px-6 py-2 border border-purple-700 text-purple-700 font-medium rounded-lg hover:bg-purple-50 transition"
                             >
-                                Lưu bài thi
+                                Lưu nháp
+                            </button>
+                            <button
+                                type="submit"
+                                onClick={() => setSubmitAction('PUBLISHED')}
+                                className="px-6 py-2 bg-purple-700 hover:bg-purple-800 text-white font-medium rounded-lg transition shadow-md"
+                            >
+                                Đăng bài
                             </button>
                         </div>
 

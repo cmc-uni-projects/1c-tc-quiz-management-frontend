@@ -11,7 +11,7 @@ const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8082/a
 interface FetchApiOptions {
   method?: string;
   headers?: Record<string, string>;
-  body?: Record<string, unknown> | string;
+  body?: Record<string, unknown> | string | FormData;
 }
 
 const isClient = typeof window !== 'undefined';
