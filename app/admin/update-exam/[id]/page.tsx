@@ -36,6 +36,7 @@ interface ExamFormValues {
     endTime: string;   // HH:mm
     endDate: string;   // YYYY-MM-DD
     questions: Question[];
+    status?: 'DRAFT' | 'PUBLISHED';
 }
 
 interface Category {
@@ -84,6 +85,7 @@ export default function AdminUpdateExamPage() {
     const [categories, setCategories] = useState<Category[]>([]);
     const [difficultyOptions, setDifficultyOptions] = useState<Option[]>([]);
     const [initialValues, setInitialValues] = useState<ExamFormValues | null>(null);
+    const [submitAction, setSubmitAction] = useState<'DRAFT' | 'PUBLISHED' | null>(null);
 
     // Library State
     const [openLibrary, setOpenLibrary] = useState(false);
@@ -151,6 +153,7 @@ export default function AdminUpdateExamPage() {
                         answers: [
                             { text: "", isCorrect: false },
                             { text: "", isCorrect: false },
+                            { text: "", isCorrect: false },
                         ],
                         isReadOnly: false
                     });
@@ -166,6 +169,7 @@ export default function AdminUpdateExamPage() {
                     endTime: endTimeObj.toTimeString().slice(0, 5),
                     endDate: endTimeObj.toISOString().slice(0, 10),
                     questions: mappedQuestions,
+                    status: exam.status || 'DRAFT'
                 });
             } catch (error) {
                 console.error("Failed to load data:", error);
@@ -227,6 +231,7 @@ export default function AdminUpdateExamPage() {
     // Submit Handler
     const handleSubmit = async (values: ExamFormValues) => {
         try {
+            const currentStatus = submitAction || 'DRAFT';
             const questionIds: number[] = [];
 
             // 1. Process Questions (Create/Update)
@@ -280,6 +285,7 @@ export default function AdminUpdateExamPage() {
                 endTime: `${values.endDate}T${values.endTime}:00`,
                 questionIds: questionIds,
                 description: "",
+                status: currentStatus
             };
 
             await fetchApi(`/exams/edit/${id}`, {
@@ -287,7 +293,7 @@ export default function AdminUpdateExamPage() {
                 body: JSON.stringify(examPayload),
             });
 
-            toastSuccess("Cập nhật bài thi thành công!");
+            toastSuccess(currentStatus === 'DRAFT' ? "Đã lưu nháp!" : "Đã đăng bài thành công!");
             router.push("/admin/list-exam");
         } catch (error: any) {
             console.error("Submit error:", error);
@@ -573,9 +579,17 @@ export default function AdminUpdateExamPage() {
                             </button>
                             <button
                                 type="submit"
-                                className="px-6 py-2 bg-purple-700 text-white rounded-md hover:bg-purple-800"
+                                onClick={() => setSubmitAction('DRAFT')}
+                                className="px-6 py-2 border border-purple-700 text-purple-700 font-medium rounded-lg hover:bg-purple-50 transition"
                             >
-                                Lưu bài thi
+                                Lưu nháp
+                            </button>
+                            <button
+                                type="submit"
+                                onClick={() => setSubmitAction('PUBLISHED')}
+                                className="px-6 py-2 bg-purple-700 hover:bg-purple-800 text-white font-medium rounded-lg transition shadow-md"
+                            >
+                                Đăng bài
                             </button>
                         </div>
 
