@@ -19,7 +19,7 @@ interface Exam {
     id: number;
     name: string;
   };
-  status?: "PENDING" | "ONGOING" | "COMPLETED"; // Optional, derived or from backend if available
+  status?: "DRAFT" | "PUBLISHED";
   durationMinutes: number;
   examLevel?: string;
 }
@@ -137,11 +137,11 @@ export default function TeacherExamListPage() {
   );
 
   // Filter Logic
-  // Draft: No questions (questionCount == 0)
-  const draftExams = sortedExams.filter((x) => x.questionCount === 0);
+  // Draft: status is DRAFT
+  const draftExams = sortedExams.filter((x) => x.status === 'DRAFT');
 
-  // Ready: Has questions (questionCount > 0)
-  const readyExams = sortedExams.filter((x) => x.questionCount > 0);
+  // Ready: status is PUBLISHED
+  const readyExams = sortedExams.filter((x) => x.status === 'PUBLISHED');
 
   const deleteExam = async (id: number) => {
     if (!confirm("Bạn có chắc chắn muốn xóa bài thi này?")) return;
@@ -231,15 +231,15 @@ export default function TeacherExamListPage() {
                     <ClockIcon /> Kết thúc: {exam.endTime ? new Date(exam.endTime).toLocaleString('vi-VN', { hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit', year: 'numeric' }) : 'N/A'}
                   </p>
                   <p>⏳ Thời gian: {exam.durationMinutes} phút</p>
-                  <p className="text-yellow-600 font-medium">⚠ Chưa có câu hỏi</p>
+                  <p className="text-yellow-600 font-medium">⚠ Bản nháp</p>
                 </div>
 
                 <div className="flex items-center justify-between mt-3">
                   <button
-                    onClick={() => router.push(`/teacher/update-exam/${exam.examId}`)} // Redirect to add questions
+                    onClick={() => router.push(`/teacher/update-exam/${exam.examId}`)}
                     className="text-sm bg-yellow-100 text-yellow-700 px-3 py-1 rounded hover:bg-yellow-200"
                   >
-                    Tiếp tục tạo
+                    Tiếp tục chỉnh sửa
                   </button>
                   <button
                     onClick={() => deleteExam(exam.examId)}

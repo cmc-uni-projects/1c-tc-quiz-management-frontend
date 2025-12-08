@@ -61,6 +61,7 @@ const DoExamContent = () => {
                 });
 
                 // Map Data
+                console.log("Exam Data:", data);
                 const mappedExam: ExamData = {
                     examId: data.examId,
                     title: data.title,
@@ -223,43 +224,50 @@ const DoExamContent = () => {
 
                 {/* Question List */}
                 <div className="bg-white p-6 rounded-lg shadow-md space-y-8">
-                    {exam.questions.map((q, index) => {
-                        const selectedForQ = studentAnswers[q.id] || [];
-                        const isMultiple = q.questionType === 'MULTIPLE';
+                    {(!exam.questions || exam.questions.length === 0) ? (
+                        <div className="text-center py-10 text-gray-500">
+                            <p>Bài thi này chưa có câu hỏi nào.</p>
+                            <p className="text-sm mt-2">Vui lòng liên hệ giáo viên.</p>
+                        </div>
+                    ) : (
+                        exam.questions.map((q, index) => {
+                            const selectedForQ = studentAnswers[q.id] || [];
+                            const isMultiple = q.questionType === 'MULTIPLE';
 
-                        return (
-                            <div key={q.id} className="border-b pb-6 last:border-0 hover:bg-gray-50 p-4 rounded-lg transition">
-                                <div className="flex justify-between items-start mb-3">
-                                    <p className="font-semibold text-lg flex-1">Câu {index + 1}: {q.text}</p>
-                                    <span className={`text-xs px-2 py-1 rounded ml-2 ${isMultiple ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-600'}`}>
-                                        {isMultiple ? 'Chọn nhiều' : 'Chọn 1'}
-                                    </span>
+                            return (
+                                <div key={q.id} className="border-b pb-6 last:border-0 hover:bg-gray-50 p-4 rounded-lg transition">
+                                    <div className="flex justify-between items-start mb-3">
+                                        <p className="font-semibold text-lg flex-1">Câu {index + 1}: {q.text}</p>
+                                        <span className={`text-xs px-2 py-1 rounded ml-2 ${isMultiple ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-600'}`}>
+                                            {isMultiple ? 'Chọn nhiều' : 'Chọn 1'}
+                                        </span>
+                                    </div>
+
+                                    {isMultiple && <p className="text-sm text-gray-400 italic mb-2">(Chọn tất cả đáp án đúng)</p>}
+
+                                    <div className="mt-3 space-y-2">
+                                        {q.answers.map(a => {
+                                            const isSelected = selectedForQ.includes(a.id);
+                                            return (
+                                                <label key={a.id} className="flex items-center cursor-pointer p-2 rounded hover:bg-gray-100 transition select-none">
+                                                    <input
+                                                        type={isMultiple ? "checkbox" : "radio"}
+                                                        name={`q-${q.id}`}
+                                                        checked={isSelected}
+                                                        onChange={() => handleAnswerChange(q.id, a.id, q.questionType)}
+                                                        className={`w-5 h-5 text-pink-600 focus:ring-pink-500 border-gray-300 ${!isMultiple ? 'rounded-full' : 'rounded'}`}
+                                                    />
+                                                    <span className={`ml-3 ${isSelected ? 'text-[#E33AEC] font-medium' : 'text-gray-700'}`}>
+                                                        {a.text}
+                                                    </span>
+                                                </label>
+                                            );
+                                        })}
+                                    </div>
                                 </div>
-
-                                {isMultiple && <p className="text-sm text-gray-400 italic mb-2">(Chọn tất cả đáp án đúng)</p>}
-
-                                <div className="mt-3 space-y-2">
-                                    {q.answers.map(a => {
-                                        const isSelected = selectedForQ.includes(a.id);
-                                        return (
-                                            <label key={a.id} className="flex items-center cursor-pointer p-2 rounded hover:bg-gray-100 transition select-none">
-                                                <input
-                                                    type={isMultiple ? "checkbox" : "radio"}
-                                                    name={`q-${q.id}`}
-                                                    checked={isSelected}
-                                                    onChange={() => handleAnswerChange(q.id, a.id, q.questionType)}
-                                                    className={`w-5 h-5 text-pink-600 focus:ring-pink-500 border-gray-300 ${!isMultiple ? 'rounded-full' : 'rounded'}`}
-                                                />
-                                                <span className={`ml-3 ${isSelected ? 'text-[#E33AEC] font-medium' : 'text-gray-700'}`}>
-                                                    {a.text}
-                                                </span>
-                                            </label>
-                                        );
-                                    })}
-                                </div>
-                            </div>
-                        );
-                    })}
+                            );
+                        })
+                    )}
                 </div>
 
                 {/* Footer Buttons */}
@@ -285,10 +293,4 @@ const DoExamContent = () => {
     );
 };
 
-export default function DoExamWrapper() {
-    return (
-        <StudentLayout>
-            <DoExamContent />
-        </StudentLayout>
-    );
-}
+export default DoExamContent;
