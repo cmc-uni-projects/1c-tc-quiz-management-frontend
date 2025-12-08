@@ -21,6 +21,7 @@ interface Exam {
   };
   status?: "PENDING" | "ONGOING" | "COMPLETED"; // Optional, derived or from backend if available
   durationMinutes: number;
+  examLevel?: string;
 }
 
 // ===== SVG ICONS =====
@@ -67,13 +68,17 @@ const MoreIcon = () => (
 );
 
 // Helper to calculate difficulty
-const getDifficultyLabel = (questions: any[]) => {
-  if (!questions || questions.length === 0) return "Chưa có";
-  const difficulties = questions.map(q => q.question?.difficulty);
-  if (difficulties.every(d => d === "EASY")) return "Dễ";
-  if (difficulties.every(d => d === "MEDIUM")) return "Trung bình";
-  if (difficulties.every(d => d === "HARD")) return "Khó";
-  return "Hỗn hợp";
+const getDifficultyLabel = (level?: string) => {
+  switch (level) {
+    case "EASY":
+      return "Dễ";
+    case "MEDIUM":
+      return "Trung bình";
+    case "HARD":
+      return "Khó";
+    default:
+      return "Chưa xác định";
+  }
 };
 
 export default function TeacherExamListPage() {
@@ -217,7 +222,7 @@ export default function TeacherExamListPage() {
                   <p>⏳ {exam.durationMinutes} Phút</p>
                   <p>📘 Câu hỏi: {exam.questionCount}</p>
                   <p>🏷 Danh mục: {exam.category?.name || "N/A"}</p>
-                  <p>📊 Độ khó: <span className="font-medium">{getDifficultyLabel(exam.examQuestions)}</span></p>
+                  <p>📊 Độ khó: <span className="font-medium">{getDifficultyLabel(exam.examLevel)}</span></p>
                 </div>
                 {/* Trạng thái + nút menu */}
                 <div className="flex items-center justify-between mt-3">
