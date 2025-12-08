@@ -24,12 +24,8 @@ export default function Navbar() {
           QuizzZone
         </Link>
 
-        {/* Center nav */}
-        <nav className="flex flex-1 items-center justify-center text-lg font-medium text-zinc-600">
-          <Link href="/" className="transition duration-150 hover:text-zinc-900">
-            Trang chủ
-          </Link>
-        </nav>
+        {/* Center nav removed as requested */}
+        <div className="flex-1" />
 
         {/* Actions */}
         <div className="flex shrink-0 items-center gap-2">

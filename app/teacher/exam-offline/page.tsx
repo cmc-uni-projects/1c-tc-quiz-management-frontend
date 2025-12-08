@@ -4,7 +4,7 @@ import React, { useState, useEffect } from "react";
 import { fetchApi } from "@/lib/apiClient";
 import { toastError, toastSuccess } from "@/lib/toast";// Adjust path as needed
 import { Autocomplete, AutocompleteItem } from "@nextui-org/react";
-import { useRouter } from 'next/router'; // Next.js 12 (hoặc next/navigation nếu là Next.js 13+);
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 
 // TYPES
@@ -65,6 +65,8 @@ export default function CreateExamPage() {
   const [difficultyOptions, setDifficultyOptions] = useState<DifficultyOption[]>([]);
   const [loadingOptions, setLoadingOptions] = useState(true);
 
+  const router = useRouter();
+
   // Fetch dynamic options on component mount
   useEffect(() => {
     const fetchDropdownData = async () => {
@@ -123,6 +125,41 @@ export default function CreateExamPage() {
       return;
     }
 
+    // Validate start time must be now or in the future
+    if (!startDate || !startTime) {
+      toastError("Vui lòng chọn ngày và giờ bắt đầu");
+      return;
+    }
+
+    const now = new Date();
+    const startDateTime = new Date(`${startDate}T${startTime}:00`);
+    if (isNaN(startDateTime.getTime())) {
+      toastError("Thời gian bắt đầu không hợp lệ");
+      return;
+    }
+
+    if (startDateTime < now) {
+      toastError("Thời gian bắt đầu phải lớn hơn hoặc bằng thời gian hiện tại");
+      return;
+    }
+
+    // Validate end time must be after start time (if provided)
+    if (!endDate || !endTime) {
+      toastError("Vui lòng chọn ngày và giờ kết thúc");
+      return;
+    }
+
+    const endDateTime = new Date(`${endDate}T${endTime}:00`);
+    if (isNaN(endDateTime.getTime())) {
+      toastError("Thời gian kết thúc không hợp lệ");
+      return;
+    }
+
+    if (endDateTime <= startDateTime) {
+      toastError("Thời gian kết thúc phải sau thời gian bắt đầu");
+      return;
+    }
+
     try {
       // 2. Fetch Questions - REMOVED automatic fetching
       // const searchParams = new URLSearchParams({
@@ -155,7 +192,8 @@ export default function CreateExamPage() {
       });
 
       toastSuccess("Tạo bài thi thành công!");
-      // Reset form or redirect? For now just notify.
+      // Sau khi tạo bài thi thành công, chuyển sang trang danh sách bài thi
+      router.push('/teacher/list-exam');
 
     } catch (error: any) {
       console.error("Error creating exam:", error);
