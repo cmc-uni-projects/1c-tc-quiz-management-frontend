@@ -89,13 +89,32 @@ export default function TeacherExamListPage() {
   const [shareLink, setShareLink] = useState("");
   const [activeTab, setActiveTab] = useState<"link" | "qr">("link");
 
+  // Search & Filter State
+  const [searchQuery, setSearchQuery] = useState("");
+  const [categoryId, setCategoryId] = useState("");
+  const [examLevel, setExamLevel] = useState("");
+  const [categories, setCategories] = useState<{ id: number; name: string }[]>([]);
+
   const router = useRouter();
+
+  // Fetch Categories
+  useEffect(() => {
+    fetchApi("/categories/all").then(setCategories).catch(console.error);
+  }, []);
 
   useEffect(() => {
     const fetchExams = async () => {
       try {
-        const data = await fetchApi("/exams/my");
-        setExams(data);
+        setLoading(true);
+        const params = new URLSearchParams();
+        if (searchQuery) params.append("title", searchQuery);
+        if (categoryId) params.append("categoryId", categoryId);
+        if (examLevel) params.append("examLevel", examLevel);
+
+        // Fetch using the new search endpoint
+        // Note: Backend returns Page<ExamResponseDto>, so we take .content
+        const response = await fetchApi(`/exams/search?${params.toString()}`);
+        setExams(response.content || []);
       } catch (error) {
         console.error("Failed to fetch exams:", error);
         toastError("Không thể tải danh sách bài thi.");
@@ -103,8 +122,14 @@ export default function TeacherExamListPage() {
         setLoading(false);
       }
     };
-    fetchExams();
-  }, []);
+
+    // Debounce search slightly to avoid too many requests
+    const timeoutId = setTimeout(() => {
+      fetchExams();
+    }, 300);
+
+    return () => clearTimeout(timeoutId);
+  }, [searchQuery, categoryId, examLevel]);
 
   // Sắp xếp từ mới nhất → cũ nhất
   const sortedExams = [...exams].sort(
@@ -150,6 +175,39 @@ export default function TeacherExamListPage() {
           >
             Lịch sử
           </button>
+        </div>
+
+        {/* ========== SEARCH & FILTER TOOLBAR ========== */}
+        <div className="flex flex-wrap gap-4 mb-8 bg-white p-4 rounded-lg shadow-sm">
+          <select
+            className="border rounded-lg p-2 min-w-[150px]"
+            value={categoryId}
+            onChange={(e) => setCategoryId(e.target.value)}
+          >
+            <option value="">Tất cả danh mục</option>
+            {categories.map((c) => (
+              <option key={c.id} value={c.id}>{c.name}</option>
+            ))}
+          </select>
+
+          <select
+            className="border rounded-lg p-2 min-w-[150px]"
+            value={examLevel}
+            onChange={(e) => setExamLevel(e.target.value)}
+          >
+            <option value="">Tất cả độ khó</option>
+            <option value="EASY">Dễ</option>
+            <option value="MEDIUM">Trung bình</option>
+            <option value="HARD">Khó</option>
+          </select>
+
+          <input
+            type="text"
+            placeholder="Nhập tên bài thi..."
+            className="border rounded-lg p-2 flex-1 min-w-[200px]"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
         </div>
 
         {/* ========== ĐANG TẠO (Draft - No Questions) ========== */}
