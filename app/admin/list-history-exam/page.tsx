@@ -132,7 +132,10 @@ export default function AdminListHistoryExamPage() {
                                             <td className="py-3 border text-green-600 font-semibold">{h.correctCount}/{h.totalQuestions}</td>
                                             <td className="py-3 border font-bold text-[#A53AEC]">{h.score}</td>
                                             <td className="py-3 border">
-                                                <button className="text-blue-600 hover:text-blue-800 hover:underline">
+                                                <button
+                                                    onClick={() => router.push(`/admin/history-result/${h.id}`)}
+                                                    className="text-blue-600 hover:text-blue-800 hover:underline"
+                                                >
                                                     Chi tiết
                                                 </button>
                                             </td>
