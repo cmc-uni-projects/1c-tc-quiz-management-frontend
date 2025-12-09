@@ -211,37 +211,37 @@ export default function AdminHistoryResultPage() {
                                         const isSelected = selectedRecord[ans.id] !== undefined;
                                         const isSnapshotCorrect = isSelected ? selectedRecord[ans.id] : false;
 
-                                        // Style classes
-                                        let containerClass = "flex items-start gap-3 p-2 rounded-lg cursor-default ";
-                                        let textClass = "text-gray-700 font-normal";
-                                        let iconColor = "text-gray-400"; // default circle/check
+                                        // Default
+                                        let textStyle = "text-gray-700";
+                                        let icon = (
+                                            <div className="w-4 h-4 rounded-full border border-gray-400 mr-3 flex items-center justify-center"></div>
+                                        );
+                                        let containerStyle = "flex items-center p-2 rounded-lg";
 
                                         if (isSelected) {
-                                            if (isSnapshotCorrect) { // Use snapshot correctness!
-                                                // Correct & Selected -> Green highlight + Background
-                                                containerClass += "bg-green-50 border border-green-200";
-                                                textClass = "text-green-700 font-semibold";
-                                                iconColor = "text-green-600";
-                                            } else {
-                                                // Wrong & Selected -> Red highlight + Background
-                                                containerClass += "bg-red-50 border border-red-200";
-                                                textClass = "text-red-700 font-medium";
-                                                iconColor = "text-red-500";
+                                            if (isSnapshotCorrect) { // User picked THIS ONE and it is CORRECT
+                                                textStyle = "text-[#059669] font-bold"; // Green
+                                                containerStyle += " bg-green-50 border border-green-200";
+                                                icon = (
+                                                    <div className="w-4 h-4 rounded-full border border-[#059669] bg-[#059669] mr-3 flex items-center justify-center">
+                                                        <div className="w-1.5 h-1.5 bg-white rounded-full"></div>
+                                                    </div>
+                                                );
+                                            } else { // User picked THIS ONE and it is WRONG
+                                                textStyle = "text-red-600 font-medium";
+                                                containerStyle += " bg-red-50 border border-red-200";
+                                                icon = (
+                                                    <div className="w-4 h-4 rounded-full border border-red-500 bg-red-500 mr-3 flex items-center justify-center">
+                                                        <div className="w-1.5 h-1.5 bg-white rounded-full"></div>
+                                                    </div>
+                                                );
                                             }
                                         }
 
                                         return (
-                                            <div key={ans.id} className={containerClass}>
-                                                {/* Radio/Checkbox Icon Mock */}
-                                                <div className={`mt-0.5 w-4 h-4 rounded-full border flex items-center justify-center shrink-0 ${isSelected ? (ans.correct ? "border-green-600" : "border-red-500") : "border-gray-400"}`}>
-                                                    {isSelected && (
-                                                        <div className={`w-2.5 h-2.5 rounded-full ${ans.correct ? "bg-green-600" : "bg-red-500"}`} />
-                                                    )}
-                                                </div>
-
-                                                <span className={textClass}>
-                                                    {ans.text}
-                                                </span>
+                                            <div key={ans.id} className={containerStyle}>
+                                                {icon}
+                                                <span className={textStyle}>{ans.text}</span>
                                             </div>
                                         )
                                     })}
@@ -249,17 +249,15 @@ export default function AdminHistoryResultPage() {
 
                                 {/* Correct Answer Box */}
                                 <div className="mt-4 ml-6 p-4 bg-[#F3EBFD] rounded-lg">
-                                    <div className="flex items-start gap-3">
-                                        <span className="bg-[#4D1597] text-white text-xs px-2 py-1 rounded font-bold uppercase tracking-wider shrink-0 mt-0.5">
+                                    <div className="flex flex-col items-start gap-3">
+                                        <span className="bg-[#4D1597] text-white text-xs px-2 py-1 rounded font-bold uppercase tracking-wider shrink-0">
                                             Đáp án
                                         </span>
-                                        <div className="flex flex-col gap-1">
+                                        <div className="text-[#4D1597] font-medium flex flex-col gap-1">
                                             {q.answers.filter(a => a.correct).map(a => (
-                                                <div key={a.id} className="flex items-center gap-2 text-[#4D1597]">
-                                                    <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-                                                    </svg>
-                                                    <span className="font-medium">{a.text}</span>
+                                                <div key={a.id} className="flex items-center gap-2">
+                                                    <span className="text-lg">✓</span>
+                                                    <span>{a.text}</span>
                                                 </div>
                                             ))}
                                         </div>

@@ -73,17 +73,23 @@ export const StudentTopBar = () => (
       </a>
 
       <nav className="flex flex-1 items-center justify-center text-lg font-medium text-zinc-600 space-x-6">
-        <a 
-          href="/student/studenthome" 
+        <a
+          href="/student/studenthome"
           className="hover:text-zinc-900 transition"
         >
           Trang chủ
         </a>
-        <a 
-          href="/student/list-exams" 
+        <a
+          href="/student/list-exams"
           className="hover:text-zinc-900 transition"
         >
           Danh sách bài thi
+        </a>
+        <a
+          href="/student/history-exam"
+          className="hover:text-zinc-900 transition"
+        >
+          Lịch sử thi
         </a>
       </nav>
 
