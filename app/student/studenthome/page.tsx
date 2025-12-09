@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
 import { useUser } from '@/lib/user';
 import StudentLayout from '@/components/StudentLayout'; // Import layout mới
-import { apiClient } from '@/lib/apiClient'; // Giả định bạn có apiClient để gọi API
+import { fetchApi } from '@/lib/apiClient'; // Fix apiClient import to import fetchApi instead
 
 // --- FIREBASE DYNAMIC LOADING & CONFIG (GIỮ NGUYÊN) ---
 let initializeApp: any;
@@ -63,6 +63,8 @@ const StudentHomeContent = () => {
     const [db, setDb] = useState<any>(null);
     const [isFirebaseReady, setIsFirebaseReady] = useState(false);
     const [subjects, setSubjects] = useState<Subject[]>([]); // Dữ liệu môn học
+    const [completedExams, setCompletedExams] = useState<number | null>(null);
+    const [averageScore, setAverageScore] = useState<number | null>(null);
 
     // Init Firebase (GIỮ NGUYÊN)
     useEffect(() => {
@@ -120,6 +122,36 @@ const StudentHomeContent = () => {
         fetchSubjects();
     }, []);
 
+    // Lấy thống kê thật cho thanh tổng kết từ lịch sử làm bài của sinh viên
+    useEffect(() => {
+        if (!user || typeof (user as any).id === 'undefined') return;
+
+        const loadStats = async () => {
+            try {
+                const histories = await fetchApi(`/examHistory/student/${(user as any).id}`);
+
+                if (Array.isArray(histories) && histories.length > 0) {
+                    const examsDone = histories.length;
+                    const totalScore = histories.reduce((sum: number, h: any) => {
+                        const s = typeof h.score === 'number' ? h.score : 0;
+                        return sum + s;
+                    }, 0);
+
+                    const avg = totalScore / examsDone;
+
+                    setCompletedExams(examsDone);
+                    setAverageScore(Number.isFinite(avg) ? parseFloat(avg.toFixed(1)) : 0);
+                } else {
+                    setCompletedExams(0);
+                    setAverageScore(0);
+                }
+            } catch (error) {
+                console.error('Không thể tải thống kê học viên:', error);
+            }
+        };
+
+        loadStats();
+    }, [user]);
 
     /* JOIN ROOM (GIỮ NGUYÊN) */
     const handleJoinRoom = async () => {
@@ -160,28 +192,64 @@ const StudentHomeContent = () => {
         <div className="bg-gray-50">
 
             {/* Hero Banner */}
-            <div className="w-full p-8 text-white flex flex-col items-center" style={{ backgroundColor: '#6D0446' }}>
-                <h1 className="mb-2 text-4xl font-extrabold">QuizzZone</h1>
-                <p className="mb-6 text-lg">Hãy thử thách trí tuệ cùng QuizzZone.</p>
+            <div
+                className="w-full text-white bg-cover bg-center min-h-[220px] sm:min-h-[260px] lg:min-h-[300px]"
+                style={{
+                    backgroundImage: "url('/roles/home.jpg')",
+                    backgroundPosition: 'center',
+                }}
+            >
+                <div className="flex flex-col lg:flex-row bg-black/10 px-6 sm:px-8 py-6 sm:py-8">
+                    <div className="flex-1 flex flex-col gap-4">
+                        <h1 className="text-2xl sm:text-3xl md:text-4xl font-extrabold mb-2">
+                            QuizzZone
+                        </h1>
 
-                <div className="flex gap-3 w-full max-w-xl">
-                    <input
-                        type="text"
-                        placeholder="Nhập mã phòng"
-                        value={roomCode}
-                        onChange={(e) => setRoomCode(e.target.value)}
-                        disabled={!isFirebaseReady || isJoining}
-                        className="flex-1 rounded-full border-0 px-5 py-3 bg-white text-gray-900 placeholder:text-gray-400 focus:ring-2 focus:ring-purple-400 outline-none"
-                    />
+                        <p className="text-sm sm:text-base text-purple-100 max-w-xl">
+                            Bạn đã sẵn sàng để chinh phục bài Quizz tiếp theo chưa?
+                        </p>
 
-                    <button
-                        onClick={handleJoinRoom}
-                        disabled={!isFirebaseReady || isJoining || !roomCode.trim()}
-                        className="rounded-full px-8 py-3 font-semibold text-white transition hover:opacity-90 disabled:opacity-50"
-                        style={{ backgroundColor: '#E33AEC' }}
-                    >
-                        {isJoining ? "Đang tham gia..." : "Tham gia"}
-                    </button>
+                        {/* JOIN ROOM INSIDE BANNER (giữ logic, chỉnh lại hình dạng thanh) */}
+                        <div className="mt-4 max-w-xl">
+                            <div
+                                className="flex items-stretch rounded-lg px-4 py-2 shadow-md bg-white/95"
+                            >
+                                <input
+                                    type="text"
+                                    placeholder="Nhập mã phòng"
+
+                                    value={roomCode}
+                                    onChange={(e) => setRoomCode(e.target.value)}
+                                    className="flex-1 bg-transparent border-none px-3 sm:px-4 py-2 text-gray-700 placeholder:text-gray-400 focus:outline-none focus:ring-0"
+                                />
+
+                                <button
+                                    onClick={handleJoinRoom}
+                                    className="ml-2 rounded-full px-6 sm:px-8 py-2 text-sm sm:text-base font-semibold text-white shadow-md hover:brightness-110"
+                                    style={{ backgroundColor: '#A020F0' }}
+                                >
+                                    {isJoining ? "Đang tham gia..." : "Tham gia"}
+                                </button>
+                            </div>
+
+                        </div>
+
+                        <div className="mt-4 bg-white/95 rounded-xl px-4 sm:px-6 py-4 flex flex-col md:flex-row md:items-center md:justify-between gap-4 max-w-xl">
+                            <div className="flex-1 text-center">
+                                <div className="text-xs sm:text-sm font-semibold text-zinc-700">Bài thi đã hoàn thành</div>
+                                <div className="text-2xl sm:text-3xl font-extrabold" style={{ color: '#E33AEC' }}>
+                                    {completedExams !== null ? completedExams : '-'}
+                                </div>
+                            </div>
+
+                            <div className="flex-1 text-center">
+                                <div className="text-xs sm:text-sm font-semibold text-zinc-700">Điểm trung bình</div>
+                                <div className="text-2xl sm:text-3xl font-extrabold" style={{ color: '#E33AEC' }}>
+                                    {averageScore !== null ? averageScore : '-'}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
 
