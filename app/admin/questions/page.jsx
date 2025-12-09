@@ -104,7 +104,12 @@ function DifficultyBadge({ difficulty }) {
   }
 
   // Format lại chữ (Dễ, Trung bình, Khó)
-  const text = diff ? sentenceCase(diff.toLowerCase()) : "N/A";
+  const difficultyMap = {
+    'EASY': 'Dễ',
+    'MEDIUM': 'Trung bình',
+    'HARD': 'Khó'
+  };
+  const text = diff ? (difficultyMap[diff] || diff) : "N/A";
 
   return (
     <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-medium ${colorClass}`}>

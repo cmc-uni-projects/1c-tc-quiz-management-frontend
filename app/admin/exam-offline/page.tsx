@@ -85,9 +85,9 @@ export default function CreateExamPage() {
       setCategoryOptions(categories);
 
       const difficultyMap: Record<string, string> = {
-        'Easy': 'Dễ',
-        'Medium': 'Trung bình',
-        'Hard': 'Khó'
+        'EASY': 'Dễ',
+        'MEDIUM': 'Trung bình',
+        'HARD': 'Khó'
       };
       const mappedDifficulties = difficulties.map((d: Option) => ({
         ...d,
@@ -359,6 +359,7 @@ export default function CreateExamPage() {
                       setDuration(e.target.value === "" ? "" : Number(e.target.value))
                     }
                     className="w-20 border px-2 py-1 rounded-md"
+                    min="1"
                   />
                   <span>Phút</span>
                 </div>

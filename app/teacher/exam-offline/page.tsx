@@ -70,7 +70,10 @@ export default function CreateExamPage() {
         const difficultyMap: Record<string, string> = {
           'Easy': 'Dễ',
           'Medium': 'Trung bình',
-          'Hard': 'Khó'
+          'Hard': 'Khó',
+          'EASY': 'Dễ',
+          'MEDIUM': 'Trung bình',
+          'HARD': 'Khó'
         };
 
         const formattedDifficulties = Array.isArray(difficultiesRes) ? difficultiesRes.map((d: any) => {
@@ -247,6 +250,7 @@ export default function CreateExamPage() {
                     value={duration}
                     onChange={(e) => setDuration(e.target.value === "" ? "" : Number(e.target.value))}
                     className="w-20 border px-2 py-1 rounded-md"
+                    min="1"
                   />
                   <span>Phút</span>
                 </div>
