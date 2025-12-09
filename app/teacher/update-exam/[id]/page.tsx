@@ -6,6 +6,7 @@ import { Formik, Form, Field, FieldArray, ErrorMessage } from "formik";
 import * as Yup from "yup";
 import { fetchApi } from "@/lib/apiClient";
 import { toastSuccess, toastError } from "@/lib/toast";
+import { useUser } from "@/lib/user";
 
 // ===== TYPES =====
 interface Answer {
@@ -80,6 +81,7 @@ const validationSchema = Yup.object().shape({
 export default function UpdateExamPage() {
     const { id } = useParams();
     const router = useRouter();
+    const { user } = useUser();
     const [loading, setLoading] = useState(true);
     const [categories, setCategories] = useState<Category[]>([]);
     const [difficultyOptions, setDifficultyOptions] = useState<Option[]>([]);
@@ -97,6 +99,7 @@ export default function UpdateExamPage() {
     // Fetch Data
     useEffect(() => {
         const fetchData = async () => {
+            if (!user) return;
             try {
                 // 1. Fetch Categories & Difficulties
                 const [cats, difficulties] = await Promise.all([
@@ -139,7 +142,7 @@ export default function UpdateExamPage() {
                         text: a.text,
                         isCorrect: a.correct || false,
                     })),
-                    isReadOnly: true
+                    isReadOnly: eq.question.createdBy !== user.username
                 })) || [];
 
                 // Empty default
@@ -176,8 +179,8 @@ export default function UpdateExamPage() {
             }
         };
 
-        if (id) fetchData();
-    }, [id]);
+        if (id && user) fetchData();
+    }, [id, user]);
 
     // Search Library
     const handleSearchLibrary = async () => {
@@ -432,200 +435,231 @@ export default function UpdateExamPage() {
                         <section className="bg-white rounded-2xl shadow p-8 space-y-6">
                             <FieldArray name="questions">
                                 {({ push, remove }) => (
-                                    <div className="space-y-6">
-                                        <div className="flex justify-between items-center">
-                                            <h3 className="text-xl font-semibold">Danh sách câu hỏi</h3>
-                                            <div className="flex items-center gap-3">
-                                                <button
-                                                    type="button"
-                                                    onClick={() => {
-                                                        setOpenLibrary(true);
-                                                        handleSearchLibrary(); // Load initial
-                                                    }}
-                                                    className="px-5 py-2 border-2 border-[#A53AEC] text-[#A53AEC] bg-white rounded-full hover:bg-purple-50"
-                                                >
-                                                    Thư viện câu hỏi
-                                                </button>
-                                                <button
-                                                    type="button"
-                                                    onClick={() =>
-                                                        push({
-                                                            title: "",
-                                                            type: "SINGLE",
-                                                            difficulty: "EASY",
-                                                            categoryId: values.categoryId,
-                                                            answers: [
-                                                                { text: "", isCorrect: false },
-                                                                { text: "", isCorrect: false },
-                                                            ],
-                                                        })
-                                                    }
-                                                    className="px-5 py-2 rounded-full bg-purple-600 text-white hover:bg-purple-700"
-                                                >
-                                                    + Thêm câu hỏi
-                                                </button>
-                                            </div>
-                                        </div>
-
-                                        {values.questions.map((q, qIndex) => (
-                                            <section
-                                                key={qIndex}
-                                                className={`bg-white rounded-2xl p-8 relative border ${q.isReadOnly ? 'border-gray-200 bg-gray-50' : 'border-black'}`}
-                                            >
-                                            <div className="flex justify-between items-center mb-4">
-                                                <h3 className="text-lg font-semibold">
-                                                    Câu hỏi {qIndex + 1} {q.isReadOnly && <span className="text-xs bg-gray-200 px-2 py-1 rounded ml-2">Thư viện</span>}
-                                                </h3>
-                                            </div>
-
-                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                                                {/* Tiêu đề câu hỏi */}
-                                                <div className="col-span-2">
-                                                    <Field
-                                                        name={`questions.${qIndex}.title`}
-                                                        placeholder="Nhập câu hỏi..."
-                                                        disabled={q.isReadOnly}
-                                                        className={`w-full border px-3 py-2 rounded-md ${q.isReadOnly ? 'bg-gray-100 cursor-not-allowed' : ''}`}
-                                                    />
-                                                    <ErrorMessage
-                                                        name={`questions.${qIndex}.title`}
-                                                        component="div"
-                                                        className="text-red-500 text-xs mt-1"
-                                                    />
-                                                </div>
-
-                                                {/* Loại câu hỏi */}
-                                                <div>
-                                                    <Field
-                                                        as="select"
-                                                        name={`questions.${qIndex}.type`}
-                                                        disabled={q.isReadOnly}
-                                                        className={`w-full border px-3 py-2 rounded-md bg-white ${q.isReadOnly ? 'bg-gray-100 cursor-not-allowed' : ''}`}
+                                    <>
+                                        <div className="space-y-6">
+                                            <div className="flex justify-between items-center">
+                                                <h3 className="text-xl font-semibold">Danh sách câu hỏi</h3>
+                                                <div className="flex items-center gap-3">
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => {
+                                                            setOpenLibrary(true);
+                                                            handleSearchLibrary(); // Load initial
+                                                        }}
+                                                        className="px-5 py-2 border-2 border-[#A53AEC] text-[#A53AEC] bg-white rounded-full hover:bg-purple-50"
                                                     >
-                                                        <option value="SINGLE">Chọn 1 đáp án</option>
-                                                        <option value="MULTIPLE">Chọn nhiều đáp án</option>
-                                                        <option value="TRUE_FALSE">Đúng/Sai</option>
-                                                    </Field>
-                                                </div>
-
-                                                {/* Độ khó */}
-                                                <div>
-                                                    <Field
-                                                        as="select"
-                                                        name={`questions.${qIndex}.difficulty`}
-                                                        disabled={q.isReadOnly}
-                                                        className={`w-full border px-3 py-2 rounded-md bg-white ${q.isReadOnly ? 'bg-gray-100 cursor-not-allowed' : ''}`}
+                                                        Thư viện câu hỏi
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() =>
+                                                            push({
+                                                                title: "",
+                                                                type: "SINGLE",
+                                                                difficulty: "EASY",
+                                                                categoryId: values.categoryId,
+                                                                answers: [
+                                                                    { text: "", isCorrect: false },
+                                                                    { text: "", isCorrect: false },
+                                                                ],
+                                                            })
+                                                        }
+                                                        className="px-5 py-2 rounded-full bg-purple-600 text-white hover:bg-purple-700"
                                                     >
-                                                        <option value="EASY">Dễ</option>
-                                                        <option value="MEDIUM">Trung bình</option>
-                                                        <option value="HARD">Khó</option>
-                                                    </Field>
+                                                        + Thêm câu hỏi
+                                                    </button>
                                                 </div>
                                             </div>
 
-                                            {/* Danh sách đáp án */}
-                                            <FieldArray name={`questions.${qIndex}.answers`}>
-                                                {({ push: pushAnswer, remove: removeAnswer }) => (
-                                                    <div className="space-y-3">
-                                                        {q.answers.map((a, aIndex) => (
-                                                            <div key={aIndex} className="flex items-center gap-3">
-                                                                <Field
-                                                                    type={q.type === "MULTIPLE" ? "checkbox" : "radio"}
-                                                                    name={`questions.${qIndex}.answers.${aIndex}.isCorrect`}
-                                                                    checked={a.isCorrect}
-                                                                    disabled={q.isReadOnly}
-                                                                    onChange={() => {
-                                                                        if (q.isReadOnly) return;
-                                                                        if (q.type === "SINGLE") {
-                                                                            // Reset others
-                                                                            q.answers.forEach((_, idx) => {
-                                                                                setFieldValue(
-                                                                                    `questions.${qIndex}.answers.${idx}.isCorrect`,
-                                                                                    idx === aIndex
-                                                                                );
-                                                                            });
-                                                                        } else {
-                                                                            setFieldValue(
-                                                                                `questions.${qIndex}.answers.${aIndex}.isCorrect`,
-                                                                                !a.isCorrect
-                                                                            );
-                                                                        }
-                                                                    }}
-                                                                    className="w-5 h-5"
-                                                                />
-                                                                <Field
-                                                                    name={`questions.${qIndex}.answers.${aIndex}.text`}
-                                                                    placeholder={`Đáp án ${aIndex + 1}`}
-                                                                    disabled={q.isReadOnly}
-                                                                    className={`flex-1 border px-3 py-2 rounded-md ${q.isReadOnly ? 'bg-gray-100 cursor-not-allowed' : ''}`}
-                                                                />
-                                                                {q.answers.length > 2 && (
-                                                                    <button
-                                                                        type="button"
-                                                                        onClick={() => removeAnswer(aIndex)}
-                                                                        disabled={q.isReadOnly}
-                                                                        className={`${
-                                                                            q.isReadOnly
-                                                                                ? 'text-gray-300 cursor-not-allowed'
-                                                                                : 'text-gray-400 hover:text-red-500'
-                                                                        }`}
-                                                                    >
-                                                                        🗑
-                                                                    </button>
+                                            {values.questions.map((q, qIndex) => (
+                                                <section
+                                                    key={qIndex}
+                                                    className={`bg-white rounded-2xl p-8 relative border ${q.isReadOnly ? 'border-gray-200 bg-gray-50' : 'border-black'}`}
+                                                >
+                                                    <div className="flex justify-between items-center mb-4">
+                                                        <h3 className="text-lg font-semibold">
+                                                            Câu hỏi {qIndex + 1} {q.isReadOnly && <span className="text-xs bg-gray-200 px-2 py-1 rounded ml-2">Thư viện</span>}
+                                                        </h3>
+                                                    </div>
+
+                                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                                                        {/* Tiêu đề câu hỏi */}
+                                                        <div className="col-span-2">
+                                                            <Field
+                                                                name={`questions.${qIndex}.title`}
+                                                                placeholder="Nhập câu hỏi..."
+                                                                disabled={q.isReadOnly}
+                                                                className={`w-full border px-3 py-2 rounded-md ${q.isReadOnly ? 'bg-gray-100 cursor-not-allowed' : ''}`}
+                                                            />
+                                                            <ErrorMessage
+                                                                name={`questions.${qIndex}.title`}
+                                                                component="div"
+                                                                className="text-red-500 text-xs mt-1"
+                                                            />
+                                                        </div>
+
+                                                        {/* Loại câu hỏi */}
+                                                        <div>
+                                                            <Field
+                                                                as="select"
+                                                                name={`questions.${qIndex}.type`}
+                                                                disabled={q.isReadOnly}
+                                                                className={`w-full border px-3 py-2 rounded-md bg-white ${q.isReadOnly ? 'bg-gray-100 cursor-not-allowed' : ''}`}
+                                                                onChange={(e: React.ChangeEvent<HTMLSelectElement>) => {
+                                                                    const newType = e.target.value;
+                                                                    setFieldValue(`questions.${qIndex}.type`, newType);
+                                                                    if (newType === 'TRUE_FALSE') {
+                                                                        setFieldValue(`questions.${qIndex}.answers`, [
+                                                                            { text: "Đúng", isCorrect: true },
+                                                                            { text: "Sai", isCorrect: false }
+                                                                        ]);
+                                                                    }
+                                                                }}
+                                                            >
+                                                                <option value="SINGLE">Chọn 1 đáp án</option>
+                                                                <option value="MULTIPLE">Chọn nhiều đáp án</option>
+                                                                <option value="TRUE_FALSE">Đúng/Sai</option>
+                                                            </Field>
+                                                        </div>
+
+                                                        {/* Độ khó */}
+                                                        <div>
+                                                            <Field
+                                                                as="select"
+                                                                name={`questions.${qIndex}.difficulty`}
+                                                                disabled={q.isReadOnly}
+                                                                className={`w-full border px-3 py-2 rounded-md bg-white ${q.isReadOnly ? 'bg-gray-100 cursor-not-allowed' : ''}`}
+                                                            >
+                                                                <option value="EASY">Dễ</option>
+                                                                <option value="MEDIUM">Trung bình</option>
+                                                                <option value="HARD">Khó</option>
+                                                            </Field>
+                                                        </div>
+                                                    </div>
+
+                                                    {/* Danh sách đáp án */}
+                                                    <FieldArray name={`questions.${qIndex}.answers`}>
+                                                        {({ push: pushAnswer, remove: removeAnswer }) => (
+                                                            <div className="space-y-3">
+                                                                {q.answers.map((a, aIndex) => (
+                                                                    <div key={aIndex} className="flex items-center gap-3">
+                                                                        <Field
+                                                                            type={q.type === "MULTIPLE" ? "checkbox" : "radio"}
+                                                                            name={`questions.${qIndex}.answers.${aIndex}.isCorrect`}
+                                                                            checked={a.isCorrect}
+                                                                            disabled={q.isReadOnly}
+                                                                            onChange={() => {
+                                                                                if (q.isReadOnly) return;
+                                                                                if (q.type === "SINGLE" || q.type === "TRUE_FALSE") {
+                                                                                    // Reset others for unique selection
+                                                                                    q.answers.forEach((_, idx) => {
+                                                                                        setFieldValue(
+                                                                                            `questions.${qIndex}.answers.${idx}.isCorrect`,
+                                                                                            idx === aIndex
+                                                                                        );
+                                                                                    });
+                                                                                } else {
+                                                                                    setFieldValue(
+                                                                                        `questions.${qIndex}.answers.${aIndex}.isCorrect`,
+                                                                                        !a.isCorrect
+                                                                                    );
+                                                                                }
+                                                                            }}
+                                                                            className="w-5 h-5"
+                                                                        />
+                                                                        <Field
+                                                                            name={`questions.${qIndex}.answers.${aIndex}.text`}
+                                                                            placeholder={`Đáp án ${aIndex + 1}`}
+                                                                            disabled={q.isReadOnly}
+                                                                            className={`flex-1 border px-3 py-2 rounded-md ${q.isReadOnly ? 'bg-gray-100 cursor-not-allowed' : ''}`}
+                                                                        />
+                                                                        {q.answers.length > 2 && (
+                                                                            <button
+                                                                                type="button"
+                                                                                onClick={() => removeAnswer(aIndex)}
+                                                                                disabled={q.isReadOnly}
+                                                                                className={`${q.isReadOnly
+                                                                                    ? 'text-gray-300 cursor-not-allowed'
+                                                                                    : 'text-gray-400 hover:text-red-500'
+                                                                                    }`}
+                                                                            >
+                                                                                🗑
+                                                                            </button>
+                                                                        )}
+                                                                    </div>
+                                                                ))}
+                                                                <ErrorMessage name={`questions.${qIndex}.answers`}>
+                                                                    {(msg) => typeof msg === 'string' ? <div className="text-red-500 text-xs">{msg}</div> : null}
+                                                                </ErrorMessage>
+
+                                                                {!q.isReadOnly && (
+                                                                    <div className="flex justify-end gap-3 mt-2">
+                                                                        <button
+                                                                            type="button"
+                                                                            onClick={() => pushAnswer({ text: "", isCorrect: false })}
+                                                                            className="text-sm text-purple-600 border border-purple-600 px-3 py-1 rounded-md hover:bg-purple-50"
+                                                                        >
+                                                                            + Thêm đáp án
+                                                                        </button>
+                                                                        <button
+                                                                            type="button"
+                                                                            onClick={() => {
+                                                                                if (values.questions.length > 1) {
+                                                                                    remove(qIndex);
+                                                                                } else {
+                                                                                    toastError("Phải có ít nhất 1 câu hỏi");
+                                                                                }
+                                                                            }}
+                                                                            className="text-sm text-red-500 border border-red-500 px-3 py-1 rounded-md hover:bg-red-50"
+                                                                        >
+                                                                            Xóa câu hỏi
+                                                                        </button>
+                                                                    </div>
+                                                                )}
+                                                                {q.isReadOnly && (
+                                                                    <div className="flex justify-end gap-3 mt-2">
+                                                                        <button
+                                                                            type="button"
+                                                                            onClick={() => {
+                                                                                if (values.questions.length > 1) {
+                                                                                    remove(qIndex);
+                                                                                } else {
+                                                                                    toastError("Phải có ít nhất 1 câu hỏi");
+                                                                                }
+                                                                            }}
+                                                                            className="text-sm text-red-500 border border-red-500 px-3 py-1 rounded-md hover:bg-red-50"
+                                                                        >
+                                                                            Xóa câu hỏi
+                                                                        </button>
+                                                                    </div>
                                                                 )}
                                                             </div>
-                                                        ))}
-                                                        <ErrorMessage name={`questions.${qIndex}.answers`}>
-                                                            {(msg) => typeof msg === 'string' ? <div className="text-red-500 text-xs">{msg}</div> : null}
-                                                        </ErrorMessage>
-
-                                                        {!q.isReadOnly && (
-                                                            <div className="flex justify-end gap-3 mt-2">
-                                                                <button
-                                                                    type="button"
-                                                                    onClick={() => pushAnswer({ text: "", isCorrect: false })}
-                                                                    className="text-sm text-purple-600 border border-purple-600 px-3 py-1 rounded-md hover:bg-purple-50"
-                                                                >
-                                                                    + Thêm đáp án
-                                                                </button>
-                                                                <button
-                                                                    type="button"
-                                                                    onClick={() => {
-                                                                        if (values.questions.length > 1) {
-                                                                            remove(qIndex);
-                                                                        } else {
-                                                                            toastError("Phải có ít nhất 1 câu hỏi");
-                                                                        }
-                                                                    }}
-                                                                    className="text-sm text-red-500 border border-red-500 px-3 py-1 rounded-md hover:bg-red-50"
-                                                                >
-                                                                    Xóa câu hỏi
-                                                                </button>
-                                                            </div>
                                                         )}
-                                                        {q.isReadOnly && (
-                                                            <div className="flex justify-end gap-3 mt-2">
-                                                                <button
-                                                                    type="button"
-                                                                    onClick={() => {
-                                                                        if (values.questions.length > 1) {
-                                                                            remove(qIndex);
-                                                                        } else {
-                                                                            toastError("Phải có ít nhất 1 câu hỏi");
-                                                                        }
-                                                                    }}
-                                                                    className="text-sm text-red-500 border border-red-500 px-3 py-1 rounded-md hover:bg-red-50"
-                                                                >
-                                                                    Xóa câu hỏi
-                                                                </button>
-                                                            </div>
-                                                        )}
-                                                    </div>
-                                                )}
-                                            </FieldArray>
-                                        </section>
-                                    ))}
-                                    </div>
+                                                    </FieldArray>
+                                                </section>
+                                            ))}
+                                        </div>
+                                        <div className="flex justify-center mt-6">
+                                            <button
+                                                type="button"
+                                                onClick={() =>
+                                                    push({
+                                                        title: "",
+                                                        type: "SINGLE",
+                                                        difficulty: "EASY",
+                                                        categoryId: values.categoryId,
+                                                        answers: [
+                                                            { text: "", isCorrect: false },
+                                                            { text: "", isCorrect: false },
+                                                        ],
+                                                    })
+                                                }
+                                                className="px-6 py-2 rounded-full bg-purple-600 text-white hover:bg-purple-700 shadow-lg flex items-center gap-2"
+                                            >
+                                                <span className="text-xl font-bold">+</span> Thêm câu hỏi
+                                            </button>
+                                        </div>
+                                    </>
                                 )}
                             </FieldArray>
                         </section>
@@ -733,71 +767,71 @@ export default function UpdateExamPage() {
                                                 {libraryQuestions
                                                     .slice((libraryPage - 1) * 10, libraryPage * 10)
                                                     .map((q, index) => {
-                                                    const isAdded = values.questions.some((cq: any) => cq.id === q.id);
-                                                    return (
-                                                        <tr key={q.id} className="hover:bg-gray-50">
-                                                            <td className="p-3 border-b">{(libraryPage - 1) * 10 + index + 1}</td>
-                                                            <td className="p-3 border-b text-left px-4 max-w-[220px] truncate" title={q.title}>{q.title}</td>
-                                                            <td className="p-3 border-b">
-                                                                {q.type === "SINGLE"
-                                                                    ? "Một đáp án"
-                                                                    : q.type === "MULTIPLE"
-                                                                        ? "Nhiều đáp án"
-                                                                        : q.type === "TRUE_FALSE"
-                                                                            ? "Đúng / Sai"
-                                                                            : q.type}
-                                                            </td>
-                                                            <td className="p-3 border-b">
-                                                                {q.difficulty === "EASY"
-                                                                    ? "Dễ"
-                                                                    : q.difficulty === "MEDIUM"
-                                                                        ? "Trung bình"
-                                                                        : q.difficulty === "HARD"
-                                                                            ? "Khó"
-                                                                            : q.difficulty}
-                                                            </td>
-                                                            <td className="p-3 border-b">{q.categoryName || "-"}</td>
-                                                            <td className="p-3 border-b">{q.createdBy || "TBD"}</td>
-                                                            <td className="p-3 border-b">
-                                                                <div className="flex items-center justify-center gap-2">
-                                                                    <button
-                                                                        type="button"
-                                                                        disabled={isAdded}
-                                                                        onClick={() => {
-                                                                            if (isAdded) return;
-                                                                            const currentQuestions = values.questions;
-                                                                            setFieldValue("questions", [...currentQuestions, q]);
-                                                                            toastSuccess("Đã thêm câu hỏi.");
-                                                                        }}
-                                                                        className={
-                                                                            "px-4 py-1 rounded-full text-xs font-medium " +
-                                                                            (isAdded
-                                                                                ? "bg-gray-300 text-gray-500 cursor-not-allowed"
-                                                                                : "bg-green-500 text-white hover:bg-green-600")
-                                                                        }
-                                                                    >
-                                                                        {isAdded ? "Đã thêm" : "Thêm"}
-                                                                    </button>
-                                                                    {isAdded && (
+                                                        const isAdded = values.questions.some((cq: any) => cq.id === q.id);
+                                                        return (
+                                                            <tr key={q.id} className="hover:bg-gray-50">
+                                                                <td className="p-3 border-b">{(libraryPage - 1) * 10 + index + 1}</td>
+                                                                <td className="p-3 border-b text-left px-4 max-w-[220px] truncate" title={q.title}>{q.title}</td>
+                                                                <td className="p-3 border-b">
+                                                                    {q.type === "SINGLE"
+                                                                        ? "Một đáp án"
+                                                                        : q.type === "MULTIPLE"
+                                                                            ? "Nhiều đáp án"
+                                                                            : q.type === "TRUE_FALSE"
+                                                                                ? "Đúng / Sai"
+                                                                                : q.type}
+                                                                </td>
+                                                                <td className="p-3 border-b">
+                                                                    {q.difficulty === "EASY"
+                                                                        ? "Dễ"
+                                                                        : q.difficulty === "MEDIUM"
+                                                                            ? "Trung bình"
+                                                                            : q.difficulty === "HARD"
+                                                                                ? "Khó"
+                                                                                : q.difficulty}
+                                                                </td>
+                                                                <td className="p-3 border-b">{q.categoryName || "-"}</td>
+                                                                <td className="p-3 border-b">{q.createdBy || "TBD"}</td>
+                                                                <td className="p-3 border-b">
+                                                                    <div className="flex items-center justify-center gap-2">
                                                                         <button
                                                                             type="button"
+                                                                            disabled={isAdded}
                                                                             onClick={() => {
-                                                                                const updatedQuestions = values.questions.filter(
-                                                                                    (cq: any) => cq.id !== q.id
-                                                                                );
-                                                                                setFieldValue("questions", updatedQuestions);
-                                                                                toastSuccess("Đã xóa câu hỏi.");
+                                                                                if (isAdded) return;
+                                                                                const currentQuestions = values.questions;
+                                                                                setFieldValue("questions", [...currentQuestions, q]);
+                                                                                toastSuccess("Đã thêm câu hỏi.");
                                                                             }}
-                                                                            className="px-3 py-1 rounded-full text-xs font-medium bg-red-500 text-white hover:bg-red-600"
+                                                                            className={
+                                                                                "px-4 py-1 rounded-full text-xs font-medium " +
+                                                                                (isAdded
+                                                                                    ? "bg-gray-300 text-gray-500 cursor-not-allowed"
+                                                                                    : "bg-green-500 text-white hover:bg-green-600")
+                                                                            }
                                                                         >
-                                                                            Xóa
+                                                                            {isAdded ? "Đã thêm" : "Thêm"}
                                                                         </button>
-                                                                    )}
-                                                                </div>
-                                                            </td>
-                                                        </tr>
-                                                    );
-                                                })}
+                                                                        {isAdded && (
+                                                                            <button
+                                                                                type="button"
+                                                                                onClick={() => {
+                                                                                    const updatedQuestions = values.questions.filter(
+                                                                                        (cq: any) => cq.id !== q.id
+                                                                                    );
+                                                                                    setFieldValue("questions", updatedQuestions);
+                                                                                    toastSuccess("Đã xóa câu hỏi.");
+                                                                                }}
+                                                                                className="px-3 py-1 rounded-full text-xs font-medium bg-red-500 text-white hover:bg-red-600"
+                                                                            >
+                                                                                Xóa
+                                                                            </button>
+                                                                        )}
+                                                                    </div>
+                                                                </td>
+                                                            </tr>
+                                                        );
+                                                    })}
                                                 {libraryQuestions.length === 0 && (
                                                     <tr>
                                                         <td colSpan={7} className="p-10 text-center text-gray-500">
