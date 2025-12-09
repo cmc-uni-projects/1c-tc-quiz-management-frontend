@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { fetchApi } from "@/lib/apiClient";
 import toast from "react-hot-toast";
+import StudentLayout from "@/components/StudentLayout";
 
 interface ExamHistory {
     id: number;
