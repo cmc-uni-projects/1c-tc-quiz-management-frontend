@@ -23,10 +23,7 @@ interface ExamResultDto {
     submittedAt: string;
     studentAnswers: StudentAnswerDto[];
     studentName?: string;
-    studentEmail?: string;
-    studentId?: number; // Added if available
-    displayName?: string; // Added if available
-    attemptNumber?: number; // Added if available
+    attemptNumber?: number;
     categoryName?: string;
 }
 
@@ -39,7 +36,7 @@ interface AnswerOption {
 interface Question {
     id: number;
     title: string;
-    type: string; // 'SINGLE' | 'MULTIPLE' | 'TRUE_FALSE'
+    type: string;
     answers: AnswerOption[];
 }
 
@@ -51,7 +48,7 @@ interface ExamDetail {
     examQuestions: { question: Question }[];
 }
 
-export default function TeacherHistoryResultPage() {
+export default function StudentHistoryDetailPage() {
     const params = useParams();
     const router = useRouter();
     const historyId = params.id;
@@ -60,7 +57,7 @@ export default function TeacherHistoryResultPage() {
     const [exam, setExam] = useState<ExamDetail | null>(null);
     const [loading, setLoading] = useState(true);
 
-    // Helper: Map for fast lookup of selected answers: questionId -> { answerId: isCorrect }
+    // Map: questionId -> { answerId: isCorrect }
     const [selectedAnswersMap, setSelectedAnswersMap] = useState<Record<number, Record<number, boolean>>>({});
 
     useEffect(() => {
@@ -72,12 +69,9 @@ export default function TeacherHistoryResultPage() {
 
                 // 1. Get History Detail
                 const historyData: ExamResultDto = await fetchApi(`/examHistory/detail/${historyId}`);
-
                 setHistory(historyData);
-                console.log("History Loaded:", historyData);
-                console.log("Student Answers:", historyData.studentAnswers);
 
-                // Map student answers for easy lookup: questionId -> { answerId: isCorrect }
+                // Map student answers
                 const answersMap: Record<number, Record<number, boolean>> = {};
                 if (historyData.studentAnswers) {
                     historyData.studentAnswers.forEach(sa => {
@@ -89,7 +83,7 @@ export default function TeacherHistoryResultPage() {
                 }
                 setSelectedAnswersMap(answersMap);
 
-                // 2. Get Exam Questions (for text and options)
+                // 2. Get Exam Detail (Questions)
                 if (historyData.examId) {
                     const examData = await fetchApi(`/exams/get/${historyData.examId}`);
                     setExam(examData);
@@ -113,106 +107,120 @@ export default function TeacherHistoryResultPage() {
     );
 
     if (!history || !exam) return (
-        <div className="flex justify-center items-center min-h-screen">
+        <div className="flex justify-center items-center min-h-screen bg-gray-50">
             <p className="text-red-500 font-semibold">Không tìm thấy dữ liệu bài thi.</p>
         </div>
     );
 
+    // Helper to format date
+    const formatDate = (isoString: string) => {
+        if (!isoString) return "---";
+        // Convert to MM-DD-YYYY or matching mockup 12-19-2025
+        const d = new Date(isoString);
+        return d.toLocaleDateString('en-US').replace(/\//g, '-');
+    };
+
+    const formatTime = (isoString: string) => {
+        if (!isoString) return "---";
+        return new Date(isoString).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+    };
+
+    const getDifficultyLabel = (level: string) => {
+        const map: Record<string, string> = {
+            'EASY': 'Dễ',
+            'MEDIUM': 'Trung bình',
+            'HARD': 'Khó',
+            'easy': 'Dễ',
+            'medium': 'Trung bình',
+            'hard': 'Khó'
+        };
+        return map[level] || level || "---";
+    };
+
     return (
-        <div className="min-h-screen bg-white text-sm text-gray-800">
-            {/* Main Container */}
-            <div className="max-w-5xl mx-auto py-8 px-4">
+        <div className="min-h-screen bg-white text-gray-800 font-sans p-8">
+            <div className="max-w-5xl mx-auto">
+                <p className="text-gray-500 text-sm mb-4 uppercase tracking-wide">Xem chi tiết lịch sử thi</p>
 
-                {/* Back Button */}
-                <button onClick={() => router.back()} className="mb-4 text-gray-500 hover:text-black flex items-center gap-1">
-                    <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                    </svg>
-                    Quay lại
-                </button>
+                {/* --- GRAY RESULTS BOX --- */}
+                <div className="bg-[#E5E7EB] border border-blue-400 rounded p-0 mb-8 overflow-hidden">
+                    {/* Title */}
+                    <div className="border-b border-gray-300 p-6">
+                        <h1 className="text-2xl font-bold text-black">{history.examTitle}</h1>
+                    </div>
 
-                {/* --- HEADER SECTION --- */}
-                <div className="bg-gray-200/60 rounded-t-lg border-b border-gray-300">
-                    <h1 className="text-2xl font-bold p-6">{history.examTitle}</h1>
-                </div>
-
-                {/* Info Bar 1 */}
-                <div className="bg-gray-200/60 px-6 py-4 grid grid-cols-4 gap-4 border-b border-gray-300">
-                    <div>
-                        <span className="block text-gray-500 mb-1">Số lượng câu hỏi:</span>
-                        <span className="font-semibold">{history.totalQuestions} câu hỏi</span>
-                    </div>
-                    <div>
-                        <span className="block text-gray-500 mb-1">Loại đề thi:</span>
-                        <span className="font-semibold">{exam.examLevel === 'medium' ? 'Trung bình' : exam.examLevel}</span>
-                    </div>
-                    <div>
-                        <span className="block text-gray-500 mb-1">Thời gian nộp bài:</span>
-                        <span className="font-semibold">{new Date(history.submittedAt).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}</span>
-                    </div>
-                    <div>
-                        <span className="block text-gray-500 mb-1">Danh mục:</span>
-                        <span className="font-semibold">{history.categoryName || 'N/A'}</span>
-                    </div>
-                </div>
-
-                {/* Info Bar 2 (Student & Stats) */}
-                <div className="bg-gray-200/60 px-6 py-4 grid grid-cols-4 gap-4 rounded-b-lg mb-8 items-center">
-                    <div className="flex items-center gap-3">
-                        <div className="w-12 h-12 rounded-full bg-purple-100 border border-purple-200 flex items-center justify-center text-purple-600">
-                            <svg width="24" height="24" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                            </svg>
+                    {/* Info Row 1 */}
+                    <div className="border-b border-gray-300 grid grid-cols-4 divide-x divide-gray-300 bg-[#E5E7EB]">
+                        <div className="p-4 text-center">
+                            <span className="block text-sm font-medium mb-1">Thời gian thi:</span>
+                            <span className="font-bold">{formatDate(history.submittedAt)}</span>
                         </div>
-                        <div>
-                            <p className="font-semibold text-base">{history.studentName || history.displayName || 'Student'}</p>
-                            <p className="text-gray-500 text-xs">{history.studentEmail || 'No Email'}</p>
+                        <div className="p-4 text-center">
+                            <span className="block text-sm font-medium mb-1">Loại đề thi:</span>
+                            <span className="font-bold">{getDifficultyLabel(exam.examLevel)}</span>
+                        </div>
+                        <div className="p-4 text-center">
+                            <span className="block text-sm font-medium mb-1">Thời gian làm bài:</span>
+                            <span className="font-bold">---</span> {/* Mocked as requested */}
+                        </div>
+                        <div className="p-4 text-center">
+                            <span className="block text-sm font-medium mb-1">Thời gian nộp bài:</span>
+                            <span className="font-bold">{formatTime(history.submittedAt)}</span>
                         </div>
                     </div>
 
-                    <div className="text-center">
-                        <span className="block text-gray-500 mb-1">Số điểm:</span>
-                        <span className="font-semibold text-lg">{history.score}</span>
-                    </div>
-
-                    <div className="text-center">
-                        <span className="block text-gray-500 mb-1">Lượt thi:</span>
-                        <span className="font-semibold text-lg">{history.attemptNumber || 1}</span>
+                    {/* Info Row 2 (Stats) */}
+                    <div className="grid grid-cols-4 divide-x divide-gray-300 bg-[#E5E7EB]">
+                        <div className="p-4 text-center">
+                            <span className="block text-sm font-medium mb-1">Số câu đúng:</span>
+                            <span className="font-bold text-lg">{history.correctCount}/{history.totalQuestions}</span>
+                        </div>
+                        <div className="p-4 text-center">
+                            <span className="block text-sm font-medium mb-1">Số điểm:</span>
+                            <span className="font-bold text-lg">{history.score}</span>
+                        </div>
+                        <div className="p-4 text-center">
+                            <span className="block text-sm font-medium mb-1">Lượt thi:</span>
+                            <span className="font-bold text-lg">{history.attemptNumber || 1}</span>
+                        </div>
+                        <div className="p-4 text-center">
+                            <span className="block text-sm font-medium mb-1">Xếp hạng:</span>
+                            <span className="font-bold text-lg">---</span> {/* Mocked as requested */}
+                        </div>
                     </div>
                 </div>
+
 
                 {/* --- QUESTIONS LIST --- */}
-                <div className="space-y-8">
+                <div className="bg-white">
                     {exam.examQuestions?.map(({ question: q }, index) => {
-                        const studentSelectedIds = selectedAnswersMap[q.id]; // Now Record<number, boolean> | undefined
-                        const isMultiple = q.type === 'MULTIPLE';
+                        const studentSelectedIds = selectedAnswersMap[q.id];
 
                         return (
-                            <div key={q.id} className="border-b pb-6 last:border-0">
+                            <div key={q.id} className="mb-8 p-4">
                                 {/* Question Title */}
-                                <div className="flex gap-2 mb-3">
-                                    <span className="font-bold whitespace-nowrap">{index + 1}.</span>
-                                    <h3 className="font-bold text-gray-900">{q.title}</h3>
+                                <div className="flex gap-2 mb-4">
+                                    <span className="font-bold text-[#4D1597]">{index + 1}.</span>
+                                    <h3 className="font-bold text-[#4D1597]">{q.title}</h3>
                                 </div>
 
                                 {/* Answers */}
-                                <div className="space-y-2 ml-6">
+                                <div className="space-y-3 ml-6 mb-6">
                                     {q.answers.map((ans) => {
                                         const selectedRecord = studentSelectedIds || {};
                                         const isSelected = selectedRecord[ans.id] !== undefined;
                                         const isSnapshotCorrect = isSelected ? selectedRecord[ans.id] : false;
 
+                                        // Based on Teacher logic but styled cleaner
                                         // Default
                                         let textStyle = "text-gray-700";
                                         let icon = (
-                                            <div className="w-4 h-4 rounded-full border border-gray-400 mr-3 flex items-center justify-center"></div>
+                                            <div className={`w-4 h-4 rounded-full border border-gray-400 mr-3 flex items-center justify-center`}></div>
                                         );
-                                        let containerStyle = "flex items-center p-2 rounded-lg";
 
                                         if (isSelected) {
                                             if (isSnapshotCorrect) { // User picked THIS ONE and it is CORRECT
                                                 textStyle = "text-[#059669] font-bold"; // Green
-                                                containerStyle += " bg-green-50 border border-green-200";
                                                 icon = (
                                                     <div className="w-4 h-4 rounded-full border border-[#059669] bg-[#059669] mr-3 flex items-center justify-center">
                                                         <div className="w-1.5 h-1.5 bg-white rounded-full"></div>
@@ -220,12 +228,24 @@ export default function TeacherHistoryResultPage() {
                                                 );
                                             } else { // User picked THIS ONE and it is WRONG
                                                 textStyle = "text-red-600 font-medium";
-                                                containerStyle += " bg-red-50 border border-red-200";
                                                 icon = (
                                                     <div className="w-4 h-4 rounded-full border border-red-500 bg-red-500 mr-3 flex items-center justify-center">
                                                         <div className="w-1.5 h-1.5 bg-white rounded-full"></div>
                                                     </div>
                                                 );
+                                            }
+                                        }
+
+                                        // Special case: Highlight actual correct answer in green IF user missed it?
+                                        // The mockup only shows user selection + "Đáp án" box below. 
+                                        // Let's stick to the mockup: Only highlight user selection here.
+
+                                        let containerStyle = "flex items-center p-2 rounded-lg";
+                                        if (isSelected) {
+                                            if (isSnapshotCorrect) {
+                                                containerStyle += " bg-green-50 border border-green-200";
+                                            } else {
+                                                containerStyle += " bg-red-50 border border-red-200";
                                             }
                                         }
 
@@ -254,9 +274,9 @@ export default function TeacherHistoryResultPage() {
                                         </div>
                                     </div>
                                 </div>
-
+                                <hr className="mt-8 border-gray-300" />
                             </div>
-                        );
+                        )
                     })}
                 </div>
 
