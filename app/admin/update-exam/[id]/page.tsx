@@ -6,6 +6,7 @@ import { Formik, Form, Field, FieldArray, ErrorMessage } from "formik";
 import * as Yup from "yup";
 import { fetchApi } from "@/lib/apiClient";
 import { toastSuccess, toastError } from "@/lib/toast";
+import { useUser } from "@/lib/user";
 
 // ===== TYPES =====
 interface Answer {
@@ -81,6 +82,7 @@ const validationSchema = Yup.object().shape({
 export default function AdminUpdateExamPage() {
     const { id } = useParams();
     const router = useRouter();
+    const { user } = useUser();
     const [loading, setLoading] = useState(true);
     const [categories, setCategories] = useState<Category[]>([]);
     const [difficultyOptions, setDifficultyOptions] = useState<Option[]>([]);
@@ -98,6 +100,7 @@ export default function AdminUpdateExamPage() {
     // Fetch Data
     useEffect(() => {
         const fetchData = async () => {
+            if (!user) return;
             try {
                 // 1. Fetch Categories & Difficulties
                 const [cats, difficulties] = await Promise.all([
@@ -140,7 +143,7 @@ export default function AdminUpdateExamPage() {
                         text: a.text,
                         isCorrect: a.correct || false,
                     })),
-                    isReadOnly: true
+                    isReadOnly: eq.question.createdBy !== user.username
                 })) || [];
 
                 // Empty default if needed... omitted for brevity or keeping original logic
@@ -179,8 +182,8 @@ export default function AdminUpdateExamPage() {
             }
         };
 
-        if (id) fetchData();
-    }, [id]);
+        if (id && user) fetchData();
+    }, [id, user]);
 
     // Search Library
     const handleSearchLibrary = async () => {
@@ -455,6 +458,16 @@ export default function AdminUpdateExamPage() {
                                                         name={`questions.${qIndex}.type`}
                                                         disabled={q.isReadOnly}
                                                         className={`w-full border px-3 py-2 rounded-md bg-white ${q.isReadOnly ? 'bg-gray-100 cursor-not-allowed' : ''}`}
+                                                        onChange={(e: React.ChangeEvent<HTMLSelectElement>) => {
+                                                            const newType = e.target.value;
+                                                            setFieldValue(`questions.${qIndex}.type`, newType);
+                                                            if (newType === 'TRUE_FALSE') {
+                                                                setFieldValue(`questions.${qIndex}.answers`, [
+                                                                    { text: "Đúng", isCorrect: true },
+                                                                    { text: "Sai", isCorrect: false }
+                                                                ]);
+                                                            }
+                                                        }}
                                                     >
                                                         <option value="SINGLE">Chọn 1 đáp án</option>
                                                         <option value="MULTIPLE">Chọn nhiều đáp án</option>
@@ -490,7 +503,7 @@ export default function AdminUpdateExamPage() {
                                                                     disabled={q.isReadOnly}
                                                                     onChange={() => {
                                                                         if (q.isReadOnly) return;
-                                                                        if (q.type === "SINGLE") {
+                                                                        if (q.type === "SINGLE" || q.type === "TRUE_FALSE") {
                                                                             // Reset others
                                                                             q.answers.forEach((_, idx) => {
                                                                                 setFieldValue(
@@ -510,10 +523,10 @@ export default function AdminUpdateExamPage() {
                                                                 <Field
                                                                     name={`questions.${qIndex}.answers.${aIndex}.text`}
                                                                     placeholder={`Đáp án ${aIndex + 1}`}
-                                                                    disabled={q.isReadOnly}
-                                                                    className={`flex-1 border px-3 py-2 rounded-md ${q.isReadOnly ? 'bg-gray-100 cursor-not-allowed' : ''}`}
+                                                                    disabled={q.isReadOnly || q.type === "TRUE_FALSE"}
+                                                                    className={`flex-1 border px-3 py-2 rounded-md ${q.isReadOnly || q.type === "TRUE_FALSE" ? 'bg-gray-100' : ''}`}
                                                                 />
-                                                                {!q.isReadOnly && (
+                                                                {!q.isReadOnly && q.type !== "TRUE_FALSE" && (
                                                                     <button
                                                                         type="button"
                                                                         onClick={() => removeAnswer(aIndex)}
@@ -528,7 +541,7 @@ export default function AdminUpdateExamPage() {
                                                             {(msg) => typeof msg === 'string' ? <div className="text-red-500 text-xs">{msg}</div> : null}
                                                         </ErrorMessage>
 
-                                                        {!q.isReadOnly && (
+                                                        {!q.isReadOnly && q.type !== "TRUE_FALSE" && (
                                                             <button
                                                                 type="button"
                                                                 onClick={() => pushAnswer({ text: "", isCorrect: false })}
