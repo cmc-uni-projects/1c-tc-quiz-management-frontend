@@ -265,7 +265,7 @@ export default function TeacherCategoriesPage() {
       } else {
         // Create
         const body = { name: form.name.trim(), description: form.description?.trim() || "" };
-        await fetchApi(`/categories`, {
+        await fetchApi(`/categories/create`, {
           method: "POST",
           body,
         });

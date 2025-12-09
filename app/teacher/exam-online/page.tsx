@@ -161,7 +161,18 @@ export default function CreateExamPage() {
         setLibraryQuestionTypes(formattedTypes);
 
         // Format difficulties for dropdown
-        const formattedDifficulties = difficultiesRes.map((d: string) => ({ id: d, name: d }));
+        const difficultyMap: Record<string, string> = {
+          'EASY': 'Dễ',
+          'MEDIUM': 'Trung bình',
+          'HARD': 'Khó',
+          'Easy': 'Dễ',
+          'Medium': 'Trung bình',
+          'Hard': 'Khó'
+        };
+        const formattedDifficulties = difficultiesRes.map((d: string) => ({
+          id: d.toUpperCase(),
+          name: difficultyMap[d] || difficultyMap[d.toUpperCase()] || d
+        }));
         setLibraryDifficulties(formattedDifficulties);
 
       } catch (error) {
@@ -361,7 +372,7 @@ export default function CreateExamPage() {
       toastError("Vui lòng chọn danh mục bài thi.");
       return;
     }
-    if (duration <= 0) {
+    if (duration === "" || duration <= 0) {
       toastError("Thời gian làm bài phải lớn hơn 0.");
       return;
     }
@@ -606,9 +617,9 @@ export default function CreateExamPage() {
                   className="w-full border px-3 py-2 rounded-md bg-white"
                 >
                   <option value="">Chọn loại</option>
-                  <option value="easy">Dễ</option>
-                  <option value="medium">Trung bình</option>
-                  <option value="hard">Khó</option>
+                  <option value="EASY">Dễ</option>
+                  <option value="MEDIUM">Trung bình</option>
+                  <option value="HARD">Khó</option>
                 </select>
               </div>
             </div>
@@ -629,6 +640,7 @@ export default function CreateExamPage() {
                       setDuration(e.target.value === "" ? "" : Number(e.target.value))
                     }
                     className="w-20 border px-2 py-1 rounded-md"
+                    min="1"
                   />
                   <span>Phút</span>
                 </div>
@@ -751,9 +763,9 @@ export default function CreateExamPage() {
                       className="border px-3 py-2 rounded-md bg-white"
                     >
                       <option value="">Độ khó</option>
-                      <option value="Easy">Dễ</option>
-                      <option value="Medium">Trung bình</option>
-                      <option value="Hard">Khó</option>
+                      <option value="EASY">Dễ</option>
+                      <option value="MEDIUM">Trung bình</option>
+                      <option value="HARD">Khó</option>
                     </select>
 
                     {/* Danh mục */}

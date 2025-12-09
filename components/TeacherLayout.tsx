@@ -138,7 +138,7 @@ const TeacherSidebar = () => {
     }
 
     return (
-        <aside className="w-56 border-r border-zinc-200 bg-white flex flex-col">
+        <aside className="w-56 border-r border-zinc-200 bg-white flex flex-col sticky top-0 h-screen overflow-y-auto">
             <nav className="flex-1 px-4 py-4 text-sm font-medium text-zinc-700 space-y-1">
                 {navItems.map((item) => {
                     const hasSubmenu = !!item.submenu;

@@ -76,7 +76,7 @@ export async function fetchApi(endpoint: string, options: FetchApiOptions = {}) 
 
     const errorData = await response.json().catch(() => ({ message: `Request failed with status ${response.status}` }));
     // Backend returns { error: "..." } for most exceptions
-    const errorMessage = errorData.error || errorData.message || `Request failed with status ${response.status}`;
+    const errorMessage = errorData.message || errorData.error || `Request failed with status ${response.status}`;
     throw new ApiError(errorMessage, response.status);
   }
 
