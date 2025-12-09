@@ -1,13 +1,15 @@
 'use client';
 
-import React, { useState, useRef, useEffect, ChangeEvent, FormEvent } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import toast from 'react-hot-toast';
+import { fetchApi } from '@/lib/apiClient';
+import StudentLayout from '@/components/StudentLayout';
 
 const PRIMARY_BG = '#6D0446';
 const BUTTON_BG = '#A53AEC';
 const MAX_AVATAR_SIZE = 5 * 1024 * 1024; // 5MB
 
-export default function StudentProfilePage() {
+const StudentProfileContent = () => {
   const fileRef = useRef<HTMLInputElement | null>(null);
   const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
@@ -16,22 +18,16 @@ export default function StudentProfilePage() {
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(true);
 
-  // Fetch profile data on mount
   useEffect(() => {
     const fetchProfile = async () => {
       try {
-        const response = await fetch('/api/profile');
-        if (response.ok) {
-          const data = await response.json();
-          setUsername(data.username || '');
-          setEmail(data.email || '');
-          setAvatar(data.avatar || null);
-        } else {
-          toast.error('Không thể tải thông tin hồ sơ');
-        }
+        const data = await fetchApi('/profile');
+        setUsername(data.name || data.username || '');
+        setEmail(data.email || '');
+        setAvatar(data.avatar || null);
       } catch (error) {
         console.error('Error fetching profile:', error);
-        toast.error('Lỗi khi tải thông tin hồ sơ');
+        toast.error('Không thể tải thông tin hồ sơ');
       } finally {
         setLoading(false);
       }
@@ -39,26 +35,23 @@ export default function StudentProfilePage() {
     fetchProfile();
   }, []);
 
-  const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files && e.target.files[0];
     if (!file) {
       if (e.target) e.target.value = '';
       return;
     }
 
-    // Validate file type
     if (!file.type.startsWith('image/')) {
       toast.error('Vui lòng chọn tệp hình ảnh');
       return;
     }
 
-    // Validate file size (5MB)
     if (file.size > MAX_AVATAR_SIZE) {
       toast.error('Ảnh đại diện không được lớn hơn 5MB');
       return;
     }
 
-    // Preview
     const reader = new FileReader();
     reader.onload = () => {
       setAvatar(String(reader.result));
@@ -69,41 +62,22 @@ export default function StudentProfilePage() {
     if (e.target) e.target.value = '';
   };
 
-  const handleChooseFile = () => {
+  const handleChoose = () => {
     fileRef.current?.click();
   };
 
-  const handleDeleteAvatar = async () => {
+  const handleDeleteAvatar = () => {
     if (!avatar) {
       toast.error('Không có ảnh đại diện để xóa');
       return;
     }
 
-    setSaving(true);
-    try {
-      const response = await fetch('/api/profile', {
-        method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
-      });
-
-      if (response.ok) {
-        setAvatar(null);
-        setAvatarFile(null);
-        if (fileRef.current) fileRef.current.value = '';
-        toast.success('Xóa ảnh đại diện thành công');
-      } else {
-        const errorData = await response.text();
-        toast.error(errorData || 'Xóa ảnh đại diện thất bại');
-      }
-    } catch (error) {
-      console.error('Error deleting avatar:', error);
-      toast.error('Lỗi khi xóa ảnh đại diện');
-    } finally {
-      setSaving(false);
-    }
+    setAvatar(null);
+    setAvatarFile(null);
+    if (fileRef.current) fileRef.current.value = '';
   };
 
-  const handleSubmit = async (e: FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!username.trim()) {
       toast.error('Tên không được để trống');
@@ -113,41 +87,45 @@ export default function StudentProfilePage() {
     setSaving(true);
 
     try {
-      let avatarUrl = avatar;
+      let finalAvatarUrl = avatar;
 
-      // Upload avatar if a new file was selected
+      // Trường hợp 1: Upload ảnh mới
       if (avatarFile) {
         const formData = new FormData();
         formData.append('file', avatarFile);
-        const uploadResponse = await fetch('/api/profile/upload-avatar', {
+
+        const uploadData = await fetchApi('/profile/upload-avatar', {
           method: 'POST',
           body: formData,
         });
-        if (!uploadResponse.ok) {
-          const text = await uploadResponse.text();
-          throw new Error(text || 'Tải ảnh đại diện thất bại');
-        }
-        const uploadData = await uploadResponse.json();
-        avatarUrl = uploadData.avatarUrl;
-      }
 
-      // Update profile
-      const response = await fetch('/api/profile', {
+        finalAvatarUrl = uploadData.avatarUrl;
+      }
+      // Trường hợp 2: Xóa ảnh (avatar là null và không có file mới)
+      else if (avatar === null) {
+        try {
+          await fetchApi('/profile/delete-avatar', {
+            method: 'DELETE',
+          });
+        } catch (deleteError) {
+          console.error('Error deleting avatar:', deleteError);
+        }
+        finalAvatarUrl = null;
+      }
+      // Trường hợp 3: Không thay đổi ảnh (giữ nguyên)
+
+      await fetchApi('/profile/update', {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username, avatar: avatarUrl }),
+        body: { username: username.trim(), avatar: finalAvatarUrl },
       });
 
-      if (response.ok) {
-        toast.success('Cập nhật hồ sơ thành công');
-        setAvatarFile(null);
-      } else {
-        const errorData = await response.json();
-        toast.error(errorData.error || 'Cập nhật hồ sơ thất bại');
-      }
+      setAvatar(finalAvatarUrl);
+      setAvatarFile(null);
+
+      toast.success('Cập nhật hồ sơ thành công');
     } catch (error) {
       console.error('Error updating profile:', error);
-      toast.error('Lỗi khi cập nhật hồ sơ');
+      toast.error((error as any)?.message || 'Lỗi khi cập nhật hồ sơ');
     } finally {
       setSaving(false);
     }
@@ -155,29 +133,34 @@ export default function StudentProfilePage() {
 
   if (loading) {
     return (
-      <div className="flex justify-center items-center h-screen" style={{ backgroundColor: PRIMARY_BG }}>
-        <p className="text-white text-lg">Loading...</p>
+      <div className="flex justify-center items-center h-screen bg-gray-50">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600"></div>
       </div>
     );
   }
 
   return (
-    <div className="max-w-5xl mx-auto" style={{ color: '#111' }}>
-      <div className="bg-white rounded-md shadow-md overflow-hidden mt-12">
-        <div className="flex p-8 gap-8 items-start">
-          {/* Avatar Section */}
-          <div className="flex flex-col items-center" style={{ minWidth: 220 }}>
+    <div className="max-w-5xl mx-auto p-4 sm:p-0" style={{ color: '#111' }}>
+      <div className="bg-white rounded-xl shadow-2xl overflow-hidden mt-8 border border-gray-200">
+        <div className="p-4 sm:p-8 flex flex-col md:flex-row gap-8 items-start">
+          {/* Avatar và chọn file */}
+          <div className="flex flex-col items-center w-full md:w-56" style={{ minWidth: 220 }}>
             <div
-              className="rounded-full overflow-hidden w-52 h-52 flex items-center justify-center border-2 border-purple-200"
+              className="rounded-full overflow-hidden w-52 h-52 flex items-center justify-center border-4 border-purple-400 shadow-lg"
               style={{ background: '#F7EFFF' }}
             >
               {avatar ? (
-                <img src={avatar} alt="avatar" className="w-full h-full object-cover" />
+                <img
+                  key={avatar}
+                  src={avatar}
+                  alt="Ảnh đại diện"
+                  className="w-full h-full object-cover"
+                />
               ) : (
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
                   viewBox="0 0 24 24"
-                  className="w-28 h-28 text-purple-700"
+                  className="w-28 h-28 text-purple-700 opacity-60"
                   fill="none"
                   stroke="currentColor"
                   strokeWidth={1.5}
@@ -187,6 +170,7 @@ export default function StudentProfilePage() {
                 </svg>
               )}
             </div>
+
             <input
               ref={fileRef}
               type="file"
@@ -194,63 +178,74 @@ export default function StudentProfilePage() {
               onChange={handleFileChange}
               className="hidden"
             />
-            <div className="flex flex-col gap-2 mt-4 w-full">
+
+            <div className="flex flex-col gap-3 mt-6 w-full max-w-xs">
               <button
                 type="button"
-                onClick={handleChooseFile}
-                className="px-4 py-2 text-sm bg-zinc-200 rounded-md hover:bg-zinc-300 transition"
+                onClick={handleChoose}
+                className="px-4 py-2 text-sm bg-purple-100 text-purple-800 font-semibold rounded-full hover:bg-purple-200 transition shadow-md"
+                disabled={saving}
               >
-                Choose Photo
+                Chọn ảnh
               </button>
               {avatar && (
                 <button
                   type="button"
                   onClick={handleDeleteAvatar}
                   disabled={saving}
-                  className="px-4 py-2 text-sm bg-red-200 text-red-700 rounded-md hover:bg-red-300 transition disabled:opacity-50"
+                  className="px-4 py-2 text-sm bg-red-100 text-red-700 font-semibold rounded-full hover:bg-red-200 transition disabled:opacity-50 shadow-md"
                 >
-                  Delete Photo
+                  Xóa ảnh đại diện
                 </button>
               )}
             </div>
           </div>
 
-          {/* Form Section */}
-          <form className="flex-1" onSubmit={handleSubmit}>
-            <div className="max-w-xl ml-auto">
+          {/* Form thông tin */}
+          <form className="flex-1 w-full md:mt-0 mt-8" onSubmit={handleSubmit}>
+            <div className="max-w-xl mx-auto md:mx-0">
+              <h2 className="text-2xl font-bold mb-6 text-gray-800">Thông tin cá nhân</h2>
+
               <div className="mb-4">
-                <label className="block text-sm text-zinc-600 mb-1">Email</label>
-                <input
-                  value={email}
-                  readOnly
-                  className="w-full px-4 py-3 rounded-md text-sm bg-zinc-100 border border-zinc-200"
-                />
-                <div className="mt-2">
-                  <span className="text-sm text-red-400">Email cannot be changed</span>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                <div>
+                  <input
+                    value={email}
+                    readOnly
+                    className="w-full px-4 py-3 rounded-lg text-sm bg-zinc-100 border border-zinc-200 cursor-not-allowed"
+                    title="Email không thể thay đổi"
+                  />
+                  <div className="mt-1">
+                    <span className="text-xs text-red-500 font-medium italic">
+                      Email không thể thay đổi.
+                    </span>
+                  </div>
                 </div>
               </div>
 
               <div className="mb-6">
-                <label className="block text-sm text-zinc-600 mb-1">Name</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Tên người dùng
+                </label>
                 <input
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
-                  className="w-full px-4 py-3 rounded-md text-sm bg-white border border-zinc-200 focus:outline-none focus:ring-2 focus:ring-purple-400"
-                  placeholder="Enter your name"
+                  className="w-full px-4 py-3 rounded-lg text-sm bg-white border border-zinc-300 focus:outline-none focus:ring-2 focus:ring-purple-400 transition"
+                  placeholder="Nhập tên của bạn"
                   required
+                  disabled={saving}
                 />
               </div>
 
-              <div className="flex flex-col items-center gap-3">
+              <div className="pt-4 border-t border-zinc-100">
                 <button
                   type="submit"
                   disabled={saving}
                   style={{ background: BUTTON_BG }}
-                  className={`text-white px-6 py-3 rounded-full font-semibold transition ${
-                    saving ? 'opacity-70 cursor-not-allowed' : 'hover:brightness-110'
-                  }`}
+                  className={`text-white w-full px-6 py-3 rounded-full font-semibold text-lg transition shadow-xl ${saving ? 'opacity-70 cursor-not-allowed' : 'hover:brightness-110'
+                    }`}
                 >
-                  {saving ? 'Updating...' : 'Update Profile'}
+                  {saving ? 'Đang cập nhật...' : 'Cập nhật hồ sơ'}
                 </button>
               </div>
             </div>
@@ -259,4 +254,6 @@ export default function StudentProfilePage() {
       </div>
     </div>
   );
-}
+};
+
+export default StudentProfileContent;

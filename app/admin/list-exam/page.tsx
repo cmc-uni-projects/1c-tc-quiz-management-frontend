@@ -1,8 +1,9 @@
 "use client";
+
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { fetchApi } from "@/lib/apiClient";
-import { toastError } from "@/lib/toast";
+import { toastError, toastSuccess } from "@/lib/toast";
 
 interface Exam {
     examId: number;
@@ -19,8 +20,9 @@ interface Exam {
         id: number;
         name: string;
     };
-    status?: "PENDING" | "ONGOING" | "COMPLETED"; // Optional, derived or from backend if available
+    status?: "DRAFT" | "PUBLISHED";
     durationMinutes: number;
+    examLevel?: string;
 }
 
 // ===== SVG ICONS =====
@@ -67,13 +69,17 @@ const MoreIcon = () => (
 );
 
 // Helper to calculate difficulty
-const getDifficultyLabel = (questions: any[]) => {
-    if (!questions || questions.length === 0) return "Chưa có";
-    const difficulties = questions.map(q => q.question?.difficulty);
-    if (difficulties.every(d => d === "EASY")) return "Dễ";
-    if (difficulties.every(d => d === "MEDIUM")) return "Trung bình";
-    if (difficulties.every(d => d === "HARD")) return "Khó";
-    return "Hỗn hợp";
+const getDifficultyLabel = (level?: string) => {
+    switch (level) {
+        case "EASY":
+            return "Dễ";
+        case "MEDIUM":
+            return "Trung bình";
+        case "HARD":
+            return "Khó";
+        default:
+            return "Chưa xác định";
+    }
 };
 
 export default function AdminExamListPage() {
@@ -84,13 +90,31 @@ export default function AdminExamListPage() {
     const [shareLink, setShareLink] = useState("");
     const [activeTab, setActiveTab] = useState<"link" | "qr">("link");
 
+    // Search & Filter State
+    const [searchQuery, setSearchQuery] = useState("");
+    const [categoryId, setCategoryId] = useState("");
+    const [examLevel, setExamLevel] = useState("");
+    const [categories, setCategories] = useState<{ id: number; name: string }[]>([]);
+
     const router = useRouter();
+
+    // Fetch Categories
+    useEffect(() => {
+        fetchApi("/categories/all").then(setCategories).catch(console.error);
+    }, []);
 
     useEffect(() => {
         const fetchExams = async () => {
             try {
-                const data = await fetchApi("/exams/my");
-                setExams(data);
+                setLoading(true);
+                const params = new URLSearchParams();
+                if (searchQuery) params.append("title", searchQuery);
+                if (categoryId) params.append("categoryId", categoryId);
+                if (examLevel) params.append("examLevel", examLevel);
+
+                // Uses search endpoint like Teacher
+                const response = await fetchApi(`/exams/search?${params.toString()}`);
+                setExams(response.content || []);
             } catch (error) {
                 console.error("Failed to fetch exams:", error);
                 toastError("Không thể tải danh sách bài thi.");
@@ -98,8 +122,14 @@ export default function AdminExamListPage() {
                 setLoading(false);
             }
         };
-        fetchExams();
-    }, []);
+
+        // Debounce search
+        const timeoutId = setTimeout(() => {
+            fetchExams();
+        }, 300);
+
+        return () => clearTimeout(timeoutId);
+    }, [searchQuery, categoryId, examLevel]);
 
     // Sắp xếp từ mới nhất → cũ nhất
     const sortedExams = [...exams].sort(
@@ -107,11 +137,11 @@ export default function AdminExamListPage() {
     );
 
     // Filter Logic
-    // Draft: No questions (questionCount == 0)
-    const draftExams = sortedExams.filter((x) => x.questionCount === 0);
+    // Draft: status is DRAFT
+    const draftExams = sortedExams.filter((x) => x.status === 'DRAFT');
 
-    // Ready: Has questions (questionCount > 0)
-    const readyExams = sortedExams.filter((x) => x.questionCount > 0);
+    // Ready: status is PUBLISHED
+    const readyExams = sortedExams.filter((x) => x.status === 'PUBLISHED');
 
     const deleteExam = async (id: number) => {
         if (!confirm("Bạn có chắc chắn muốn xóa bài thi này?")) return;
@@ -119,6 +149,7 @@ export default function AdminExamListPage() {
             await fetchApi(`/exams/delete/${id}`, { method: "DELETE" });
             setExams(exams.filter((e) => e.examId !== id));
             setOpenMenu(null);
+            toastSuccess("Đã xóa bài thi.");
         } catch (error: any) {
             toastError(error.message || "Không thể xóa bài thi.");
         }
@@ -132,22 +163,63 @@ export default function AdminExamListPage() {
     if (loading) return <div className="p-10">Đang tải...</div>;
 
     return (
-        <div className="flex-1 flex flex-col bg-white rounded-xl shadow-lg overflow-hidden min-h-[80vh]">
-            <div className="flex-1 px-10 py-8">
-                {/* TAB DANH SÁCH BÀI THI / LỊCH SỬ */}
-                <div className="border-b border-gray-200 mb-6 flex gap-6 text-sm">
-                    <button className="pb-2 border-b-2 border-black font-medium">
-                        Danh sách bài thi
-                    </button>
+        <div className="flex-1 flex flex-col min-h-screen bg-white">
+            <main className="flex-1 px-10 py-8">
+                {/* TAB DANH SÁCH BÀI THI / LỊCH SỬ / HEADER ADMIN */}
+                <div className="border-b border-gray-200 mb-6 flex justify-between items-center text-sm">
+                    <div className="flex gap-6">
+                        <button className="pb-2 border-b-2 border-black font-medium">
+                            Danh sách bài thi
+                        </button>
+                        <button
+                            onClick={() => router.push("/admin/history-exam")}
+                            className="pb-2 text-gray-500 hover:text-black"
+                        >
+                            Lịch sử
+                        </button>
+                    </div>
                     <button
-                        onClick={() => router.push("/admin/history-exam")}
-                        className="pb-2 text-gray-500 hover:text-black"
+                        onClick={() => router.push("/admin/exam-offline")}
+                        className="bg-purple-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-purple-700 mb-2"
                     >
-                        Lịch sử
+                        + Tạo bài thi mới
                     </button>
                 </div>
 
-                {/* ========== ĐANG TẠO (Draft - No Questions) ========== */}
+                {/* ========== SEARCH & FILTER TOOLBAR ========== */}
+                <div className="flex flex-wrap gap-4 mb-8 bg-white p-4 rounded-lg shadow-sm">
+                    <select
+                        className="border rounded-lg p-2 min-w-[150px]"
+                        value={categoryId}
+                        onChange={(e) => setCategoryId(e.target.value)}
+                    >
+                        <option value="">Tất cả danh mục</option>
+                        {categories.map((c) => (
+                            <option key={c.id} value={c.id}>{c.name}</option>
+                        ))}
+                    </select>
+
+                    <select
+                        className="border rounded-lg p-2 min-w-[150px]"
+                        value={examLevel}
+                        onChange={(e) => setExamLevel(e.target.value)}
+                    >
+                        <option value="">Tất cả độ khó</option>
+                        <option value="EASY">Dễ</option>
+                        <option value="MEDIUM">Trung bình</option>
+                        <option value="HARD">Khó</option>
+                    </select>
+
+                    <input
+                        type="text"
+                        placeholder="Nhập tên bài thi..."
+                        className="border rounded-lg p-2 flex-1 min-w-[200px]"
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                    />
+                </div>
+
+                {/* ========== ĐANG TẠO (Draft) ========== */}
                 <h2 className="text-xl font-semibold mb-4">Đang tạo</h2>
 
                 {draftExams.length === 0 ? (
@@ -168,15 +240,15 @@ export default function AdminExamListPage() {
                                         <ClockIcon /> Kết thúc: {exam.endTime ? new Date(exam.endTime).toLocaleString('vi-VN', { hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit', year: 'numeric' }) : 'N/A'}
                                     </p>
                                     <p>⏳ Thời gian: {exam.durationMinutes} phút</p>
-                                    <p className="text-yellow-600 font-medium">⚠ Chưa có câu hỏi</p>
+                                    <p className="text-yellow-600 font-medium">⚠ Bản nháp</p>
                                 </div>
 
                                 <div className="flex items-center justify-between mt-3">
                                     <button
-                                        onClick={() => router.push(`/admin/update-exam/${exam.examId}`)} // Redirect to add questions
+                                        onClick={() => router.push(`/admin/update-exam/${exam.examId}`)}
                                         className="text-sm bg-yellow-100 text-yellow-700 px-3 py-1 rounded hover:bg-yellow-200"
                                     >
-                                        Tiếp tục tạo
+                                        Tiếp tục chỉnh sửa
                                     </button>
                                     <button
                                         onClick={() => deleteExam(exam.examId)}
@@ -191,7 +263,7 @@ export default function AdminExamListPage() {
                     </div>
                 )}
 
-                {/* ========== DANH SÁCH BÀI THI (Ready - Has Questions) ========== */}
+                {/* ========== DANH SÁCH BÀI THI (Published) ========== */}
                 <h2 className="text-xl font-semibold mb-4">
                     Danh sách bài thi
                 </h2>
@@ -217,7 +289,7 @@ export default function AdminExamListPage() {
                                     <p>⏳ {exam.durationMinutes} Phút</p>
                                     <p>📘 Câu hỏi: {exam.questionCount}</p>
                                     <p>🏷 Danh mục: {exam.category?.name || "N/A"}</p>
-                                    <p>📊 Độ khó: <span className="font-medium">{getDifficultyLabel(exam.examQuestions)}</span></p>
+                                    <p>📊 Độ khó: <span className="font-medium">{getDifficultyLabel(exam.examLevel)}</span></p>
                                 </div>
                                 {/* Trạng thái + nút menu */}
                                 <div className="flex items-center justify-between mt-3">
@@ -244,7 +316,7 @@ export default function AdminExamListPage() {
                                             Xóa bài thi
                                         </button>
                                         <button
-                                            onClick={() => router.push(`/admin/update-exam/${exam.examId}`)} // Assuming update route
+                                            onClick={() => router.push(`/admin/update-exam/${exam.examId}`)} // Admin route
                                             className="block w-full text-left px-4 py-2 hover:bg-gray-100"
                                         >
                                             Cập nhật
@@ -320,7 +392,7 @@ export default function AdminExamListPage() {
                                         <button
                                             onClick={() => {
                                                 navigator.clipboard.writeText(shareLink);
-                                                alert("Đã sao chép!");
+                                                toastSuccess("Đã sao chép!");
                                             }}
                                             className="bg-[#A53AEC] text-white px-4 py-2 rounded-md"
                                         >
@@ -349,10 +421,10 @@ export default function AdminExamListPage() {
                     </div>
                 )}
 
-            </div>
+            </main>
 
             {/* ============ FOOTER ============ */}
-            <footer className="bg-[#F5F5F5] border-t border-gray-200 py-4 text-center text-gray-500 text-sm">
+            <footer className="bg-[#F5F5F5] border-t border-gray-200 py-4 text-center text-gray-500 text-sm mt-auto">
                 © 2025 QuizzZone. Mọi quyền được bảo lưu.
             </footer>
         </div>

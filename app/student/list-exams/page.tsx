@@ -27,12 +27,26 @@ const ListExamsContent = () => {
     const router = useRouter();
     const [exams, setExams] = useState<Exam[]>([]);
     const [isLoading, setIsLoading] = useState(true);
+    const [difficulty, setDifficulty] = useState<string>(''); // Default: All difficulties
+    const [searchQuery, setSearchQuery] = useState('');
+    const [selectedCategory, setSelectedCategory] = useState('');
+    const [categories, setCategories] = useState<{ id: number; name: string }[]>([]);
+
+    // Fetch Categories
+    useEffect(() => {
+        fetchApi("/categories/all").then(setCategories).catch(console.error);
+    }, []);
 
     // Lấy dữ liệu Bài thi từ API
     useEffect(() => {
         const fetchExams = async () => {
             try {
-                const response = await fetchApi('/student/exams/search');
+                const params = new URLSearchParams();
+                if (searchQuery) params.append('title', searchQuery);
+                if (selectedCategory) params.append('categoryId', selectedCategory);
+                if (difficulty) params.append('examLevel', difficulty);
+
+                const response = await fetchApi(`/student/exams/search?${params.toString()}`);
                 // Backend returns Page<ExamResponseDto>. Content is in response.content
                 const data = response.content || response.data || [];
 
@@ -66,7 +80,7 @@ const ListExamsContent = () => {
         };
 
         fetchExams();
-    }, []);
+    }, [difficulty, searchQuery, selectedCategory]); // Re-fetch when filters change
 
     const handleStartExam = (exam: Exam) => {
         Swal.fire({
@@ -90,23 +104,36 @@ const ListExamsContent = () => {
             <h2 className="text-3xl font-bold text-gray-900 mb-8">Danh sách bài thi</h2>
 
             {/* Thanh tìm kiếm theo giao diện bạn cung cấp */}
-            <div className='flex gap-4 mb-8 p-4 bg-white rounded-lg shadow-sm'>
-                <select className='border rounded-lg p-2 flex-1 max-w-xs'>
-                    <option>Chọn danh mục</option>
-                    {/* Categories should also be dynamic ideally, but keeping static for now or can fetch */}
-                    <option>Toán học</option>
-                    <option>Tiếng Anh</option>
+            <div className='flex gap-4 mb-8 p-4 bg-white rounded-lg shadow-sm flex-wrap'>
+                <select
+                    className='border rounded-lg p-2 flex-1 min-w-[150px]'
+                    value={selectedCategory}
+                    onChange={(e) => setSelectedCategory(e.target.value)}
+                >
+                    <option value="">Tất cả danh mục</option>
+                    {categories.map((c) => (
+                        <option key={c.id} value={c.id}>{c.name}</option>
+                    ))}
                 </select>
+
+                <select
+                    className='border rounded-lg p-2 flex-1 min-w-[150px]'
+                    value={difficulty}
+                    onChange={(e) => setDifficulty(e.target.value)}
+                >
+                    <option value="">Tất cả độ khó</option>
+                    <option value="EASY">Dễ</option>
+                    <option value="MEDIUM">Trung bình</option>
+                    <option value="HARD">Khó</option>
+                </select>
+
                 <input
                     type='text'
                     placeholder='Nhập tên bài thi...'
-                    className='border rounded-lg p-2 flex-1'
+                    className='border rounded-lg p-2 flex-[2] min-w-[200px]'
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
                 />
-                <button
-                    className='bg-pink-600 hover:bg-pink-700 text-white font-semibold py-2 px-6 rounded-lg transition'
-                >
-                    Tìm kiếm
-                </button>
             </div>
 
             {isLoading ? (
@@ -153,10 +180,4 @@ const ListExamsContent = () => {
 /* ===========================================================
     WRAPPER EXPORT (Sử dụng Layout mới)
 =========================================================== */
-export default function ListExamsWrapper() {
-    return (
-        <StudentLayout>
-            <ListExamsContent />
-        </StudentLayout>
-    );
-}
+export default ListExamsContent;

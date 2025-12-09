@@ -19,8 +19,9 @@ interface Exam {
     id: number;
     name: string;
   };
-  status?: "PENDING" | "ONGOING" | "COMPLETED"; // Optional, derived or from backend if available
+  status?: "DRAFT" | "PUBLISHED";
   durationMinutes: number;
+  examLevel?: string;
 }
 
 // ===== SVG ICONS =====
@@ -67,13 +68,17 @@ const MoreIcon = () => (
 );
 
 // Helper to calculate difficulty
-const getDifficultyLabel = (questions: any[]) => {
-  if (!questions || questions.length === 0) return "Chưa có";
-  const difficulties = questions.map(q => q.question?.difficulty);
-  if (difficulties.every(d => d === "EASY")) return "Dễ";
-  if (difficulties.every(d => d === "MEDIUM")) return "Trung bình";
-  if (difficulties.every(d => d === "HARD")) return "Khó";
-  return "Hỗn hợp";
+const getDifficultyLabel = (level?: string) => {
+  switch (level) {
+    case "EASY":
+      return "Dễ";
+    case "MEDIUM":
+      return "Trung bình";
+    case "HARD":
+      return "Khó";
+    default:
+      return "Chưa xác định";
+  }
 };
 
 export default function TeacherExamListPage() {
@@ -84,13 +89,32 @@ export default function TeacherExamListPage() {
   const [shareLink, setShareLink] = useState("");
   const [activeTab, setActiveTab] = useState<"link" | "qr">("link");
 
+  // Search & Filter State
+  const [searchQuery, setSearchQuery] = useState("");
+  const [categoryId, setCategoryId] = useState("");
+  const [examLevel, setExamLevel] = useState("");
+  const [categories, setCategories] = useState<{ id: number; name: string }[]>([]);
+
   const router = useRouter();
+
+  // Fetch Categories
+  useEffect(() => {
+    fetchApi("/categories/all").then(setCategories).catch(console.error);
+  }, []);
 
   useEffect(() => {
     const fetchExams = async () => {
       try {
-        const data = await fetchApi("/exams/my");
-        setExams(data);
+        setLoading(true);
+        const params = new URLSearchParams();
+        if (searchQuery) params.append("title", searchQuery);
+        if (categoryId) params.append("categoryId", categoryId);
+        if (examLevel) params.append("examLevel", examLevel);
+
+        // Fetch using the new search endpoint
+        // Note: Backend returns Page<ExamResponseDto>, so we take .content
+        const response = await fetchApi(`/exams/search?${params.toString()}`);
+        setExams(response.content || []);
       } catch (error) {
         console.error("Failed to fetch exams:", error);
         toastError("Không thể tải danh sách bài thi.");
@@ -98,8 +122,14 @@ export default function TeacherExamListPage() {
         setLoading(false);
       }
     };
-    fetchExams();
-  }, []);
+
+    // Debounce search slightly to avoid too many requests
+    const timeoutId = setTimeout(() => {
+      fetchExams();
+    }, 300);
+
+    return () => clearTimeout(timeoutId);
+  }, [searchQuery, categoryId, examLevel]);
 
   // Sắp xếp từ mới nhất → cũ nhất
   const sortedExams = [...exams].sort(
@@ -107,11 +137,11 @@ export default function TeacherExamListPage() {
   );
 
   // Filter Logic
-  // Draft: No questions (questionCount == 0)
-  const draftExams = sortedExams.filter((x) => x.questionCount === 0);
+  // Draft: status is DRAFT
+  const draftExams = sortedExams.filter((x) => x.status === 'DRAFT');
 
-  // Ready: Has questions (questionCount > 0)
-  const readyExams = sortedExams.filter((x) => x.questionCount > 0);
+  // Ready: status is PUBLISHED
+  const readyExams = sortedExams.filter((x) => x.status === 'PUBLISHED');
 
   const deleteExam = async (id: number) => {
     if (!confirm("Bạn có chắc chắn muốn xóa bài thi này?")) return;
@@ -147,6 +177,39 @@ export default function TeacherExamListPage() {
           </button>
         </div>
 
+        {/* ========== SEARCH & FILTER TOOLBAR ========== */}
+        <div className="flex flex-wrap gap-4 mb-8 bg-white p-4 rounded-lg shadow-sm">
+          <select
+            className="border rounded-lg p-2 min-w-[150px]"
+            value={categoryId}
+            onChange={(e) => setCategoryId(e.target.value)}
+          >
+            <option value="">Tất cả danh mục</option>
+            {categories.map((c) => (
+              <option key={c.id} value={c.id}>{c.name}</option>
+            ))}
+          </select>
+
+          <select
+            className="border rounded-lg p-2 min-w-[150px]"
+            value={examLevel}
+            onChange={(e) => setExamLevel(e.target.value)}
+          >
+            <option value="">Tất cả độ khó</option>
+            <option value="EASY">Dễ</option>
+            <option value="MEDIUM">Trung bình</option>
+            <option value="HARD">Khó</option>
+          </select>
+
+          <input
+            type="text"
+            placeholder="Nhập tên bài thi..."
+            className="border rounded-lg p-2 flex-1 min-w-[200px]"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
+        </div>
+
         {/* ========== ĐANG TẠO (Draft - No Questions) ========== */}
         <h2 className="text-xl font-semibold mb-4">Đang tạo</h2>
 
@@ -168,15 +231,15 @@ export default function TeacherExamListPage() {
                     <ClockIcon /> Kết thúc: {exam.endTime ? new Date(exam.endTime).toLocaleString('vi-VN', { hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit', year: 'numeric' }) : 'N/A'}
                   </p>
                   <p>⏳ Thời gian: {exam.durationMinutes} phút</p>
-                  <p className="text-yellow-600 font-medium">⚠ Chưa có câu hỏi</p>
+                  <p className="text-yellow-600 font-medium">⚠ Bản nháp</p>
                 </div>
 
                 <div className="flex items-center justify-between mt-3">
                   <button
-                    onClick={() => router.push(`/teacher/update-exam/${exam.examId}`)} // Redirect to add questions
+                    onClick={() => router.push(`/teacher/update-exam/${exam.examId}`)}
                     className="text-sm bg-yellow-100 text-yellow-700 px-3 py-1 rounded hover:bg-yellow-200"
                   >
-                    Tiếp tục tạo
+                    Tiếp tục chỉnh sửa
                   </button>
                   <button
                     onClick={() => deleteExam(exam.examId)}
@@ -217,7 +280,7 @@ export default function TeacherExamListPage() {
                   <p>⏳ {exam.durationMinutes} Phút</p>
                   <p>📘 Câu hỏi: {exam.questionCount}</p>
                   <p>🏷 Danh mục: {exam.category?.name || "N/A"}</p>
-                  <p>📊 Độ khó: <span className="font-medium">{getDifficultyLabel(exam.examQuestions)}</span></p>
+                  <p>📊 Độ khó: <span className="font-medium">{getDifficultyLabel(exam.examLevel)}</span></p>
                 </div>
                 {/* Trạng thái + nút menu */}
                 <div className="flex items-center justify-between mt-3">

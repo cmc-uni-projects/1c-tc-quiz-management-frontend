@@ -10,78 +10,7 @@ import { logout } from "@/lib/utils";
 
 const LOGO_TEXT_COLOR = "#E33AEC";
 
-/* ------------------------------ AUTH GUARD ------------------------------ */
-const StudentAuthGuard = ({ children }: { children: React.ReactNode }) => {
-  const { user, isLoading, isAuthenticated } = useUser();
-  const router = useRouter();
-  const [isRedirecting, setIsRedirecting] = useState(false);
 
-  useEffect(() => {
-    if (isLoading || isRedirecting) return;
-
-    let redirectPath = null;
-    let toastMessage = null;
-
-    if (!isAuthenticated) {
-      redirectPath = "/auth/login";
-      toastMessage = "Bạn cần đăng nhập để truy cập trang này.";
-    } else if (user?.role !== "STUDENT") {
-      redirectPath = "/";
-      toastMessage = "Bạn không có quyền truy cập vào khu vực học sinh.";
-    }
-
-    if (redirectPath) {
-      setIsRedirecting(true);
-      if (toastMessage) toast.error(toastMessage);
-      router.push(redirectPath);
-    }
-  }, [user, isLoading, isAuthenticated, router, isRedirecting]);
-
-  if (isLoading) {
-    return (
-      <div className="flex h-screen items-center justify-center bg-white">
-        <div className="text-center">
-          <div className="mx-auto h-12 w-12 animate-spin rounded-full border-green-600 border-b-2" />
-          <p className="mt-4 text-lg font-semibold text-gray-700">
-            Đang tải dữ liệu người dùng...
-          </p>
-        </div>
-      </div>
-    );
-  }
-
-  if (!isAuthenticated || user?.role !== "STUDENT") return null;
-
-  return <>{children}</>;
-};
-
-/* ------------------------------ TOP BAR ------------------------------ */
-const StudentTopBar = () => (
-  <header className="w-full border-b border-zinc-200 bg-white shadow-sm">
-    <div className="mx-auto flex w-full items-center justify-between gap-2 px-4 py-3 md:px-6">
-      <a
-        href="/student/studenthome"
-        className="shrink-0 text-3xl font-black tracking-tighter"
-        style={{ color: LOGO_TEXT_COLOR }}
-      >
-        QuizzZone
-      </a>
-
-      <nav className="flex flex-1 items-center justify-center text-lg font-medium text-zinc-600">
-        <a
-          href="/student/studenthome"
-          className="hover:text-zinc-900 transition duration-150"
-        >
-          Trang chủ
-        </a>
-      </nav>
-
-      <div className="flex shrink-0 items-center gap-3">
-        <ProfileDropdown />
-      </div>
-    </div>
-  </header>
-);
 
 /* ------------------------------ MAIN CONTENT ------------------------------ */
 import { fetchApi } from "@/lib/apiClient";
@@ -209,9 +138,6 @@ const StartExamContent = () => {
 /* ------------------------------ PAGE WRAPPER ------------------------------ */
 export default function StartExamPage() {
   return (
-    <StudentAuthGuard>
-      <StudentTopBar />
-      <StartExamContent />
-    </StudentAuthGuard>
+    <StartExamContent />
   );
 }

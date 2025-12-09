@@ -61,6 +61,7 @@ const DoExamContent = () => {
                 });
 
                 // Map Data
+                console.log("Exam Data:", data);
                 const mappedExam: ExamData = {
                     examId: data.examId,
                     title: data.title,
@@ -285,10 +286,4 @@ const DoExamContent = () => {
     );
 };
 
-export default function DoExamWrapper() {
-    return (
-        <StudentLayout>
-            <DoExamContent />
-        </StudentLayout>
-    );
-}
+export default DoExamContent;
