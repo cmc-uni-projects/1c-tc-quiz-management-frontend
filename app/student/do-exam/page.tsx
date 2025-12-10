@@ -180,23 +180,6 @@ const DoExamContent = () => {
         });
     };
 
-    const handleGoBack = async () => {
-        if (!isSubmitted) {
-            const confirm = await Swal.fire({
-                title: "Thoát khỏi bài thi?",
-                text: "Nếu quay lại, bài thi sẽ coi như chưa nộp.",
-                icon: "warning",
-                showCancelButton: true,
-                confirmButtonText: "Thoát",
-                cancelButtonText: "Hủy",
-                confirmButtonColor: "#E33AEC",
-            });
-
-            if (!confirm.isConfirmed) return;
-        }
-        router.push('/student/list-exams');
-    };
-
     if (isLoading) return (
         <div className="flex h-screen items-center justify-center bg-white">
             <div className="text-center">
@@ -216,9 +199,12 @@ const DoExamContent = () => {
                 <div className="flex justify-between items-center mb-6 p-4 bg-white rounded-lg shadow-md sticky top-0 z-10 transition-all">
                     <h1 className="text-xl font-bold text-gray-800 line-clamp-1 flex-1 mr-4">{exam.title}</h1>
 
-                    <div className={`text-xl font-bold ${secondsLeft < 300 ? 'text-red-600 animate-pulse' : 'text-gray-700'}`}>
-                        {Math.floor(secondsLeft / 60)}:
-                        {(secondsLeft % 60).toString().padStart(2, '0')}
+                    <div className="flex items-center">
+                        <span className="mr-2 text-gray-700 font-semibold text-lg">Thời gian còn lại:</span>
+                        <div className={`text-xl font-bold ${secondsLeft < 300 ? 'text-red-600 animate-pulse' : 'text-gray-700'}`}>
+                            {Math.floor(secondsLeft / 60)}:
+                            {(secondsLeft % 60).toString().padStart(2, '0')}
+                        </div>
                     </div>
                 </div>
 
@@ -265,13 +251,6 @@ const DoExamContent = () => {
 
                 {/* Footer Buttons */}
                 <div className="flex justify-center gap-6 mt-8 pb-10">
-                    <button
-                        onClick={handleGoBack}
-                        className="bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-3 px-8 rounded-lg transition"
-                    >
-                        Quay lại
-                    </button>
-
                     <button
                         onClick={() => handleSubmit(false)}
                         disabled={isSubmitted}
