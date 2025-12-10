@@ -459,9 +459,9 @@ export default function CategoriesPage() {
                           return (
                             <span
                               title={c.createdBy}
-                              className={`px-3 py-1.5 rounded-full text-[0.7rem] font-semibold inline-flex items-center justify-center ${creatorBadgeClass(role)}`}
+                              className={`px-3 py-1.5 rounded-full text-[0.7rem] font-semibold inline-flex items-center justify-center whitespace-nowrap ${creatorBadgeClass(role)}`}
                             >
-                              {sentenceCase(role) || "N/A"}
+                              {sentenceCase(c.createdByName || c.createdBy) || "N/A"}
                             </span>
                           );
                         })()}
