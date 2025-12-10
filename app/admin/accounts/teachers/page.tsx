@@ -7,32 +7,32 @@ import Swal from 'sweetalert2';
 
 const TrashIcon = (props: React.SVGAttributes<SVGSVGElement>) => (
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
-    <polyline points="3 6 5 6 21 6"/>
-    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/>
-    <path d="M10 11v6"/>
-    <path d="M14 11v6"/>
-    <path d="M9 6V4a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2"/>
+    <polyline points="3 6 5 6 21 6" />
+    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6" />
+    <path d="M10 11v6" />
+    <path d="M14 11v6" />
+    <path d="M9 6V4a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2" />
   </svg>
 );
 
 const LockIcon = (props: React.SVGAttributes<SVGSVGElement>) => (
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
-    <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
-    <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+    <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+    <path d="M7 11V7a5 5 0 0 1 10 0v4" />
   </svg>
 );
 
 const UnlockIcon = (props: React.SVGAttributes<SVGSVGElement>) => (
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
-    <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
-    <path d="M7 11V7a5 5 0 0 1 9.9-1"/>
+    <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+    <path d="M7 11V7a5 5 0 0 1 9.9-1" />
   </svg>
 );
 
 class ApiError extends Error {
   status: number;
   payload: any;
-  
+
   constructor(message: string, status: number, payload: any) {
     super(message);
     this.name = "ApiError";
@@ -342,16 +342,16 @@ const TeacherAccountsPage = () => {
         await deleteTeacherInBackend(id);
         toast.success('Đã xóa giáo viên thành công!');
         if (teachers.length === 1 && currentPage > 0) {
-            setCurrentPage(p => p - 1);
+          setCurrentPage(p => p - 1);
         } else {
-            await fetchTeachers();
+          await fetchTeachers();
         }
       } catch (error: any) {
         console.error('Error deleting teacher:', error);
         if (error.status === 403 || error.status === 401) {
-            toast.error("Truy cập bị từ chối. Vui lòng đăng nhập lại với tài khoản Admin.");
+          toast.error("Truy cập bị từ chối. Vui lòng đăng nhập lại với tài khoản Admin.");
         } else {
-            toast.error(error.message || 'Không thể xóa giáo viên');
+          toast.error(error.message || 'Không thể xóa giáo viên');
         }
       } finally {
         setLoading(false);
@@ -559,10 +559,10 @@ const TeacherAccountsPage = () => {
                           </button>
                           <button
                             onClick={() => handleDelete(teacher.teacherId)}
-                            className="px-3 py-1.5 rounded-full text-xs font-semibold bg-rose-500 text-white shadow hover:bg-rose-600 transition disabled:opacity-50 flex items-center gap-1"
+                            className="p-2 text-rose-500 hover:text-rose-700 hover:bg-rose-100 rounded-full transition disabled:opacity-50 flex items-center gap-1"
                             disabled={loading}
                           >
-                            <TrashIcon className="w-3 h-3 flex-shrink-0" /> Xóa
+                            <TrashIcon className="w-5 h-5 flex-shrink-0" />
                           </button>
                         </div>
                       </td>
@@ -597,10 +597,9 @@ const TeacherAccountsPage = () => {
                 onClick={() => setCurrentPage(i)}
                 disabled={loading}
                 className={`w-8 h-8 flex items-center justify-center rounded-full text-sm font-semibold transition-colors
-                  ${
-                    currentPage === i
-                      ? 'bg-purple-700 text-white shadow-lg'
-                      : 'text-gray-600 hover:bg-purple-50'
+                  ${currentPage === i
+                    ? 'bg-purple-700 text-white shadow-lg'
+                    : 'text-gray-600 hover:bg-purple-50'
                   }
                 `}
               >

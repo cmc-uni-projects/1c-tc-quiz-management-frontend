@@ -2,7 +2,8 @@
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { fetchApi } from "@/lib/apiClient";
-import { toastError } from "@/lib/toast";
+import { toastError, toastSuccess } from "@/lib/toast";
+import Swal from "sweetalert2";
 
 interface Exam {
   examId: number;
@@ -144,11 +145,24 @@ export default function TeacherExamListPage() {
   const readyExams = sortedExams.filter((x) => x.status === 'PUBLISHED');
 
   const deleteExam = async (id: number) => {
-    if (!confirm("Bạn có chắc chắn muốn xóa bài thi này?")) return;
+    const result = await Swal.fire({
+      title: "Xác nhận xóa",
+      text: "Bạn có chắc chắn muốn xóa bài thi này?",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#d33",
+      cancelButtonColor: "#3085d6",
+      confirmButtonText: "Xóa",
+      cancelButtonText: "Hủy",
+    });
+
+    if (!result.isConfirmed) return;
+
     try {
       await fetchApi(`/exams/delete/${id}`, { method: "DELETE" });
       setExams(exams.filter((e) => e.examId !== id));
       setOpenMenu(null);
+      toastSuccess("Đã xóa bài thi thành công");
     } catch (error: any) {
       toastError(error.message || "Không thể xóa bài thi.");
     }
@@ -383,7 +397,7 @@ export default function TeacherExamListPage() {
                     <button
                       onClick={() => {
                         navigator.clipboard.writeText(shareLink);
-                        alert("Đã sao chép!");
+                        toastSuccess("Đã sao chép liên kết!");
                       }}
                       className="bg-[#A53AEC] text-white px-4 py-2 rounded-md"
                     >
