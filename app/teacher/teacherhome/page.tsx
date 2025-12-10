@@ -37,8 +37,21 @@ const TeacherHome = () => {
   const { user } = useUser();
   const [roomCode, setRoomCode] = useState('');
   const [stats, setStats] = useState({ exams: 0, questions: 0, students: 0 });
-
   const username = user?.username;
+
+  const displayName = (() => {
+    if (!user) return '';
+
+    const fullName = `${user.firstName || ''} ${user.lastName || ''}`.trim();
+    if (fullName) return fullName;
+
+    const rawUser = user.username || (user as any).email || '';
+    if (typeof rawUser === 'string' && rawUser.includes('@')) {
+      return rawUser.split('@')[0];
+    }
+
+    return rawUser;
+  })();
 
   const handleJoinRoom = () => {
     if (roomCode.trim()) {
@@ -93,7 +106,7 @@ const TeacherHome = () => {
             <div className="flex flex-col lg:flex-row bg-black/10 px-6 sm:px-8 py-6 sm:py-8">
               <div className="flex-1 flex flex-col gap-4">
                 <h1 className="text-2xl sm:text-3xl md:text-4xl font-extrabold mb-2">
-                  {username ? `Chào mừng, ${username}!` : 'Chào mừng bạn!'}
+                  {displayName ? `Chào mừng, ${displayName}!` : 'Chào mừng bạn!'}
                 </h1>
 
                 <p className="text-sm sm:text-base text-purple-100 max-w-xl">

@@ -61,10 +61,16 @@ const fetcher = async (url: string): Promise<User | null> => {
       finalAvatarUrl = backendBase + finalAvatarUrl;
     }
 
+    const displayNameFromProfile = profileData?.name || profileData?.username;
+
     const transformedUser: User = {
       ...rawUserData,
       id: rawUserData.id,
+      // Nếu backend dùng username là email, vẫn giữ nguyên email cũ,
+      // nhưng thêm firstName lấy từ hồ sơ để hiển thị tên người dùng.
       email: rawUserData.username,
+      firstName: displayNameFromProfile || rawUserData.firstName,
+      lastName: rawUserData.lastName,
       role: cleanRole as User['role'],
       // Ưu tiên avatar từ /profile, nếu không có thì fallback về dữ liệu từ /me (nếu có),
       // đồng thời đảm bảo avatarUrl là URL đầy đủ
