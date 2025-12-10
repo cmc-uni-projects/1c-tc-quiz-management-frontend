@@ -143,7 +143,7 @@ const ListExamsContent = () => {
                     <p className="mt-4 text-gray-700">Đang tải bài thi...</p>
                 </div>
             ) : (
-                <div className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     {exams.length > 0 ? (
                         exams.map((exam) => (
                             <div
