@@ -510,7 +510,7 @@ export default function CreateExamPage() {
         <main className="flex-1 overflow-y-auto px-10 py-8">
 
           {/* ================== FORM TẠO BÀI THI ================== */}
-          <section className="bg-white rounded-2xl shadow p-8 mb-6">
+          <section className="bg-white rounded-2xl shadow p-8 mb-6 max-w-5xl mx-auto">
             <h2 className="text-2xl font-semibold text-center mb-8">
               Tạo bài thi online
             </h2>
@@ -535,36 +535,11 @@ export default function CreateExamPage() {
             </div>
 
             {/* Các input đầu */}
-            <div className="space-y-4 mb-6">
-              <div>
-                <label className="block text-sm mb-1">Danh mục bài thi</label>
-                <Autocomplete
-                  allowsCustomValue
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+              {/* Tên bài thi */}
+              <div className="md:col-span-2">
+                <label className="block text-sm font-medium mb-1">Tên bài thi</label>
 
-                  defaultItems={categories}
-                  onSelectionChange={(key) => setExamCategory(key as string)}
-                  onInputChange={(value) => setExamCategory(value)}
-                  className="w-full"
-                  isLoading={categoriesLoading}
-                  label={examCategory ? "" : (categoriesLoading ? "Đang tải danh mục..." : "Chọn danh mục")}
-                  inputProps={{
-                    classNames: {
-                      base: "h-auto",
-                      inputWrapper: "border px-3 py-2 rounded-md bg-white h-auto",
-                      input: "text-sm",
-                    },
-                  }}
-                  popoverProps={{
-                    classNames: {
-                      content: "bg-white" // Đặt nền trắng cho phần xổ xuống
-                    }
-                  }}
-                >
-                  {(item) => <AutocompleteItem key={item.id} value={item.name}>{item.name}</AutocompleteItem>}
-                </Autocomplete>
-              </div>
-              <div>
-                <label className="block text-sm mb-1">Tên bài thi</label>
                 <input
                   type="text"
                   value={examTitle}
@@ -573,8 +548,44 @@ export default function CreateExamPage() {
                 />
               </div>
 
+              {/* Danh mục bài thi */}
               <div>
-                <label className="block text-sm mb-1">Số lượng câu hỏi</label>
+                <label className="block text-sm font-medium mb-1">Danh mục bài thi</label>
+                <select
+                  value={examCategory}
+                  onChange={(e) => setExamCategory(e.target.value)}
+                  className="w-full border px-3 py-2 rounded-md bg-white"
+                  disabled={categoriesLoading}
+                >
+                  <option value="">{categoriesLoading ? "Đang tải danh mục..." : "Chọn danh mục"}</option>
+                  {categories.map((cat) => (
+                    <option key={cat.id} value={cat.id.toString()}>
+                      {cat.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Loại đề thi / Độ khó tổng thể của bài thi */}
+              <div>
+                <label className="block text-sm font-medium mb-1">Loại đề thi</label>
+
+                <select
+                  value={examType}
+                  onChange={(e) => setExamType(e.target.value)}
+                  className="w-full border px-3 py-2 rounded-md bg-white"
+                >
+                  <option value="">Chọn độ khó</option>
+                  <option value="EASY">Dễ</option>
+                  <option value="MEDIUM">Trung bình</option>
+                  <option value="HARD">Khó</option>
+                </select>
+              </div>
+
+              {/* Số lượng câu hỏi */}
+              <div>
+                <label className="block text-sm font-medium mb-1">Số lượng câu hỏi</label>
+
                 <input
                   type="number"
                   value={questionCount}
@@ -587,8 +598,10 @@ export default function CreateExamPage() {
                   className="w-full border px-3 py-2 rounded-md"
                 />
               </div>
+
+              {/* Giới hạn người tham gia */}
               <div>
-                <label className="block text-sm mb-2">
+                <label className="block text-sm font-medium mb-2">
                   Giới hạn số người tham gia
                   <span className="text-gray-500 text-xs ml-1"></span>
                 </label>
@@ -608,46 +621,30 @@ export default function CreateExamPage() {
                focus:outline-none transition-all font-medium"
                 />
               </div>
-
-              <div>
-                <label className="block text-sm mb-1">Loại đề thi</label>
-                <select
-                  value={examType}
-                  onChange={(e) => setExamType(e.target.value)}
-                  className="w-full border px-3 py-2 rounded-md bg-white"
-                >
-                  <option value="">Chọn loại</option>
-                  <option value="EASY">Dễ</option>
-                  <option value="MEDIUM">Trung bình</option>
-                  <option value="HARD">Khó</option>
-                </select>
-              </div>
             </div>
 
             {/* Thời gian nộp bài */}
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium mb-1">
-                  Thời gian nộp bài
-                </label>
+            <div className="space-y-4 md:col-span-2">
+              <label className="block text-sm font-medium mb-1">
+                Thời gian nộp bài
+              </label>
 
-                <div className="flex items-center gap-2">
-                  <span className="text-sm">Khoảng thời gian:</span>
-                  <input
-                    type="number"
-                    value={duration}
-                    onChange={(e) =>
-                      setDuration(e.target.value === "" ? "" : Number(e.target.value))
-                    }
-                    className="w-20 border px-2 py-1 rounded-md"
-                    min="1"
-                  />
-                  <span>Phút</span>
-                </div>
+              <div className="flex items-center gap-2 mb-4">
+                <span className="text-sm">Khoảng thời gian:</span>
+                <input
+                  type="number"
+                  value={duration}
+                  onChange={(e) =>
+                    setDuration(e.target.value === "" ? "" : Number(e.target.value))
+                  }
+                  className="w-24 border px-2 py-1 rounded-md"
+                  min="1"
+                />
+                <span>Phút</span>
               </div>
 
-              {/* Bắt đầu */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* Bắt đầu */}
                 <div>
                   <p className="text-sm mb-1">Thời gian bắt đầu:</p>
                   <div className="flex gap-2">
@@ -708,7 +705,7 @@ export default function CreateExamPage() {
           )}
 
           {/* ================== THÊM CÂU HỎI ================== */}
-          <section className="bg-white rounded-2xl shadow p-8">
+          <section className="bg-white rounded-2xl shadow p-8 max-w-5xl mx-auto">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-semibold">Các câu hỏi đã tạo</h3>
               <div className="flex items-center gap-2">
@@ -748,7 +745,7 @@ export default function CreateExamPage() {
                     <select
                       value={q.questionType}
                       onChange={(e) => updateQuestionField(q.id, "questionType", e.target.value)}
-                      className="border px-3 py-2 rounded-md bg-white"
+                      className="border px-2 py-1 rounded-md bg-white"
                     >
                       <option value="">Loại câu hỏi</option>
                       <option value="single">Chọn 1 đáp án</option>
@@ -766,18 +763,6 @@ export default function CreateExamPage() {
                       <option value="EASY">Dễ</option>
                       <option value="MEDIUM">Trung bình</option>
                       <option value="HARD">Khó</option>
-                    </select>
-
-                    {/* Danh mục */}
-                    <select
-                      value={q.categoryId}
-                      onChange={(e) => updateQuestionField(q.id, "categoryId", e.target.value)}
-                      className="border px-3 py-2 rounded-md bg-white"
-                    >
-                      <option value="">Danh mục</option>
-                      {categories.map((cat) => (
-                        <option key={cat.id} value={cat.id.toString()}>{cat.name}</option>
-                      ))}
                     </select>
                   </div>
 
@@ -840,7 +825,8 @@ export default function CreateExamPage() {
           </section>
 
           {/* NÚT LƯU – ĐĂNG BÀI */}
-          <div className="mt-6 flex justify-end gap-4">
+          <div className="mt-6 flex justify-end gap-4 max-w-5xl mx-auto">
+
             <button className="px-6 py-2 border border-purple-700 text-purple-700 rounded-md">
               Lưu
             </button>

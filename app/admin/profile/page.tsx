@@ -1,6 +1,7 @@
 "use client";
 import React, { useState, useRef, useEffect, useCallback } from "react";
 import toast from "react-hot-toast";
+import { useUser } from "@/lib/user";
 
 const API_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "/api";
 const PRIMARY_BG = "#6D0446";
@@ -69,6 +70,7 @@ async function fetchApi(url: string, options: any = {}) {
 
 
 export default function AdminProfilePage() {
+  const { mutate } = useUser();
   const fileRef = useRef<HTMLInputElement | null>(null);
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
@@ -184,6 +186,9 @@ export default function AdminProfilePage() {
 
       setAvatar(finalAvatarUrl);
       setAvatarFile(null);
+      
+      // Cập nhật lại user global để header nhận avatar mới
+      await mutate();
       
       toast.success("Cập nhật hồ sơ thành công");
       

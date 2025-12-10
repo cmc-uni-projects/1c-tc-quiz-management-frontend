@@ -765,26 +765,6 @@ export default function UpdateExamPage() {
                                                 </section>
                                             ))}
                                         </div>
-                                        <div className="flex justify-center mt-6">
-                                            <button
-                                                type="button"
-                                                onClick={() =>
-                                                    push({
-                                                        title: "",
-                                                        type: "SINGLE",
-                                                        difficulty: "EASY",
-                                                        categoryId: values.categoryId,
-                                                        answers: [
-                                                            { text: "", isCorrect: false },
-                                                            { text: "", isCorrect: false },
-                                                        ],
-                                                    })
-                                                }
-                                                className="px-6 py-2 rounded-full bg-purple-600 text-white hover:bg-purple-700 shadow-lg flex items-center gap-2"
-                                            >
-                                                <span className="text-xl font-bold">+</span> Thêm câu hỏi
-                                            </button>
-                                        </div>
                                     </>
                                 )}
                             </FieldArray>

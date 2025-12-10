@@ -27,18 +27,27 @@ export async function fetchApi(endpoint: string, options: FetchApiOptions = {}) 
     token = localStorage.getItem('jwt');
   }
 
+  // Khởi tạo headers từ options trước
   const headers: Record<string, string> = {
-    'Content-Type': 'application/json',
     ...(options.headers as Record<string, string> || {}),
   };
+
+  // Chỉ set Content-Type mặc định cho các request KHÔNG dùng FormData
+  if (!(options.body instanceof FormData)) {
+    if (!headers['Content-Type']) {
+      headers['Content-Type'] = 'application/json';
+    }
+  }
 
   if (token) {
     headers['Authorization'] = `Bearer ${token}`;
   }
 
   let body = options.body;
+  // Nếu body là object thông thường (không phải FormData) thì stringify thành JSON
   if (body && typeof body === 'object' && !(body instanceof FormData)) {
     if (headers['Content-Type'] === 'application/x-www-form-urlencoded') {
+      // Trường hợp muốn tự encode form-url-encoded sẽ xử lý ở nơi khác nếu cần
     } else {
       body = JSON.stringify(body);
     }
