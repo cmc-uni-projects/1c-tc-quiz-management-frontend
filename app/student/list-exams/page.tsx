@@ -100,7 +100,8 @@ const ListExamsContent = () => {
     };
 
     return (
-        <div className="bg-gray-50 p-8">
+        <div className="min-h-screen bg-gray-50 p-8">
+
             <h2 className="text-3xl font-bold text-gray-900 mb-8">Danh sách bài thi</h2>
 
             {/* Thanh tìm kiếm theo giao diện bạn cung cấp */}
