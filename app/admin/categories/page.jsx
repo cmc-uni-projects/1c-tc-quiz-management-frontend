@@ -72,25 +72,25 @@ const PlusIcon = (props) => (
 
 const EditIcon = (props) => (
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
-    <path d="M12 20h9"/>
-    <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4Z"/>
+    <path d="M12 20h9" />
+    <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4Z" />
   </svg>
 );
 
 const TrashIcon = (props) => (
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
-    <polyline points="3 6 5 6 21 6"/>
-    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/>
-    <path d="M10 11v6"/>
-    <path d="M14 11v6"/>
-    <path d="M9 6V4a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2"/>
+    <polyline points="3 6 5 6 21 6" />
+    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6" />
+    <path d="M10 11v6" />
+    <path d="M14 11v6" />
+    <path d="M9 6V4a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2" />
   </svg>
 );
 
 const XIcon = (props) => (
   <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
-    <path d="M18 6 6 18"/>
-    <path d="m6 6 12 12"/>
+    <path d="M18 6 6 18" />
+    <path d="m6 6 12 12" />
   </svg>
 );
 
@@ -196,7 +196,7 @@ export default function CategoriesPage() {
         setTotalPages(1);
         setTotalElements(0);
       }
-      setPage(pageParam); 
+      setPage(pageParam);
 
     } catch (e) {
       console.error("Error fetching categories:", e);
@@ -214,9 +214,9 @@ export default function CategoriesPage() {
   // Tìm kiếm: reset về trang 0 và gọi lại fetchCategories với keyword hiện tại
   const handleSearch = () => {
     if (page === 0) {
-      fetchCategories(0, keyword); 
+      fetchCategories(0, keyword);
     } else {
-      setPage(0); 
+      setPage(0);
     }
   };
 
@@ -280,10 +280,10 @@ export default function CategoriesPage() {
 
         // Cập nhật local state sau khi thành công
         setCategories((prev) => prev.map((c) =>
-          (c.id === editing.id
-            ? { ...c, name: form.name.trim(), description: form.description?.trim() || "" }
-            : c
-          )
+        (c.id === editing.id
+          ? { ...c, name: form.name.trim(), description: form.description?.trim() || "" }
+          : c
+        )
         ));
         toast.success("Cập nhật danh mục thành công");
       } else {
@@ -470,17 +470,17 @@ export default function CategoriesPage() {
                         <div className="flex items-center justify-center gap-2">
                           <button
                             onClick={() => openEdit(c)}
-                            className="px-3 py-1.5 rounded-full text-xs font-semibold bg-blue-100 text-blue-800 border border-blue-200 hover:bg-blue-200 transition disabled:opacity-50 flex items-center gap-1"
+                            className="p-2 text-blue-600 hover:text-blue-800 hover:bg-blue-100 rounded-full transition disabled:opacity-50 flex items-center gap-1"
                             disabled={loading}
                           >
-                            <EditIcon className="w-3 h-3 flex-shrink-0" /> Sửa
+                            <EditIcon className="w-5 h-5 flex-shrink-0" />
                           </button>
                           <button
                             onClick={() => handleDelete(c.id)}
-                            className="px-3 py-1.5 rounded-full text-xs font-semibold bg-rose-500 text-white shadow hover:bg-rose-600 transition disabled:opacity-50 flex items-center gap-1"
+                            className="p-2 text-rose-500 hover:text-rose-700 hover:bg-rose-100 rounded-full transition disabled:opacity-50 flex items-center gap-1"
                             disabled={loading}
                           >
-                            <TrashIcon className="w-3 h-3 flex-shrink-0" /> Xóa
+                            <TrashIcon className="w-5 h-5 flex-shrink-0" />
                           </button>
                         </div>
                       </td>
@@ -516,10 +516,9 @@ export default function CategoriesPage() {
                   onClick={() => setPage(i)}
                   disabled={loading}
                   className={`w-8 h-8 flex items-center justify-center rounded-full text-sm font-semibold transition-colors
-                    ${
-                      page === i
-                        ? 'bg-purple-700 text-white shadow-lg'
-                        : 'text-gray-600 hover:bg-purple-50'
+                    ${page === i
+                      ? 'bg-purple-700 text-white shadow-lg'
+                      : 'text-gray-600 hover:bg-purple-50'
                     }
                   `}
                 >
@@ -554,7 +553,7 @@ export default function CategoriesPage() {
             <div className="flex items-start justify-between mb-4 border-b pb-3">
               <h2 className="text-xl font-bold text-gray-900">{editing ? "Sửa danh mục" : "Thêm danh mục"}</h2>
               <button onClick={closeModal} className="text-gray-500 hover:text-gray-700">
-                <XIcon className="w-5 h-5"/>
+                <XIcon className="w-5 h-5" />
               </button>
             </div>
 
@@ -585,12 +584,12 @@ export default function CategoriesPage() {
 
               <div className="flex justify-end gap-3 pt-2">
                 <button onClick={closeModal} className="px-4 py-2 border border-gray-300 rounded-xl hover:bg-gray-100 transition" disabled={loading}>
-                    Hủy
+                  Hủy
                 </button>
                 <button
-                    onClick={handleSave}
-                    className="px-4 py-2 bg-purple-700 text-white rounded-xl hover:bg-purple-800 font-semibold transition shadow-md disabled:opacity-50"
-                    disabled={loading}
+                  onClick={handleSave}
+                  className="px-4 py-2 bg-purple-700 text-white rounded-xl hover:bg-purple-800 font-semibold transition shadow-md disabled:opacity-50"
+                  disabled={loading}
                 >
                   {loading ? (editing ? "Đang cập nhật..." : "Đang tạo...") : (editing ? "Lưu thay đổi" : "Thêm mới")}
                 </button>
@@ -600,6 +599,6 @@ export default function CategoriesPage() {
         </div>
       )}
 
-      </div>
+    </div>
   );
 }
