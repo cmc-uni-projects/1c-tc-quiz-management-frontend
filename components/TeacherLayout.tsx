@@ -72,7 +72,7 @@ const TeacherSidebar = () => {
 
     const navItems = [
         { href: '/teacher/teacherhome', label: 'Trang chủ' },
-        { href: '/teacher/categories', label: 'Danh mục câu hỏi' },
+        { href: '/teacher/categories', label: 'Danh mục' },
         { href: '/teacher/questions', label: 'Quản lý câu hỏi' },
         {
             label: 'Quản lý bài thi',
@@ -89,7 +89,7 @@ const TeacherSidebar = () => {
         switch (label) {
             case 'Trang chủ':
                 return <HomeIcon className="w-5 h-5" />;
-            case 'Danh mục câu hỏi':
+            case 'Danh mục':
                 return <FolderIcon className="w-5 h-5" />;
             case 'Quản lý câu hỏi':
                 return <QuestionMarkCircleIcon className="w-5 h-5" />;
