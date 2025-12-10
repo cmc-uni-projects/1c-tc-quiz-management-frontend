@@ -41,6 +41,7 @@ const HERO_GRADIENT = "linear-gradient(135deg, #FFB6FF 0%, #8A46FF 100%)";
 const BUTTON_COLOR = "#9453C9";
 const SEARCH_BAR_BG = "#E33AEC";
 const TABLE_SHADOW = "0 25px 60px rgba(126, 62, 255, 0.18)";
+const PRIMARY_PURPLE_BG = "#9453C9";
 
 // Icon nhỏ dùng cho nút
 const PlusIcon = (props) => (
@@ -330,230 +331,225 @@ export default function TeacherCategoriesPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 flex-1 p-4 sm:p-8 font-sans">
-      {/* Thanh tiêu đề + tìm kiếm */}
-      <div
-        className="p-4 sm:p-6 mb-6 rounded-xl shadow-lg"
-        style={{ backgroundColor: PRIMARY_PURPLE_BG }}
-      >
-        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
-          <div>
-            <h1 className="text-2xl font-extrabold text-white">Danh mục câu hỏi</h1>
-            <p className="text-white/80 mt-1 text-sm">
-              Quản lý danh mục câu hỏi dùng cho các bài thi
+    <div className="w-full min-h-screen py-6 sm:py-10 px-4 sm:px-8" style={{ backgroundColor: PAGE_BG }}>
+      <div className="max-w-6xl mx-auto space-y-6">
+
+        {/* Hero Section */}
+        <div className="rounded-2xl shadow-2xl p-6 sm:p-8 text-white relative overflow-hidden" style={{ background: HERO_GRADIENT }}>
+          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+            <div>
+              <h1 className="text-3xl font-extrabold drop-shadow">Danh mục câu hỏi</h1>
+              <p className="text-white/80 mt-1 text-sm">
+                Quản lý danh mục câu hỏi dùng cho các bài thi
+              </p>
+            </div>
+
+            <div className="flex items-center gap-2 text-sm font-semibold">
+              <span className="px-4 py-1 rounded-full bg-white/25 backdrop-blur">Tổng {totalElements} danh mục</span>
+            </div>
+          </div>
+
+          <div className="mt-6 bg-white/95 rounded-2xl p-4 shadow-inner">
+            <div className="flex flex-col gap-4">
+              <div className="flex flex-col sm:flex-row gap-3">
+                <input
+                  value={keyword}
+                  onChange={(e) => setKeyword(e.target.value)}
+                  placeholder="Tìm theo tên danh mục..."
+                  className="flex-1 px-4 py-2 rounded-xl border border-gray-200 text-gray-800 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-purple-400"
+                  onKeyDown={(e) => e.key === "Enter" && handleSearch()}
+                />
+
+                <div className="flex gap-2 shrink-0">
+                  <button
+                    onClick={handleSearch}
+                    className="px-6 py-2 rounded-xl text-white text-sm font-semibold"
+                    style={{ backgroundColor: SEARCH_BAR_BG }}
+                  >
+                    Tìm kiếm
+                  </button>
+
+                  <button
+                    onClick={openAdd}
+                    className="px-6 py-2 rounded-xl text-white text-sm font-semibold flex items-center gap-2"
+                    style={{ backgroundColor: BUTTON_COLOR }}
+                  >
+                    <PlusIcon /> Thêm mới
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Table Section */}
+        <div
+          className="bg-white rounded-2xl border border-white/60 shadow-[0_25px_60px_rgba(131,56,236,0.12)] overflow-hidden"
+          style={{ boxShadow: TABLE_SHADOW }}
+        >
+          <div className="p-5 border-b border-gray-100 bg-gradient-to-r from-white to-purple-50/60">
+            <p className="text-sm text-gray-600 font-medium flex flex-wrap items-center gap-2">
+              <span className="text-xs px-3 py-1 rounded-full bg-white shadow-inner">
+                Trang {page + 1}/{totalPages}
+              </span>
             </p>
           </div>
 
-          <div className="flex flex-col sm:flex-row gap-3 w-full lg:w-auto">
-            <input
-              value={keyword}
-              onChange={(e) => setKeyword(e.target.value)}
-              placeholder="Tìm theo tên danh mục..."
-              className="w-full sm:w-72 px-4 py-2 bg-white rounded-lg shadow focus:outline-none focus:ring-2 focus:ring-purple-400"
-            />
-            <div className="flex gap-2">
-              <button
-                onClick={handleSearch}
-                className="px-4 py-2 bg-white text-purple-700 font-semibold rounded-lg shadow hover:bg-purple-50"
-              >
-                Tìm kiếm
-              </button>
-              <button
-                onClick={openAdd}
-                className="px-4 py-2 bg-purple-700 text-white font-semibold rounded-lg shadow hover:bg-purple-800 flex items-center gap-2"
-              >
-                <PlusIcon /> Thêm danh mục
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Bảng danh mục */}
-      <div className="bg-white rounded-xl shadow-md border border-gray-200 overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="min-w-full text-sm">
-            <thead className="bg-gray-50 text-gray-700">
-              <tr>
-                <th className="px-4 py-3 text-left text-xs font-semibold uppercase">STT</th>
-                <th className="px-4 py-3 text-left text-xs font-semibold uppercase">Tên danh mục</th>
-                <th className="px-4 py-3 text-left text-xs font-semibold uppercase">Mô tả</th>
-                <th className="px-4 py-3 text-left text-xs font-semibold uppercase">Số câu hỏi</th>
-                <th className="px-4 py-3 text-left text-xs font-semibold uppercase">Người tạo</th>
-                <th className="px-4 py-3 text-right text-xs font-semibold uppercase">Thao tác</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100">
-              {filtered.length === 0 ? (
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[800px] text-sm text-gray-700">
+              <thead className="bg-[#F7F4FF] border-b border-gray-100 uppercase text-[0.65rem] tracking-wide text-gray-600">
                 <tr>
-                  <td
-                    colSpan={5}
-                    className="px-4 py-8 text-center text-gray-500 text-sm"
-                  >
-                    Không có danh mục nào
-                  </td>
+                  <th className="px-4 py-3 text-left w-16">STT</th>
+                  <th className="px-4 py-3 text-left">Tên danh mục</th>
+                  <th className="px-4 py-3 text-left">Mô tả</th>
+                  <th className="px-4 py-3 text-left w-32">Số câu hỏi</th>
+                  <th className="px-4 py-3 text-left w-40">Người tạo</th>
+                  <th className="px-4 py-3 text-center w-32">Thao tác</th>
                 </tr>
-              ) : (
-                filtered.map((cat, index) => (
-                  <tr key={cat.id} className="hover:bg-gray-50/70">
-                    <td className="px-4 py-3 text-gray-700">
-                      {page * PAGE_SIZE + index + 1}
-                    </td>
-                    <td className="px-4 py-3 text-gray-900 font-medium">
-                      {cat.name}
-                    </td>
-                    <td className="px-4 py-3 text-gray-700">
-                      {cat.description || "Không có mô tả"}
-                    </td>
-                    <td className="px-4 py-3 text-gray-700">
-                      {cat.questions?.length ?? 0}
-                    </td>
-                    <td className="px-4 py-3">
-                      <span
-                        className="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-gray-100 text-gray-700 border border-gray-200"
-                      >
-                        {cat.createdByName || 'Không rõ'}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3 text-right">
-                      <div className="inline-flex items-center justify-center gap-2">
-                        <button
-                          onClick={() => openEdit(cat)}
-                          className="p-2 text-blue-600 hover:text-blue-800 hover:bg-blue-100 rounded-full flex items-center gap-1 text-xs transition"
-                        >
-                          <EditIcon className="w-5 h-5" />
-                        </button>
-                        <button
-                          onClick={() => handleDelete(cat.id)}
-                          className="p-2 text-rose-500 hover:text-rose-700 hover:bg-rose-100 rounded-full flex items-center gap-1 text-xs transition"
-                        >
-                          <TrashIcon className="w-5 h-5" />
-                        </button>
-                      </div>
+              </thead>
+              <tbody className="divide-y divide-gray-100">
+                {filtered.length === 0 ? (
+                  <tr>
+                    <td colSpan={6} className="px-4 py-10 text-center text-gray-500">
+                      Không có danh mục nào
                     </td>
                   </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
+                ) : (
+                  filtered.map((cat, index) => (
+                    <tr key={cat.id} className="hover:bg-purple-50/50 transition">
+                      <td className="px-4 py-3 text-gray-600">{page * PAGE_SIZE + index + 1}</td>
+                      <td className="px-4 py-3 font-medium text-gray-900">{cat.name}</td>
+                      <td className="px-4 py-3 text-gray-600 max-w-xs truncate" title={cat.description}>{cat.description || "—"}</td>
+                      <td className="px-4 py-3 text-gray-600">{cat.questions?.length ?? 0}</td>
+                      <td className="px-4 py-3">
+                        <span className={`inline-block px-3 py-1 rounded-full text-xs font-semibold border ${(cat.createdByRole || "").toUpperCase() === "ADMIN"
+                          ? "bg-fuchsia-100 text-fuchsia-700 border-fuchsia-200"
+                          : "bg-emerald-100 text-emerald-700 border-emerald-200"
+                          }`}>
+                          {sentenceCase(cat.createdByName) || 'Không rõ'}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3 text-center">
+                        <div className="flex items-center justify-center gap-2">
+                          <button
+                            onClick={() => openEdit(cat)}
+                            className="p-2 text-blue-600 hover:text-blue-800 hover:bg-blue-100 rounded-full transition"
+                            title="Sửa"
+                          >
+                            <EditIcon className="w-5 h-5" />
+                          </button>
+                          <button
+                            onClick={() => handleDelete(cat.id)}
+                            className="p-2 text-rose-500 hover:text-rose-700 hover:bg-rose-100 rounded-full transition"
+                            title="Xóa"
+                          >
+                            <TrashIcon className="w-5 h-5" />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
 
-        {/* Phân trang thực (backend) */}
-        <div className="flex items-center justify-center gap-1 py-3 border-t border-gray-100 text-xs text-gray-600">
-          {/* Về trang đầu */}
-          <button
-            className="px-2 py-1 rounded border border-transparent text-gray-400 hover:text-gray-600 hover:bg-gray-50 disabled:opacity-40"
-            onClick={() => setPage(0)}
-            disabled={page === 0}
-          >
-            «
-          </button>
-          {/* Trang trước */}
-          <button
-            className="px-2 py-1 rounded border border-transparent text-gray-400 hover:bg-gray-50 disabled:opacity-40"
-            onClick={() => setPage((p) => Math.max(0, p - 1))}
-            disabled={page === 0}
-          >
-            ‹
-          </button>
-          {/* Số trang */}
-          {Array.from({ length: totalPages }, (_, i) => (
-            <button
-              key={i}
-              onClick={() => setPage(i)}
-              className={`px-3 py-1 rounded-full text-sm font-medium transition-colors
-                  ${i === page
-                  ? "bg-purple-100 text-purple-700"
-                  : "text-gray-700 hover:bg-gray-50"
-                }
-                `}
-            >
-              {i + 1}
-            </button>
-          ))}
-          {/* Trang tiếp */}
-          <button
-            className="px-2 py-1 rounded border border-transparent text-gray-400 hover:bg-gray-50 disabled:opacity-40"
-            onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))}
-            disabled={page === totalPages - 1}
-          >
-            ›
-          </button>
-          {/* Về trang cuối */}
-          <button
-            className="px-2 py-1 rounded border border-transparent text-gray-400 hover:bg-gray-50 disabled:opacity-40"
-            onClick={() => setPage(totalPages - 1)}
-            disabled={page === totalPages - 1}
-          >
-            »
-          </button>
+          {/* Pagination */}
+          {totalElements > 0 && (
+            <div className="p-5 border-t border-gray-100 flex justify-center items-center gap-2 text-sm text-gray-500 bg-white">
+              <button
+                onClick={() => { if (page !== 0) setPage(0); }}
+                disabled={page === 0}
+                className="px-3 py-1 rounded-full text-gray-400 hover:text-purple-700 hover:bg-purple-50 disabled:opacity-40 disabled:cursor-not-allowed transition"
+              >
+                «
+              </button>
+              <button
+                onClick={() => setPage(p => Math.max(0, p - 1))}
+                disabled={page === 0}
+                className="px-3 py-1 rounded-full text-gray-400 hover:text-purple-700 hover:bg-purple-50 disabled:opacity-40 disabled:cursor-not-allowed transition"
+              >
+                ‹
+              </button>
+
+              {Array.from({ length: totalPages }, (_, i) => i).slice(Math.max(0, page - 3), Math.min(totalPages, page + 4)).map(i => (
+                <button
+                  key={i}
+                  onClick={() => setPage(i)}
+                  className={`w-8 h-8 flex items-center justify-center rounded-full text-sm font-semibold transition-colors ${page === i ? 'bg-purple-700 text-white shadow-lg' : 'text-gray-600 hover:bg-purple-50'}`}
+                >
+                  {i + 1}
+                </button>
+              ))}
+
+              <button
+                onClick={() => setPage(p => Math.min(totalPages - 1, p + 1))}
+                disabled={page === totalPages - 1}
+                className="px-3 py-1 rounded-full text-gray-400 hover:text-purple-700 hover:bg-purple-50 disabled:opacity-40 disabled:cursor-not-allowed transition"
+              >
+                ›
+              </button>
+              <button
+                onClick={() => { if (page !== totalPages - 1) setPage(totalPages - 1); }}
+                disabled={page === totalPages - 1}
+                className="px-3 py-1 rounded-full text-gray-400 hover:text-purple-700 hover:bg-purple-50 disabled:opacity-40 disabled:cursor-not-allowed transition"
+              >
+                »
+              </button>
+            </div>
+          )}
         </div>
       </div>
 
-      {/* Modal Thêm/Sửa */}
+      {/* Modal */}
       {modalOpen && (
-        <div
-          className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50"
-          onClick={closeModal}
-        >
-          <div
-            className="bg-white rounded-xl p-6 w-full max-w-lg shadow-2xl"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="flex items-start justify-between mb-4 border-b pb-3">
+        <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4" onClick={closeModal}>
+          <div className="bg-white rounded-2xl w-full max-w-lg shadow-2xl flex flex-col" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between p-6 pb-0 mb-4 bg-white rounded-t-2xl z-10 shrink-0">
               <h2 className="text-xl font-bold text-gray-900">
-                {editing ? "Sửa danh mục" : "Thêm danh mục"}
+                {editing ? "Cập nhật danh mục" : "Thêm danh mục mới"}
               </h2>
-              <button
-                onClick={closeModal}
-                className="text-gray-500 hover:text-gray-700"
-              >
-                ✕
-              </button>
+              <button onClick={closeModal} className="text-gray-500 hover:text-gray-800">✕</button>
             </div>
 
-            <div className="space-y-4">
+            <div className="space-y-4 px-6 overflow-y-auto flex-1 pb-2">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Tên danh mục
-                </label>
+                <label className="text-sm font-medium block mb-1 text-gray-700">Tên danh mục</label>
                 <input
                   value={form.name}
                   onChange={onChangeName}
                   placeholder="Nhập tên danh mục..."
-                  className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-400"
+                  className="w-full px-4 py-2 rounded-xl border border-gray-200 text-gray-800 text-sm focus:outline-none focus:ring-2 focus:ring-purple-400"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Mô tả
-                </label>
+                <label className="text-sm font-medium block mb-1 text-gray-700">Mô tả</label>
                 <textarea
                   value={form.description}
                   onChange={onChangeDesc}
                   rows={3}
-                  placeholder="Mô tả ngắn gọn..."
-                  className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-400"
+                  placeholder="Mô tả danh mục..."
+                  className="w-full px-4 py-2 rounded-xl border border-gray-200 text-gray-800 text-sm focus:outline-none focus:ring-2 focus:ring-purple-400"
                 />
               </div>
+              {error && <p className="text-sm text-red-600 font-medium">{error}</p>}
+            </div>
 
-              {error && <p className="text-sm text-red-600">{error}</p>}
-
-              <div className="flex justify-end gap-3 pt-2">
-                <button
-                  onClick={closeModal}
-                  className="px-4 py-2 border rounded-lg hover:bg-gray-50"
-                >
-                  Hủy
-                </button>
-                <button
-                  onClick={handleSave}
-                  className="px-4 py-2 bg-purple-700 text-white rounded-lg hover:bg-purple-800 font-semibold"
-                  disabled={loading}
-                >
-                  Lưu
-                </button>
-              </div>
+            <div className="flex justify-end gap-3 p-6 pt-4 border-t border-gray-100 bg-white rounded-b-2xl shrink-0">
+              <button
+                onClick={closeModal}
+                className="px-4 py-2 border rounded-xl hover:bg-gray-100 text-sm font-medium"
+              >
+                Hủy
+              </button>
+              <button
+                onClick={handleSave}
+                className="px-4 py-2 rounded-xl text-white text-sm font-medium"
+                style={{ backgroundColor: BUTTON_COLOR }}
+                disabled={loading}
+              >
+                {loading ? "Đang lưu..." : "Lưu"}
+              </button>
             </div>
           </div>
         </div>

@@ -129,7 +129,7 @@ function DifficultyBadge({ difficulty }) {
   const text = diff ? (difficultyMap[diff] || diff) : "N/A";
 
   return (
-    <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-medium ${colorClass}`}>
+    <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-medium whitespace-nowrap ${colorClass}`}>
       {text}
     </span>
   );
@@ -161,6 +161,29 @@ function VisibilityBadge({ visibility }) {
 }
 
 /* --- Modal component for Create/Edit (internal) --- */
+function getCreatorBadgeRole(createdBy, currentUser) {
+  const v = (createdBy || "").toLowerCase();
+  if (currentUser) {
+    const u = (currentUser.username || "").toLowerCase();
+    const e = (currentUser.email || "").toLowerCase();
+    if (v && (v === u || v === e)) {
+      return (currentUser.role || "").toLowerCase();
+    }
+  }
+  return v.includes("admin") ? "admin" : "teacher";
+}
+
+const creatorBadgeClass = (role) => {
+  switch ((role || "").toUpperCase()) {
+    case "ADMIN":
+      return "bg-fuchsia-100 text-fuchsia-700 border border-fuchsia-200";
+    case "TEACHER":
+      return "bg-emerald-100 text-emerald-700 border border-emerald-200";
+    default:
+      return "bg-gray-100 text-gray-700 border border-gray-200";
+  }
+};
+
 function QuestionModal({ open, onClose, onSubmit, categories = [], editing = null }) {
   const [title, setTitle] = useState(editing?.title || "");
   const [type, setType] = useState(editing?.type || "");
@@ -753,7 +776,19 @@ export default function QuestionsPage() {
                         })()}
                       </td>
                       <td className="px-4 py-3"><DifficultyBadge difficulty={q.difficulty} /></td>
-                      <td className="px-4 py-3 hidden md:table-cell">{q.createdBy || "N/A"}</td>
+                      <td className="px-4 py-3 hidden md:table-cell">
+                        {(() => {
+                          const role = ((q.createdByRole || (currentUser && ((q.createdBy || "").toLowerCase() === ((currentUser.email || "").toLowerCase()) || (q.createdBy || "").toLowerCase() === ((currentUser.username || "").toLowerCase())) ? (currentUser.role || "").toLowerCase() : null)) || getCreatorBadgeRole(q.createdBy, currentUser));
+                          return (
+                            <span
+                              title={q.createdBy}
+                              className={`px-3 py-1.5 rounded-full text-[0.7rem] font-semibold inline-flex items-center justify-center whitespace-nowrap ${creatorBadgeClass(role)}`}
+                            >
+                              {sentenceCase(q.createdByName || q.createdBy) || "N/A"}
+                            </span>
+                          );
+                        })()}
+                      </td>
                       <td className="px-4 py-3 hidden lg:table-cell">{q.categoryName || ""}</td>
                       <td className="px-4 py-3"><VisibilityBadge visibility={q.visibility} /></td>
                       <td className="px-4 py-3">
