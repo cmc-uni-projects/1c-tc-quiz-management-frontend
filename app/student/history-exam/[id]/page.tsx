@@ -38,6 +38,7 @@ interface Question {
     title: string;
     type: string;
     answers: AnswerOption[];
+    correctAnswer?: string;
 }
 
 interface ExamDetail {
@@ -130,9 +131,6 @@ export default function StudentHistoryDetailPage() {
             'EASY': 'Dễ',
             'MEDIUM': 'Trung bình',
             'HARD': 'Khó',
-            'easy': 'Dễ',
-            'medium': 'Trung bình',
-            'hard': 'Khó'
         };
         return map[level] || level || "---";
     };
@@ -265,12 +263,32 @@ export default function StudentHistoryDetailPage() {
                                             Đáp án
                                         </span>
                                         <div className="text-[#4D1597] font-medium flex flex-col gap-1">
-                                            {q.answers.filter(a => a.correct).map(a => (
-                                                <div key={a.id} className="flex items-center gap-2">
-                                                    <span className="text-lg">✓</span>
-                                                    <span>{a.text}</span>
-                                                </div>
-                                            ))}
+                                            {(() => {
+                                                console.log(`[DEBUG] Question ID: ${q.id}, Type: ${q.type}, CorrectAnswer: ${q.correctAnswer}`);
+                                                console.log(`[DEBUG] Answers:`, q.answers);
+
+                                                let correctList = q.answers.filter(a => a.correct);
+                                                // Fallback: If no answer is marked correct but we have a correctAnswer string
+                                                if (correctList.length === 0 && q.correctAnswer) {
+                                                    const match = q.answers.find(a =>
+                                                        a.text === q.correctAnswer ||
+                                                        String(a.text).toLowerCase() === String(q.correctAnswer).toLowerCase()
+                                                    );
+                                                    if (match) {
+                                                        correctList = [match];
+                                                    } else {
+                                                        // If not found in options (e.g. data mismatch), show the raw string
+                                                        correctList = [{ id: -1, text: q.correctAnswer, correct: true }];
+                                                    }
+                                                }
+
+                                                return correctList.map(a => (
+                                                    <div key={a.id} className="flex items-center gap-2">
+                                                        <span className="text-lg">✓</span>
+                                                        <span>{a.text}</span>
+                                                    </div>
+                                                ));
+                                            })()}
                                         </div>
                                     </div>
                                 </div>

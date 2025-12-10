@@ -137,7 +137,7 @@ function VisibilityBadge({ visibility }) {
   };
 
   return (
-    <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-medium ${colorClass}`}>
+    <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-medium whitespace-nowrap ${colorClass}`}>
       {vis ? (mapVis[vis] || vis) : "N/A"}
     </span>
   );
