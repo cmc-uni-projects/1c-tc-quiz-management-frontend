@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { fetchApi } from "@/lib/apiClient";
 import { toastError, toastSuccess } from "@/lib/toast";
 import Swal from "sweetalert2";
+import { usePathname } from "next/navigation";
 
 interface Exam {
   examId: number;
@@ -83,6 +84,7 @@ const getDifficultyLabel = (level?: string) => {
 };
 
 export default function TeacherExamListPage() {
+  const pathname = usePathname();
   const [exams, setExams] = useState<Exam[]>([]);
   const [loading, setLoading] = useState(true);
   const [openMenu, setOpenMenu] = useState<number | null>(null);
@@ -178,20 +180,69 @@ export default function TeacherExamListPage() {
   return (
     <div className="flex-1 flex flex-col">
       <main className="flex-1 px-10 py-8">
-        {/* TAB DANH SÁCH BÀI THI / LỊCH SỬ */}
-        <div className="flex items-center justify-between mb-8">
-          <div className="flex gap-8 text-sm font-bold border-b border-gray-200 w-full">
-            <button className="pb-3 text-[#A53AEC] border-b-2 border-[#A53AEC] relative">
-              <span className="text-base">Bài thi</span>
-            </button>
-            <button
-              onClick={() => router.push("/teacher/history-exam")}
-              className="pb-3 text-gray-500 hover:text-[#A53AEC] transition-colors relative"
-            >
-              <span className="text-base">Lịch sử thi</span>
-            </button>
-          </div>
-        </div>
+{/* TAB DANH SÁCH BÀI THI / LỊCH SỬ */}
+<div className="flex items-center mb-8">
+  <div className="flex gap-10 font-bold border-b border-gray-200 w-full">
+
+    {(() => {
+      const pathname = usePathname();
+
+      return (
+        <>
+          {/* TAB BÀI THI */}
+          <button
+            onClick={() => router.push("/teacher/list-exam")}
+            className={`pb-3 relative transition-colors ${
+              pathname === "/teacher/list-exam"
+                ? "text-[#A53AEC]"
+                : "text-gray-500 hover:text-[#A53AEC]"
+            }`}
+          >
+            <span className="text-base">Bài thi</span>
+
+            {pathname === "/teacher/list-exam" && (
+              <span className="absolute left-0 right-0 -bottom-[1px] h-[2px] bg-[#A53AEC] rounded-full" />
+            )}
+          </button>
+
+          {/* TAB LỊCH SỬ THI OFFLINE */}
+          <button
+            onClick={() => router.push("/teacher/history-exam")}
+            className={`pb-3 relative transition-colors ${
+              pathname === "/teacher/history-exam"
+                ? "text-[#A53AEC]"
+                : "text-gray-500 hover:text-[#A53AEC]"
+            }`}
+          >
+            <span className="text-base">Lịch sử thi offline</span>
+
+            {pathname === "/teacher/history-exam" && (
+              <span className="absolute left-0 right-0 -bottom-[1px] h-[2px] bg-[#A53AEC] rounded-full" />
+            )}
+          </button>
+
+          {/* TAB LỊCH SỬ THI ONLINE */}
+          <button
+            onClick={() => router.push("/teacher/history-exam-online")}
+            className={`pb-3 relative transition-colors ${
+              pathname === "/teacher/history-exam-online"
+                ? "text-[#A53AEC]"
+                : "text-gray-500 hover:text-[#A53AEC]"
+            }`}
+          >
+            <span className="text-base">Lịch sử thi online</span>
+
+            {pathname === "/teacher/history-exam-online" && (
+              <span className="absolute left-0 right-0 -bottom-[1px] h-[2px] bg-[#A53AEC] rounded-full" />
+            )}
+          </button>
+        </>
+      );
+    })()}
+  </div>
+</div>
+
+
 
         {/* ========== SEARCH & FILTER TOOLBAR ========== */}
         <div className="flex flex-wrap gap-4 mb-8 bg-white p-4 rounded-lg shadow-sm">
