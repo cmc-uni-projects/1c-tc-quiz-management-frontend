@@ -601,9 +601,8 @@ export default function CreateExamPage() {
 
               {/* Giới hạn người tham gia */}
               <div>
-                <label className="block text-sm font-medium mb-2">
+                <label className="block text-sm font-medium mb-1">
                   Giới hạn số người tham gia
-                  <span className="text-gray-500 text-xs ml-1"></span>
                 </label>
                 <input
                   type="number"
@@ -616,9 +615,7 @@ export default function CreateExamPage() {
                       setParticipantLimit(value === "" ? "" : Number(value));
                     }
                   }}
-                  className="w-full px-4 py-3 border-2 border-gray-400 rounded-lg 
-               focus:border-purple-600 focus:ring-4 focus:ring-purple-100 
-               focus:outline-none transition-all font-medium"
+                  className="w-full border px-3 py-2 rounded-md"
                 />
               </div>
             </div>
@@ -740,7 +737,7 @@ export default function CreateExamPage() {
                   </div>
 
                   {/* Question Type + Difficulty + Category */}
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-4">
                     {/* Loại câu hỏi */}
                     <select
                       value={q.questionType}
