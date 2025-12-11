@@ -242,23 +242,26 @@ function QuestionModal({ open, onClose, onSubmit, categories = [], editing = nul
 
   // Initialize answers when type changes
   useEffect(() => {
-    if (type === "TRUE_FALSE") {
-      setAnswers([
-        { text: "Đúng", correct: false },
-        { text: "Sai", correct: false }
-      ]);
-    } else if (type === "SINGLE" && answers.length < 2) {
-      setAnswers([
-        { text: "", correct: false },
-        { text: "", correct: false }
-      ]);
-    } else if (type === "MULTIPLE" && answers.length < 2) {
-      setAnswers([
-        { text: "", correct: false },
-        { text: "", correct: false }
-      ]);
+    // Only initialize answers for new questions
+    if (!editing) {
+        if (type === "TRUE_FALSE") {
+          setAnswers([
+            { text: "Đúng", correct: false },
+            { text: "Sai", correct: false }
+          ]);
+        } else if (type === "SINGLE" && answers.length < 2) {
+          setAnswers([
+            { text: "", correct: false },
+            { text: "", correct: false }
+          ]);
+        } else if (type === "MULTIPLE" && answers.length < 2) {
+          setAnswers([
+            { text: "", correct: false },
+            { text: "", correct: false }
+          ]);
+        }
     }
-  }, [type]);
+  }, [type, editing]); // Add editing to dependency array
 
   const validate = () => {
     if (!title.trim()) return "Tiêu đề là bắt buộc";
