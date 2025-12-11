@@ -430,7 +430,6 @@ export default function CategoriesPage() {
                   <th className="px-4 py-3 text-left w-16">STT</th>
                   <th className="px-4 py-3 text-left">Tên danh mục</th>
                   <th className="px-4 py-3 text-left hidden sm:table-cell">Mô tả</th>
-                  <th className="px-4 py-3 text-center w-48">Số câu hỏi</th>
                   <th className="px-4 py-3 text-left w-32 hidden md:table-cell">Người tạo</th>
                   <th className="px-4 py-3 text-center w-40">Thao tác</th>
                 </tr>
@@ -453,11 +452,6 @@ export default function CategoriesPage() {
                       <td className="px-4 py-3 font-medium text-gray-900">{c.name}</td>
                       <td className="px-4 py-3 text-gray-700 hidden sm:table-cell max-w-xs overflow-hidden text-ellipsis whitespace-nowrap">
                         {c.description}
-                      </td>
-                      <td className="px-4 py-3 text-center">
-                        <span className="bg-purple-100 text-purple-700 py-1 px-3 rounded-full text-xs font-bold">
-                          {c.questionCount || 0}
-                        </span>
                       </td>
                       <td className="px-4 py-3 hidden md:table-cell">
                         {(() => {
