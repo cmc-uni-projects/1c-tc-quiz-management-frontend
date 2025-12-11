@@ -38,8 +38,11 @@ export default function HistoryExamPage() {
     const fetchExams = async () => {
       try {
         const data = await fetchApi("/exams/my"); // GET /api/exams/my
+        // Filter out DRAFT exams
+        const validExams = Array.isArray(data) ? data.filter((e: any) => e.status !== 'DRAFT') : [];
+
         // Map response to UI
-        const mapped: Exam[] = Array.isArray(data) ? data.map((e: any) => ({
+        const mapped: Exam[] = validExams.map((e: any) => ({
           examId: e.examId,
           title: e.title,
           startTime: e.startTime ? new Date(e.startTime).toLocaleString('vi-VN') : 'Không giới hạn',
@@ -47,7 +50,7 @@ export default function HistoryExamPage() {
           durationMinutes: e.durationMinutes,
           questionCount: e.questionCount || e.examQuestions?.length || 0,
           status: calculateStatus(e.startTime, e.endTime)
-        })) : [];
+        }));
         setExams(mapped);
       } catch (error) {
         console.error("Fetch exams error:", error);
@@ -77,17 +80,19 @@ export default function HistoryExamPage() {
       <main className="flex-1 px-10 py-8">
 
         {/* ===== TAB ===== */}
-        <div className="border-b border-gray-200 mb-6 flex gap-6 text-sm">
-          <button
-            onClick={() => router.push("/teacher/list-exam")}
-            className="pb-2 text-gray-500 hover:text-black"
-          >
-            Danh sách bài thi
-          </button>
+        <div className="flex items-center justify-between mb-8">
+          <div className="flex gap-8 text-sm font-bold border-b border-gray-200 w-full">
+            <button
+              onClick={() => router.push("/teacher/list-exam")}
+              className="pb-3 text-gray-500 hover:text-[#A53AEC] transition-colors relative"
+            >
+              <span className="text-base">Bài thi</span>
+            </button>
 
-          <button className="pb-2 border-b-2 border-black font-medium">
-            Lịch sử
-          </button>
+            <button className="pb-3 text-[#A53AEC] border-b-2 border-[#A53AEC] relative">
+              <span className="text-base">Lịch sử thi</span>
+            </button>
+          </div>
         </div>
 
         {/* ===== FILTER ===== */}

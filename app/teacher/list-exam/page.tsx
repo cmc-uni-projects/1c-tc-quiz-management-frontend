@@ -179,16 +179,18 @@ export default function TeacherExamListPage() {
     <div className="flex-1 flex flex-col">
       <main className="flex-1 px-10 py-8">
         {/* TAB DANH SÁCH BÀI THI / LỊCH SỬ */}
-        <div className="border-b border-gray-200 mb-6 flex gap-6 text-sm">
-          <button className="pb-2 border-b-2 border-black font-medium">
-            Danh sách bài thi
-          </button>
-          <button
-            onClick={() => router.push("/teacher/history-exam")}
-            className="pb-2 text-gray-500 hover:text-black"
-          >
-            Lịch sử
-          </button>
+        <div className="flex items-center justify-between mb-8">
+          <div className="flex gap-8 text-sm font-bold border-b border-gray-200 w-full">
+            <button className="pb-3 text-[#A53AEC] border-b-2 border-[#A53AEC] relative">
+              <span className="text-base">Bài thi</span>
+            </button>
+            <button
+              onClick={() => router.push("/teacher/history-exam")}
+              className="pb-3 text-gray-500 hover:text-[#A53AEC] transition-colors relative"
+            >
+              <span className="text-base">Lịch sử thi</span>
+            </button>
+          </div>
         </div>
 
         {/* ========== SEARCH & FILTER TOOLBAR ========== */}
