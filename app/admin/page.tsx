@@ -9,6 +9,20 @@ const AdminHome: React.FC = () => {
     const { user } = useUser();
     const username = user?.username;
 
+    const displayName = (() => {
+        if (!user) return '';
+
+        const fullName = `${user.firstName || ''} ${user.lastName || ''}`.trim();
+        if (fullName) return fullName;
+
+        const rawUser = user.username || (user as any).email || '';
+        if (typeof rawUser === 'string' && rawUser.includes('@')) {
+            return rawUser.split('@')[0];
+        }
+
+        return rawUser;
+    })();
+
     const [roomCode, setRoomCode] = useState("");
     const [stats, setStats] = useState({ users: 0, pendingTeachers: 0, exams: 0 });
     const toastRef = useRef<string | null>(null);
@@ -107,7 +121,7 @@ const AdminHome: React.FC = () => {
                     <div className="flex flex-col lg:flex-row bg-black/10 px-4 sm:px-6 py-2 sm:py-3 items-start">
                         <div className="flex-1 flex flex-col gap-3">
                             <h1 className="text-2xl sm:text-3xl md:text-4xl font-extrabold mb-2">
-                                {username ? `Chào mừng, ${username}!` : "Chào mừng, Quản trị viên!"}
+                                {displayName ? `Chào mừng, ${displayName}!` : "Chào mừng, Quản trị viên!"}
                             </h1>
 
                             <p className="text-sm sm:text-base text-purple-100 max-w-xl">

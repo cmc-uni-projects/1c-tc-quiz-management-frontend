@@ -35,7 +35,6 @@ interface AdminLayoutProps {
 
 const PRIMARY_COLOR = "#6A1B9A";
 const LOGO_TEXT_COLOR = "#E33AEC";
-const MAIN_CONTENT_BG = "#6D0446";
 const contentPaddingClass = "ml-64";
 
 /** @type {React.FC<AdminAuthGuardProps>} */
@@ -324,10 +323,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
             className={`${contentPaddingClass} flex flex-col flex-1 transition-[margin-left] duration-300 w-[calc(100%-16rem)]`}
           >
             <AdminTopBar />
-            <main
-              className="flex-1 p-4 md:p-8 shadow-inner"
-              style={{ backgroundColor: MAIN_CONTENT_BG }}
-            >
+            <main className="flex-1 pb-10 bg-gray-50 w-full">
               {children}
             </main>
           </div>

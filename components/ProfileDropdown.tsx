@@ -75,6 +75,20 @@ export default function ProfileDropdown() {
     return null;
   }
 
+  const displayName = (() => {
+    if (!user) return 'User';
+
+    const fullName = `${user.firstName || ''} ${user.lastName || ''}`.trim();
+    if (fullName) return fullName;
+
+    const rawUser = user.username || user.email || '';
+    if (typeof rawUser === 'string' && rawUser.includes('@')) {
+      return rawUser.split('@')[0];
+    }
+
+    return rawUser || 'User';
+  })();
+
   return (
     <div className="relative" ref={ref}>
       <button
@@ -92,7 +106,7 @@ export default function ProfileDropdown() {
             '👤'
           )}
         </span>
-        <span className="hidden sm:inline">Xin chào, {user?.firstName || user?.lastName ? `${user?.firstName || ''} ${user?.lastName || ''}`.trim() : user?.username?.split('@')[0] || 'User'}</span>
+        <span className="hidden sm:inline">Xin chào, {displayName}</span>
       </button>
 
       {open && (

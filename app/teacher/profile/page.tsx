@@ -4,12 +4,14 @@ import React, { useState, useRef, useEffect } from 'react';
 import toast from 'react-hot-toast';
 import { fetchApi } from '@/lib/apiClient';
 import TeacherLayout from '@/components/TeacherLayout';
+import { useUser } from '@/lib/user';
 
 const PRIMARY_BG = '#6D0446';
 const BUTTON_BG = '#A53AEC';
 const MAX_AVATAR_SIZE = 5 * 1024 * 1024; // 5MB
 
 const TeacherProfileContent = () => {
+  const { mutate } = useUser();
   const fileRef = useRef<HTMLInputElement | null>(null);
   const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
@@ -121,6 +123,9 @@ const TeacherProfileContent = () => {
 
       setAvatar(finalAvatarUrl);
       setAvatarFile(null);
+
+      // Cập nhật lại user global để header nhận avatar mới
+      await mutate();
 
       toast.success('Cập nhật hồ sơ thành công');
     } catch (error) {

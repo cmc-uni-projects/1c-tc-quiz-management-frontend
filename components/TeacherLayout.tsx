@@ -138,8 +138,18 @@ const TeacherSidebar = () => {
     }
 
     return (
-        <aside className="w-56 border-r border-zinc-200 bg-white flex flex-col sticky top-0 h-screen overflow-y-auto">
-            <nav className="flex-1 px-4 py-4 text-sm font-medium text-zinc-700 space-y-1">
+        <aside className="w-64 bg-white border-r border-zinc-200 h-screen fixed top-0 left-0 z-50 shadow-xl overflow-y-auto">
+            <div className="flex items-center space-x-2 px-4 py-3 border-b border-zinc-200 bg-white">
+                <button
+                    type="button"
+                    onClick={(e) => handleNavigation('/teacher/teacherhome', e as any)}
+                    className="text-xl font-black text-[#E33AEC]"
+                >
+                    QuizzZone
+                </button>
+            </div>
+
+            <nav className="px-4 py-4 text-sm font-medium text-zinc-700 space-y-1">
                 {navItems.map((item) => {
                     const hasSubmenu = !!item.submenu;
                     const isCurrentActive = isActive(item);
@@ -237,11 +247,11 @@ export default function TeacherLayout({
 }) {
     return (
         <TeacherAuthGuard>
-            <div className="flex min-h-screen bg-[#F5F5F5]">
+            <div className="flex flex-col min-h-screen bg-gray-50">
                 <TeacherSidebar />
-                <div className="flex-1 flex flex-col">
+                <div className="ml-64 flex flex-col flex-1 transition-[margin-left] duration-300 w-[calc(100%-16rem)]">
                     <TeacherTopBar />
-                    <main className="flex-1 p-0">
+                    <main className="flex-1 pb-10 bg-gray-50 w-full">
                         {children}
                     </main>
                 </div>
