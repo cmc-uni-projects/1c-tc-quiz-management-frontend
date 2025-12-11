@@ -121,7 +121,7 @@ const DoExamContent = () => {
             setSecondsLeft(0);
 
             await Swal.fire({
-                title: "Đã nộp bài!",
+                title: autoSubmit ? "Hết thời gian làm bài" : "Đã nộp bài!",
                 text: `Điểm số: ${result.score} - Số câu đúng: ${result.correctCount}/${result.totalQuestions}`,
                 icon: "success",
                 confirmButtonColor: "#E33AEC",
@@ -138,18 +138,29 @@ const DoExamContent = () => {
 
 
     // Timer
+    const hasWarnedLowTime = React.useRef(false);
+
     useEffect(() => {
         if (isSubmitted || isLoading || !exam) return;
 
         if (secondsLeft <= 0) {
-            Swal.fire({
-                title: "Hết giờ!",
-                text: "Hệ thống tự động nộp bài.",
-                icon: "warning",
-                confirmButtonColor: "#E33AEC",
-            });
+            // Hết giờ -> Tự động nộp bài luôn, không hiện thông báo cũ đè lên
             handleSubmit(true);
             return;
+        }
+
+        // Warning when <= 5 minutes (300 seconds)
+        if (secondsLeft <= 300 && !hasWarnedLowTime.current) {
+            toast("⚠️ Chú ý: Thời gian làm bài còn dưới 5 phút!", {
+                duration: 5000,
+                style: {
+                    border: '1px solid #F59E0B',
+                    padding: '16px',
+                    color: '#B45309',
+                    backgroundColor: '#FFFBEB'
+                },
+            });
+            hasWarnedLowTime.current = true;
         }
 
         const timer = setInterval(() => setSecondsLeft(s => s - 1), 1000);
