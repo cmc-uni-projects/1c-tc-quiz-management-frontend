@@ -463,7 +463,7 @@ export default function AdminUpdateExamPage() {
                                                             setFieldValue(`questions.${qIndex}.type`, newType);
                                                             if (newType === 'TRUE_FALSE') {
                                                                 setFieldValue(`questions.${qIndex}.answers`, [
-                                                                    { text: "Đúng", isCorrect: true },
+                                                                    { text: "Đúng", isCorrect: false },
                                                                     { text: "Sai", isCorrect: false }
                                                                 ]);
                                                             }
