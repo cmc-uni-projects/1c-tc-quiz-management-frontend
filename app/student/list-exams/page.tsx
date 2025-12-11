@@ -135,6 +135,14 @@ const ListExamsContent = () => {
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                 />
+                <button
+                    onClick={() => {
+                        setSearchQuery(searchQuery);
+                    }}
+                    className="bg-[#A53AEC] hover:bg-[#8B2BE2] text-white font-bold py-2 px-6 rounded-full transition duration-150"
+                >
+                    Tìm kiếm
+                </button>
             </div>
 
             {isLoading ? (
@@ -163,7 +171,7 @@ const ListExamsContent = () => {
                                 </div>
                                 <button
                                     onClick={() => handleStartExam(exam)}
-                                    className="bg-pink-500 hover:bg-pink-600 text-white font-bold py-2 px-6 rounded-full transition duration-150"
+                                    className="bg-[#A53AEC] hover:bg-[#8B2BE2] text-white font-bold py-2 px-6 rounded-full transition duration-150"
                                 >
                                     Làm Bài
                                 </button>
