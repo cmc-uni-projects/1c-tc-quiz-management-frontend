@@ -269,7 +269,7 @@ export default function AdminUpdateExamPage() {
                     // Create new
                     savedQ = await fetchApi("/questions/create", {
                         method: "POST",
-                        body: JSON.stringify({ ...payload, createdBy: "Admin" }),
+                        body: JSON.stringify({ ...payload, createdBy: "Admin", visibility: "PRIVATE" }),
                     });
                 }
 

@@ -110,13 +110,20 @@ function DifficultyBadge({ difficulty }: { difficulty: string }) {
 function VisibilityBadge({ visibility }: { visibility: string }) {
     const vis = visibility?.toUpperCase();
     let colorClass = "bg-gray-100 text-gray-800";
+    let displayText = "N/A";
+
     switch (vis) {
-        case "PUBLIC": colorClass = "bg-sky-100 text-sky-800"; break;
-        case "PRIVATE": colorClass = "bg-orange-100 text-orange-800"; break;
-        case "HIDDEN": colorClass = "bg-gray-200 text-gray-800"; break;
+        case "PUBLIC":
+            colorClass = "bg-sky-100 text-sky-800";
+            displayText = "Công khai";
+            break;
+        case "PRIVATE":
+        case "HIDDEN": // Treat HIDDEN questions as PRIVATE for display
+            colorClass = "bg-orange-100 text-orange-800";
+            displayText = "Riêng tư";
+            break;
     }
-    const mapVis: Record<string, string> = { "PUBLIC": "Công khai", "PRIVATE": "Riêng tư", "HIDDEN": "Ẩn (Bài thi)" };
-    return <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-medium whitespace-nowrap ${colorClass}`}>{vis ? (mapVis[vis] || vis) : "N/A"}</span>;
+    return <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-medium whitespace-nowrap ${colorClass}`}>{displayText}</span>;
 }
 
 function QuestionDetailModal({ open, onClose, question }: { open: boolean; onClose: () => void; question: any }) {
@@ -396,7 +403,7 @@ export default function UpdateExamPage() {
                     // Create new
                     const createPayload = {
                         ...payload,
-                        visibility: "HIDDEN",
+                        visibility: "PRIVATE", // Changed from "HIDDEN" to "PRIVATE"
                         createdBy: "TEACHER",
                     };
                     console.log(`[DEBUG] Creating new question:`, createPayload);
