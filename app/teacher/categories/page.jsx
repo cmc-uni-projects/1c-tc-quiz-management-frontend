@@ -402,7 +402,7 @@ export default function TeacherCategoriesPage() {
                   <th className="px-4 py-3 text-left w-16">STT</th>
                   <th className="px-4 py-3 text-left">Tên danh mục</th>
                   <th className="px-4 py-3 text-left">Mô tả</th>
-                  <th className="px-4 py-3 text-center w-48">Số câu hỏi</th>
+                  <th className="px-4 py-3 text-left w-32">Số câu hỏi</th>
                   <th className="px-4 py-3 text-left w-40">Người tạo</th>
                   <th className="px-4 py-3 text-center w-32">Thao tác</th>
                 </tr>
@@ -420,11 +420,7 @@ export default function TeacherCategoriesPage() {
                       <td className="px-4 py-3 text-gray-600">{page * PAGE_SIZE + index + 1}</td>
                       <td className="px-4 py-3 font-medium text-gray-900">{cat.name}</td>
                       <td className="px-4 py-3 text-gray-600 max-w-xs truncate" title={cat.description}>{cat.description || "—"}</td>
-                      <td className="px-4 py-3 text-center">
-                        <span className="bg-purple-100 text-purple-700 py-1 px-3 rounded-full text-xs font-bold">
-                          {cat.questionCount || 0}
-                        </span>
-                      </td>
+                      <td className="px-4 py-3 text-gray-600">{cat.questions?.length ?? 0}</td>
                       <td className="px-4 py-3">
                         <span className={`inline-block px-3 py-1 rounded-full text-xs font-semibold border ${(cat.createdByRole || "").toUpperCase() === "ADMIN"
                           ? "bg-fuchsia-100 text-fuchsia-700 border-fuchsia-200"
