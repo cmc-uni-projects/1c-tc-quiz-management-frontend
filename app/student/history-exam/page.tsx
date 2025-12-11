@@ -20,6 +20,7 @@ export default function StudentHistoryPage() {
     const [loading, setLoading] = useState(true);
     const [searchTitle, setSearchTitle] = useState("");
     const [searchDate, setSearchDate] = useState("");
+    const [currentPage, setCurrentPage] = useState(0);
 
     useEffect(() => {
         const loadHistory = async () => {
@@ -71,7 +72,7 @@ export default function StudentHistoryPage() {
     };
 
     return (
-        <div className="min-h-screen bg-gray-50 p-8 font-sans">
+        <div className="min-h-screen bg-gray-50 p-8">
             <h2 className="text-xl font-bold text-gray-800 mb-6">Lịch sử thi</h2>
 
             <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
@@ -103,60 +104,142 @@ export default function StudentHistoryPage() {
                 <p className="mb-4 text-sm font-semibold text-gray-700">Trang 1/1</p>
 
                 {/* TABLE */}
-                <div className="overflow-x-auto border border-gray-300 rounded-lg">
+                <div className="overflow-hidden rounded-xl border border-gray-100">
                     <table className="w-full text-center text-sm">
-                        <thead className="bg-gray-50 text-gray-700 font-bold border-b border-gray-300">
+                        <thead className="bg-[#F3EBFD] text-[#4D1597] uppercase text-xs font-bold tracking-wider">
                             <tr>
-                                <th className="py-3 px-4 border-r border-gray-300 w-16">STT</th>
-                                <th className="py-3 px-4 border-r border-gray-300">Tên bài thi</th>
-                                <th className="py-3 px-4 border-r border-gray-300">Thời gian thi</th>
-                                <th className="py-3 px-4 border-r border-gray-300">Thời gian nộp bài</th>
-                                <th className="py-3 px-4 border-r border-gray-300">Lượt thi</th>
-                                <th className="py-3 px-4 border-r border-gray-300">Điểm</th>
-                                <th className="py-3 px-4 w-32">Thao tác</th>
+                                <th className="py-4 px-6 font-semibold">STT</th>
+                                <th className="py-4 px-6 text-left font-semibold">Tên bài thi</th>
+                                <th className="py-4 px-6 font-semibold">Thời gian thi</th>
+                                <th className="py-4 px-6 font-semibold">Thời gian nộp bài</th>
+                                <th className="py-4 px-6 font-semibold">Lượt thi</th>
+                                <th className="py-4 px-6 font-semibold">Điểm</th>
+                                <th className="py-4 px-6 font-semibold">Thao tác</th>
                             </tr>
                         </thead>
-                        <tbody className="bg-white">
+                        <tbody className="divide-y divide-gray-100">
                             {loading ? (
                                 <tr>
-                                    <td colSpan={7} className="py-8 text-gray-500">Đang tải dữ liệu...</td>
+                                    <td colSpan={7} className="py-12 text-center text-gray-500">
+                                        <div className="flex justify-center items-center gap-2">
+                                            <div className="w-5 h-5 border-2 border-[#A53AEC] border-t-transparent rounded-full animate-spin"></div>
+                                            <span>Đang tải dữ liệu...</span>
+                                        </div>
+                                    </td>
                                 </tr>
                             ) : filteredHistories.length === 0 ? (
                                 <tr>
-                                    <td colSpan={7} className="py-8 text-gray-500">Không tìm thấy lịch sử thi nào.</td>
+                                    <td colSpan={7} className="py-12 text-center text-gray-500">
+                                        Không tìm thấy lịch sử thi nào.
+                                    </td>
                                 </tr>
                             ) : (
-                                filteredHistories.map((item, index) => (
-                                    <tr key={item.id} className="border-b border-gray-200 hover:bg-gray-50 transition-colors">
-                                        <td className="py-3 px-4 border-r border-gray-200">{index + 1}</td>
-                                        <td className="py-3 px-4 border-r border-gray-200 font-medium text-gray-800">{item.examTitle || "---"}</td>
-                                        <td className="py-3 px-4 border-r border-gray-200">{formatDate(item.submittedAt)}</td>
-                                        <td className="py-3 px-4 border-r border-gray-200">{formatTime(item.submittedAt)}</td>
-                                        <td className="py-3 px-4 border-r border-gray-200">{item.attemptNumber}</td>
-                                        <td className="py-3 px-4 border-r border-gray-200 font-bold text-gray-800">{item.score !== undefined ? item.score : "-"}</td>
-                                        <td className="py-3 px-4">
-                                            <button
-                                                onClick={() => router.push(`/student/history-exam/${item.id}`)}
-                                                className="bg-[#5C7CFA] hover:bg-blue-600 text-white px-4 py-1 rounded-full text-xs font-medium"
-                                            >
-                                                Xem
-                                            </button>
-                                        </td>
-                                    </tr>
-                                ))
+                                (() => {
+                                    const ITEMS_PER_PAGE = 10;
+                                    const startIndex = currentPage * ITEMS_PER_PAGE;
+                                    const currentData = filteredHistories.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+
+                                    return currentData.map((item, index) => (
+                                        <tr key={item.id} className="hover:bg-purple-50/30 transition-colors duration-150">
+                                            <td className="py-4 px-6 text-gray-500">#{startIndex + index + 1}</td>
+                                            <td className="py-4 px-6 text-left font-semibold text-gray-800">
+                                                <div className="flex items-center gap-3">
+                                                    <div className="w-8 h-8 rounded-full bg-purple-100 flex items-center justify-center text-[#A53AEC] font-bold text-xs shrink-0">
+                                                        {(item.examTitle || "E").charAt(0).toUpperCase()}
+                                                    </div>
+                                                    <span className="line-clamp-1" title={item.examTitle}>{item.examTitle || "---"}</span>
+                                                </div>
+                                            </td>
+                                            <td className="py-4 px-6 text-gray-600">{formatDate(item.submittedAt)}</td>
+                                            <td className="py-4 px-6 text-gray-600 font-mono text-xs">{formatTime(item.submittedAt)}</td>
+                                            <td className="py-4 px-6">
+                                                <span className="bg-gray-100 text-gray-600 py-1 px-3 rounded-full text-xs font-bold">
+                                                    Lần {item.attemptNumber}
+                                                </span>
+                                            </td>
+                                            <td className="py-4 px-6">
+                                                <span className="text-[#A53AEC] font-bold text-base">
+                                                    {item.score !== undefined ? item.score : "-"}
+                                                </span>
+                                            </td>
+                                            <td className="py-4 px-6">
+                                                <button
+                                                    onClick={() => router.push(`/student/history-exam/${item.id}`)}
+                                                    className="group flex items-center justify-center gap-1 mx-auto text-[#A53AEC] hover:text-white hover:bg-[#A53AEC] border border-[#A53AEC] px-3 py-1.5 rounded-lg transition-all duration-200 text-xs font-bold uppercase tracking-wide"
+                                                >
+                                                    <span>Chi tiết</span>
+                                                    <svg className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                                                    </svg>
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    ));
+                                })()
                             )}
                         </tbody>
                     </table>
                 </div>
 
-                {/* PAGINATION (Simple mock for now as backend paging not fully utilized in basic fetch) */}
-                <div className="flex justify-center items-center gap-2 mt-6">
-                    <button className="w-8 h-8 flex items-center justify-center border border-blue-200 text-blue-500 rounded hover:bg-blue-50">«</button>
-                    <button className="w-8 h-8 flex items-center justify-center border border-blue-200 text-blue-500 rounded hover:bg-blue-50">‹</button>
-                    <button className="w-8 h-8 flex items-center justify-center border border-blue-500 bg-blue-50 text-blue-600 font-bold rounded">1</button>
-                    <button className="w-8 h-8 flex items-center justify-center border border-blue-200 text-blue-500 rounded hover:bg-blue-50">›</button>
-                    <button className="w-8 h-8 flex items-center justify-center border border-blue-200 text-blue-500 rounded hover:bg-blue-50">»</button>
-                </div>
+                {/* PAGINATION */}
+                {filteredHistories.length > 0 && (() => {
+                    const ITEMS_PER_PAGE = 10;
+                    const totalPages = Math.ceil(filteredHistories.length / ITEMS_PER_PAGE);
+
+                    return (
+                        <div className="flex justify-center items-center gap-2 mt-8">
+                            {/* First Page */}
+                            <button
+                                onClick={() => setCurrentPage(0)}
+                                disabled={currentPage === 0}
+                                className="px-3 py-1 rounded-full text-gray-400 hover:text-purple-700 hover:bg-purple-50 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+                            >
+                                «
+                            </button>
+
+                            {/* Previous Page */}
+                            <button
+                                onClick={() => setCurrentPage(p => Math.max(0, p - 1))}
+                                disabled={currentPage === 0}
+                                className="px-3 py-1 rounded-full text-gray-400 hover:text-purple-700 hover:bg-purple-50 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+                            >
+                                ‹
+                            </button>
+
+                            {/* Page Numbers */}
+                            {Array.from({ length: totalPages }, (_, i) => i).slice(Math.max(0, currentPage - 2), Math.min(totalPages, currentPage + 3)).map(i => (
+                                <button
+                                    key={i}
+                                    onClick={() => setCurrentPage(i)}
+                                    className={`w-8 h-8 flex items-center justify-center rounded-full text-sm font-semibold transition-colors ${currentPage === i
+                                        ? 'bg-purple-700 text-white shadow-lg'
+                                        : 'text-gray-600 hover:bg-purple-50'
+                                        }`}
+                                >
+                                    {i + 1}
+                                </button>
+                            ))}
+
+                            {/* Next Page */}
+                            <button
+                                onClick={() => setCurrentPage(p => Math.min(totalPages - 1, p + 1))}
+                                disabled={currentPage === totalPages - 1}
+                                className="px-3 py-1 rounded-full text-gray-400 hover:text-purple-700 hover:bg-purple-50 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+                            >
+                                ›
+                            </button>
+
+                            {/* Last Page */}
+                            <button
+                                onClick={() => setCurrentPage(totalPages - 1)}
+                                disabled={currentPage === totalPages - 1}
+                                className="px-3 py-1 rounded-full text-gray-400 hover:text-purple-700 hover:bg-purple-50 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+                            >
+                                »
+                            </button>
+                        </div>
+                    );
+                })()}
 
             </div>
 
