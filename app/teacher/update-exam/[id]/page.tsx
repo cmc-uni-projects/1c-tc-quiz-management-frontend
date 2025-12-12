@@ -140,7 +140,7 @@ function QuestionDetailModal({ open, onClose, question }: { open: boolean; onClo
                         <div>
                             <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Loại câu hỏi</label>
                             <p className="font-medium text-gray-900 mt-1">
-                                {question.type === "SINGLE" ? "Một đáp án" : question.type === "MULTIPLE" ? "Nhiều đáp án" : question.type === "TRUE_FALSE" ? "Đúng / Sai" : question.type}
+                                {question.type?.trim() === "SINGLE" ? "Một đáp án" : question.type?.trim() === "MULTIPLE" ? "Nhiều đáp án" : question.type?.trim() === "TRUE_FALSE" ? "Đúng / Sai" : question.type}
                             </p>
                         </div>
                         <div>
@@ -335,7 +335,7 @@ export default function UpdateExamPage() {
                 return {
                     id: q.id,
                     title: q.title,
-                    type: q.type,
+                    type: q.type.trim(),
                     difficulty: q.difficulty,
                     categoryId: q.category?.id,
                     categoryName: q.categoryName || q.category?.name,
@@ -887,12 +887,11 @@ export default function UpdateExamPage() {
                                                                 <td className="p-3 border-b">{(libraryPage - 1) * 10 + index + 1}</td>
                                                                 <td className="p-3 border-b text-left px-4 max-w-[220px] truncate" title={q.title}>{q.title}</td>
                                                                 <td className="p-3 border-b">
-                                                                    {console.log(`[DEBUG] Question ID: ${q.id}, Type: ${q.type}`)}
-                                                                    {q.type === "SINGLE"
+                                                                    {q.type?.trim() === "SINGLE"
                                                                         ? "Một đáp án"
-                                                                        : q.type === "MULTIPLE"
+                                                                        : q.type?.trim() === "MULTIPLE"
                                                                             ? "Nhiều đáp án"
-                                                                            : q.type === "TRUE_FALSE"
+                                                                            : q.type?.trim() === "TRUE_FALSE"
                                                                                 ? "Đúng / Sai"
                                                                                 : q.type}
                                                                 </td>
