@@ -17,7 +17,7 @@ interface AnswerOption {
 interface Question {
     id: number;
     text: string;
-    questionType: string; // ADDED: 'SINGLE', 'MULTIPLE', 'TRUE_FALSE'
+    type: string; // RENAMED from questionType to match API
     answers: AnswerOption[];
 }
 
@@ -223,7 +223,7 @@ const DoExamContent = () => {
                 <div className="bg-white p-6 rounded-lg shadow-md space-y-8">
                     {exam.questions.map((q, index) => {
                         const selectedForQ = studentAnswers[q.id] || [];
-                        const isMultiple = q.questionType === 'MULTIPLE';
+                        const isMultiple = q.type === 'MULTIPLE';
 
                         return (
                             <div key={q.id} className="border-b pb-6 last:border-0 hover:bg-gray-50 p-4 rounded-lg transition">
@@ -245,7 +245,7 @@ const DoExamContent = () => {
                                                     type={isMultiple ? "checkbox" : "radio"}
                                                     name={`q-${q.id}`}
                                                     checked={isSelected}
-                                                    onChange={() => handleAnswerChange(q.id, a.id, q.questionType)}
+                                                    onChange={() => handleAnswerChange(q.id, a.id, q.type)}
                                                     className={`w-5 h-5 text-pink-600 focus:ring-pink-500 border-gray-300 ${!isMultiple ? 'rounded-full' : 'rounded'}`}
                                                 />
                                                 <span className={`ml-3 ${isSelected ? 'text-[#E33AEC] font-medium' : 'text-gray-700'}`}>

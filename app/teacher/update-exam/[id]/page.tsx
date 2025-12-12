@@ -842,6 +842,7 @@ export default function UpdateExamPage() {
                                             <option value="">Chọn loại câu hỏi</option>
                                             <option value="SINGLE">Một đáp án</option>
                                             <option value="MULTIPLE">Nhiều đáp án</option>
+                                            <option value="TRUE_FALSE">Đúng / Sai</option>
                                         </select>
                                         <select
                                             value={searchCategory}
