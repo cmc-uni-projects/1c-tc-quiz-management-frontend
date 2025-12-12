@@ -887,6 +887,7 @@ export default function UpdateExamPage() {
                                                                 <td className="p-3 border-b">{(libraryPage - 1) * 10 + index + 1}</td>
                                                                 <td className="p-3 border-b text-left px-4 max-w-[220px] truncate" title={q.title}>{q.title}</td>
                                                                 <td className="p-3 border-b">
+                                                                    {console.log(`[DEBUG] Question ID: ${q.id}, Type: ${q.type}`)}
                                                                     {q.type === "SINGLE"
                                                                         ? "Một đáp án"
                                                                         : q.type === "MULTIPLE"
