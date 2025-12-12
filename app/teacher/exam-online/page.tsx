@@ -1073,11 +1073,6 @@ export default function CreateExamPage() {
           )}
 
         </main>
-
-        {/* ====================== FOOTER ====================== */}
-        <footer className="h-12 bg-white border-t border-gray-200 flex items-center justify-center text-sm text-gray-500">
-          © 2025 QuizzZone. Mọi quyền được bảo lưu.
-        </footer>
       </div>
     </div>
   );
