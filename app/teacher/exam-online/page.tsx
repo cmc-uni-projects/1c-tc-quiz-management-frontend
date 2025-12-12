@@ -900,7 +900,7 @@ export default function CreateExamPage() {
                 </div>
 
                 {/* ===== TABLE ===== */}
-                <div className="border border-gray-200 rounded-lg overflow-hidden flex-grow relative">
+                <div className="border border-gray-200 rounded-lg overflow-auto flex-grow relative">
                   {libraryLoading && (
                     <div className="absolute inset-0 bg-white bg-opacity-75 flex items-center justify-center">
                       <p className="text-gray-600">Đang tải câu hỏi...</p>
