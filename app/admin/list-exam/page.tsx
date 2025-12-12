@@ -1,9 +1,10 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import { fetchApi } from "@/lib/apiClient";
 import { toastError, toastSuccess } from "@/lib/toast";
+import Swal from "sweetalert2";
 
 interface Exam {
     examId: number;
@@ -83,6 +84,8 @@ const getDifficultyLabel = (level?: string) => {
 };
 
 export default function AdminExamListPage() {
+    const pathname = usePathname();
+    const router = useRouter();
     const [exams, setExams] = useState<Exam[]>([]);
     const [loading, setLoading] = useState(true);
     const [openMenu, setOpenMenu] = useState<number | null>(null);
@@ -95,8 +98,6 @@ export default function AdminExamListPage() {
     const [categoryId, setCategoryId] = useState("");
     const [examLevel, setExamLevel] = useState("");
     const [categories, setCategories] = useState<{ id: number; name: string }[]>([]);
-
-    const router = useRouter();
 
     // Fetch Categories
     useEffect(() => {
@@ -144,12 +145,24 @@ export default function AdminExamListPage() {
     const readyExams = sortedExams.filter((x) => x.status === 'PUBLISHED');
 
     const deleteExam = async (id: number) => {
-        if (!confirm("Bạn có chắc chắn muốn xóa bài thi này?")) return;
+        const result = await Swal.fire({
+            title: "Xác nhận xóa",
+            text: "Bạn có chắc chắn muốn xóa bài thi này?",
+            icon: "warning",
+            showCancelButton: true,
+            confirmButtonColor: "#d33",
+            cancelButtonColor: "#3085d6",
+            confirmButtonText: "Xóa",
+            cancelButtonText: "Hủy",
+        });
+
+        if (!result.isConfirmed) return;
+
         try {
             await fetchApi(`/exams/delete/${id}`, { method: "DELETE" });
             setExams(exams.filter((e) => e.examId !== id));
             setOpenMenu(null);
-            toastSuccess("Đã xóa bài thi.");
+            toastSuccess("Đã xóa bài thi thành công");
         } catch (error: any) {
             toastError(error.message || "Không thể xóa bài thi.");
         }
@@ -163,28 +176,75 @@ export default function AdminExamListPage() {
     if (loading) return <div className="p-10">Đang tải...</div>;
 
     return (
-        <div className="flex-1 flex flex-col min-h-screen bg-white">
+        <div className="flex-1 flex flex-col">
             <main className="flex-1 px-10 py-8">
-                {/* TAB DANH SÁCH BÀI THI / LỊCH SỬ / HEADER ADMIN */}
-                <div className="border-b border-gray-200 mb-6 flex justify-between items-center text-sm">
-                    <div className="flex gap-6">
-                        <button className="pb-2 border-b-2 border-black font-medium">
-                            Danh sách bài thi
-                        </button>
-                        <button
-                            onClick={() => router.push("/admin/history-exam")}
-                            className="pb-2 text-gray-500 hover:text-black"
-                        >
-                            Lịch sử
-                        </button>
-                    </div>
-                    <button
-                        onClick={() => router.push("/admin/exam-offline")}
-                        className="bg-purple-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-purple-700 mb-2"
-                    >
-                        + Tạo bài thi mới
-                    </button>
-                </div>
+<div className="flex items-center mb-8">
+  <div className="flex gap-10 font-bold border-b border-gray-200 w-full">
+
+    {(() => {
+
+      return (
+        <>
+          {/* TAB BÀI THI */}
+          <button
+            onClick={() => router.push("/admin/list-exam")}
+            className={`pb-3 relative transition-colors ${
+              pathname === "/admin/list-exam"
+                ? "text-[#A53AEC]"
+                : "text-gray-500 hover:text-[#A53AEC]"
+            }`}
+          >
+            <span className="text-base">Bài thi</span>
+
+            {pathname === "/admin/list-exam" && (
+              <span className="absolute left-0 right-0 -bottom-[1px] h-[2px] bg-[#A53AEC] rounded-full" />
+            )}
+          </button>
+
+          {/* TAB LỊCH SỬ THI OFFLINE */}
+          <button
+            onClick={() => router.push("/admin/history-exam")}
+            className={`pb-3 relative transition-colors ${
+              pathname === "/admin/history-exam"
+                ? "text-[#A53AEC]"
+                : "text-gray-500 hover:text-[#A53AEC]"
+            }`}
+          >
+            <span className="text-base">Lịch sử thi offline</span>
+
+            {pathname === "/admin/history-exam" && (
+              <span className="absolute left-0 right-0 -bottom-[1px] h-[2px] bg-[#A53AEC] rounded-full" />
+            )}
+          </button>
+
+          {/* TAB LỊCH SỬ THI ONLINE */}
+          <button
+            onClick={() => router.push("/admin/list-history-exam")}
+            className={`pb-3 relative transition-colors ${
+              pathname === "/admin/list-history-exam"
+                ? "text-[#A53AEC]"
+                : "text-gray-500 hover:text-[#A53AEC]"
+            }`}
+          >
+            <span className="text-base">Lịch sử thi online</span>
+
+            {pathname === "/admin/list-history-exam" && (
+              <span className="absolute left-0 right-0 -bottom-[1px] h-[2px] bg-[#A53AEC] rounded-full" />
+            )}
+          </button>
+        </>
+      );
+    })()}
+  </div>
+</div>
+<div className="flex justify-end mb-4">
+    <button
+        onClick={() => router.push("/admin/exam-offline")}
+        className="bg-purple-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-purple-700"
+    >
+        + Tạo bài thi mới
+    </button>
+</div>
 
                 {/* ========== SEARCH & FILTER TOOLBAR ========== */}
                 <div className="flex flex-wrap gap-4 mb-8 bg-white p-4 rounded-lg shadow-sm">
@@ -329,7 +389,7 @@ export default function AdminExamListPage() {
                                         </button>
                                         <button
                                             onClick={() => {
-                                                setShareLink(`${window.location.origin}/student/startexam?subjectId=${exam.examId}`);
+                                                setShareLink(`${window.location.origin}/admin/exam/${exam.examId}`);
                                                 setOpenShare(true);
                                                 setOpenMenu(null);
                                             }}
@@ -430,7 +490,7 @@ export default function AdminExamListPage() {
             </main>
 
             {/* ============ FOOTER ============ */}
-            <footer className="bg-[#F5F5F5] border-t border-gray-200 py-4 text-center text-gray-500 text-sm mt-auto">
+            <footer className="bg-[#F5F5F5] border-t border-gray-200 py-4 text-center text-gray-500 text-sm">
                 © 2025 QuizzZone. Mọi quyền được bảo lưu.
             </footer>
         </div>
