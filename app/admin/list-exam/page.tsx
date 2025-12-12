@@ -310,6 +310,12 @@ export default function AdminExamListPage() {
                                 {openMenu === exam.examId && (
                                     <div className="absolute right-0 top-8 bg-white shadow-lg border rounded-md w-32 py-2 z-20">
                                         <button
+                                            onClick={() => router.push(`/admin/detail-exam/${exam.examId}`)}
+                                            className="block w-full text-left px-4 py-2 hover:bg-gray-100"
+                                        >
+                                            Chi tiết
+                                        </button>
+                                        <button
                                             onClick={() => deleteExam(exam.examId)}
                                             className="block w-full text-left px-4 py-2 hover:bg-gray-100 text-red-600"
                                         >
@@ -323,7 +329,7 @@ export default function AdminExamListPage() {
                                         </button>
                                         <button
                                             onClick={() => {
-                                                setShareLink(`${window.location.origin}/teacher/exam/${exam.examId}`);
+                                                setShareLink(`${window.location.origin}/student/startexam?subjectId=${exam.examId}`);
                                                 setOpenShare(true);
                                                 setOpenMenu(null);
                                             }}
