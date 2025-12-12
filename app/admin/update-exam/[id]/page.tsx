@@ -646,6 +646,7 @@ export default function AdminUpdateExamPage() {
                                             <option value="">Tất cả loại</option>
                                             <option value="SINGLE">Một đáp án</option>
                                             <option value="MULTIPLE">Nhiều đáp án</option>
+                                            <option value="TRUE_FALSE">Đúng/Sai</option>
                                         </select>
                                         <button
                                             type="button"
