@@ -1,12 +1,14 @@
 "use client";
 
-import React, { useState } from "react";
-import { useRouter } from "next/navigation";
+import React, { useState, useEffect } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { fetchApi } from "@/lib/apiClient";
+import toast from "react-hot-toast";
 
 interface ExamHistory {
   id: number;
   studentId: number;
-  displayName: string;
+  studentName: string; // Changed from displayName
   submittedAt: string;
   attemptNumber: number;
   correctCount: number;
@@ -16,45 +18,60 @@ interface ExamHistory {
 
 export default function ListHistoryExamPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const examId = searchParams.get("examId");
 
-  // ====== MOCK DATA (DỮ LIỆU CỨNG) ======
-  const mockData: ExamHistory[] = [
-    {
-      id: 1,
-      studentId: 101,
-      displayName: "User 1",
-      submittedAt: "12/12/2025 13:20",
-      attemptNumber: 1,
-      correctCount: 4,
-      totalQuestions: 5,
-      score: 8,
-    },
-    {
-      id: 2,
-      studentId: 102,
-      displayName: "User 2",
-      submittedAt: "12/12/2025 13:25",
-      attemptNumber: 1,
-      correctCount: 5,
-      totalQuestions: 5,
-      score: 10,
-    },
-  ];
+  const [histories, setHistories] = useState<ExamHistory[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState("");
+
+  useEffect(() => {
+    if (!examId) {
+      toast.error("Không tìm thấy mã bài thi.");
+      setLoading(false);
+      return;
+    }
+
+    const loadHistories = async () => {
+      try {
+        setLoading(true);
+        const data = await fetchApi(`/examHistory/exam/${examId}`);
+        if (Array.isArray(data)) {
+          setHistories(data);
+        } else {
+          setHistories([]);
+          console.warn("API did not return an array for exam histories:", data);
+        }
+      } catch (error) {
+        console.error("Load exam histories error:", error);
+        toast.error("Không thể tải lịch sử làm bài của bài thi này.");
+        setHistories([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadHistories();
+  }, [examId]);
 
   // ====== MOCK THỐNG KÊ NHƯ ẢNH ======
+  // TODO: Replace with real calculations from fetched data
   const examStats = {
     accuracy: "80%",
     completion: "80%",
     totalStudents: "80%",
-    questionCount: 5,
+    questionCount: histories[0]?.totalQuestions || 5,
   };
 
-  const [histories, setHistories] = useState(mockData);
-  const [searchTerm, setSearchTerm] = useState("");
-
   const filtered = histories.filter((h) =>
-    h.displayName.toLowerCase().includes(searchTerm.toLowerCase())
+    h.studentName.toLowerCase().includes(searchTerm.toLowerCase())
   );
+  
+  const formatDate = (isoString: string) => {
+    if (!isoString) return "";
+    const date = new Date(isoString);
+    return date.toLocaleDateString('vi-VN') + ' ' + date.toLocaleTimeString('en-US', { hour12: true });
+  };
 
   return (
     <div className="min-h-screen bg-[#F8F9FA] flex flex-col text-gray-800">
@@ -162,7 +179,16 @@ export default function ListHistoryExamPage() {
               </thead>
 
               <tbody className="divide-y divide-gray-100">
-                {filtered.length === 0 ? (
+                {loading ? (
+                  <tr>
+                    <td colSpan={7} className="py-12 text-center text-gray-500">
+                        <div className="flex justify-center items-center gap-2">
+                            <div className="w-5 h-5 border-2 border-[#A53AEC] border-t-transparent rounded-full animate-spin"></div>
+                            <span>Đang tải dữ liệu...</span>
+                        </div>
+                    </td>
+                  </tr>
+                ) : filtered.length === 0 ? (
                   <tr>
                     <td colSpan={7} className="py-12 text-center text-gray-400">
                       Không có dữ liệu
@@ -175,12 +201,12 @@ export default function ListHistoryExamPage() {
                       <td className="py-4 px-6 font-semibold">
                         <div className="flex items-center gap-3">
                           <div className="w-8 h-8 rounded-full bg-purple-100 flex items-center justify-center text-[#A53AEC] font-bold text-xs">
-                            {h.displayName.charAt(0)}
+                            {(h.studentName || "S").charAt(0).toUpperCase()}
                           </div>
-                          {h.displayName}
+                          {h.studentName}
                         </div>
                       </td>
-                      <td className="py-4 px-6">{h.submittedAt}</td>
+                      <td className="py-4 px-6">{formatDate(h.submittedAt)}</td>
                       <td className="py-4 px-6">Lần {h.attemptNumber}</td>
                       <td className="py-4 px-6 text-center">
                         <span className="text-green-600 bg-green-50 px-3 py-1 rounded-full text-xs font-bold">
@@ -190,7 +216,7 @@ export default function ListHistoryExamPage() {
                       <td className="py-4 px-6 text-center font-bold text-[#A53AEC]">{h.score}</td>
                       <td className="py-4 px-6 text-center">
                         <button
-                          onClick={() => router.push(`/teacher/online-exam-detail/${h.id}`)}
+                          onClick={() => router.push(`/teacher/history-result/${h.id}`)}
                           className="text-[#A53AEC] hover:text-white hover:bg-[#A53AEC] border border-[#A53AEC] px-3 py-1.5 rounded-lg text-xs uppercase font-bold transition-all"
                         >
                           Chi tiết
