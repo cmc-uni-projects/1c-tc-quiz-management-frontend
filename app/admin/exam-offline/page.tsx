@@ -402,32 +402,28 @@ export default function CreateExamPage() {
                       className="border px-2 py-1 rounded-md"
                     />
                   </div>
-                </div>
               </div>
             </div>
-          </section>
-
-          {/* NÚT LƯU – ĐĂNG BÀI */}
-          <div className="mt-6 flex justify-end gap-4">
-            <button
-              onClick={() => window.location.href = '/admin/list-exam'}
-              className="px-6 py-2 border border-purple-700 text-purple-700 rounded-md">
-              Hủy
-            </button>
-
-            <button
-              onClick={() => handleCreateExam('DRAFT')}
-              className="px-6 py-2 bg-purple-700 text-white rounded-md"
-            >
-              Tạo bài thi
-            </button>
           </div>
-        </main>
+        </section>
 
-        <footer className="h-12 bg-white border-t border-gray-200 flex items-center justify-center text-sm text-gray-500">
-          © 2025 QuizzZone. Mọi quyền được bảo lưu.
-        </footer>
-      </div>
+        {/* NÚT LƯU – ĐĂNG BÀI */}
+        <div className="mt-6 flex justify-end gap-4">
+          <button
+            onClick={() => window.location.href = '/admin/list-exam'}
+            className="px-6 py-2 border border-purple-700 text-purple-700 rounded-md">
+            Hủy
+          </button>
+
+          <button
+            onClick={() => handleCreateExam('DRAFT')}
+            className="px-6 py-2 bg-purple-700 text-white rounded-md"
+          >
+            Tạo bài thi
+          </button>
+        </div>
+      </main>
     </div>
-  );
+  </div>
+);
 }
