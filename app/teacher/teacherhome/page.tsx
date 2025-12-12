@@ -113,12 +113,12 @@ const TeacherHome = () => {
 
   return (
     <>
-      <div className="min-h-screen bg-gray-50 flex flex-1 flex-col">
+      <div className="bg-gray-50 flex flex-col min-h-full">
 
         {/* MAIN CONTENT */}
         <main className="flex-1 pb-10 bg-gray-50 w-full">
 
-          {/* 🔥 HERO BANNER — FULL WIDTH, VUÔNG, KHÔNG BO GÓC */}
+          {/* HERO BANNER — FULL WIDTH, VUÔNG, KHÔNG BO GÓC */}
           <section
             className="shadow-lg overflow-hidden text-white min-h-[220px] sm:min-h-[260px] lg:min-h-[300px]"
             style={{
@@ -137,7 +137,7 @@ const TeacherHome = () => {
                   Bắt đầu xây dựng ngân hàng đề thi chất lượng ngay hôm nay.
                 </p>
 
-                {/* 🔑 JOIN ROOM INSIDE BANNER */}
+                {/* JOIN ROOM INSIDE BANNER */}
                 <div className="mt-4 max-w-xl">
                   <div
                     className="flex items-stretch rounded-xl px-3 py-2 shadow-md"
@@ -161,7 +161,7 @@ const TeacherHome = () => {
                   </div>
                 </div>
 
-                {/* ⚡ STATS CARD */}
+                {/* STATS CARD */}
                 <div className="mt-4 bg-white/95 rounded-xl px-4 sm:px-6 py-4 flex flex-col md:flex-row md:items-center md:justify-between gap-4 max-w-xl">
                   <div className="flex-1 text-center">
                     <div className="text-xs sm:text-sm font-semibold text-zinc-700">Bài thi đã tạo:</div>
@@ -182,11 +182,6 @@ const TeacherHome = () => {
             </div>
           </section>
         </main>
-
-        {/* FOOTER */}
-        <footer className="mt-auto border-t border-zinc-100 bg-white py-4 text-center text-sm text-zinc-600">
-          &copy; 2025 QuizzZone. Mọi quyền được bảo lưu.
-        </footer>
 
       </div>
     </>
