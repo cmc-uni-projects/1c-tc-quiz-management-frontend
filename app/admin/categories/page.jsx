@@ -133,6 +133,19 @@ export default function CategoriesPage() {
   const [formError, setFormError] = useState("");
   const [loading, setLoading] = useState(false);
 
+  // Load profile once
+  useEffect(() => {
+    const fetchProfile = async () => {
+      try {
+        const profile = await fetchApi(`${API_URL}/me`); // Using local fetchApi and API_URL
+        setCurrentUser(profile);
+      } catch (e) {
+        console.error("Error fetching user profile:", e);
+      }
+    };
+    fetchProfile();
+  }, []);
+
   // Badge màu theo người tạo
   const creatorBadgeClass = (role) => {
     switch ((role || "").toUpperCase()) {
@@ -468,20 +481,24 @@ export default function CategoriesPage() {
                       </td>
                       <td className="px-4 py-3">
                         <div className="flex items-center justify-center gap-2">
-                          <button
-                            onClick={() => openEdit(c)}
-                            className="p-2 text-blue-600 hover:text-blue-800 hover:bg-blue-100 rounded-full transition disabled:opacity-50 flex items-center gap-1"
-                            disabled={loading}
-                          >
-                            <EditIcon className="w-5 h-5 flex-shrink-0" />
-                          </button>
-                          <button
-                            onClick={() => handleDelete(c.id)}
-                            className="p-2 text-rose-500 hover:text-rose-700 hover:bg-rose-100 rounded-full transition disabled:opacity-50 flex items-center gap-1"
-                            disabled={loading}
-                          >
-                            <TrashIcon className="w-5 h-5 flex-shrink-0" />
-                          </button>
+                          {currentUser && c.createdBy === currentUser.email && (
+                            <>
+                              <button
+                                onClick={() => openEdit(c)}
+                                className="p-2 text-blue-600 hover:text-blue-800 hover:bg-blue-100 rounded-full transition disabled:opacity-50 flex items-center gap-1"
+                                disabled={loading}
+                              >
+                                <EditIcon className="w-5 h-5 flex-shrink-0" />
+                              </button>
+                              <button
+                                onClick={() => handleDelete(c.id)}
+                                className="p-2 text-rose-500 hover:text-rose-700 hover:bg-rose-100 rounded-full transition disabled:opacity-50 flex items-center gap-1"
+                                disabled={loading}
+                              >
+                                <TrashIcon className="w-5 h-5 flex-shrink-0" />
+                              </button>
+                            </>
+                          )}
                         </div>
                       </td>
                     </tr>
