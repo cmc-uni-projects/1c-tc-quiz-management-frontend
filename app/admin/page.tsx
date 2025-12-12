@@ -92,8 +92,8 @@ const AdminHome: React.FC = () => {
     };
 
     return (
-        <div className="min-h-screen bg-gray-50 flex flex-1 flex-col">
-            <main className="flex-1 pb-10 bg-gray-50 w-full">
+        <div className="bg-gray-50 flex flex-col min-h-full">
+            <main className="pb-10 bg-gray-50 w-full">
                 <section
                     className="shadow-lg overflow-hidden text-white min-h-[220px] sm:min-h-[260px] lg:min-h-[300px]"
                     style={{
@@ -161,8 +161,6 @@ const AdminHome: React.FC = () => {
                 </section>
 
             </main>
-
-            <footer className="mt-auto border-t border-zinc-100 bg-white py-4 text-center text-sm text-zinc-600">&copy; 2025 QuizzZone. Mọi quyền được bảo lưu.</footer>
         </div>
     );
 };
