@@ -314,6 +314,13 @@ export default function TeacherCategoriesPage() {
       showError("Bạn không có quyền xóa danh mục này");
       return;
     }
+    
+    if (!currentUser.authorities.some(auth => auth.authority === "ROLE_ADMIN")) {
+        if (cat.createdBy?.toLowerCase()?.trim() !== currentUser.username?.toLowerCase()?.trim()) {
+            showError("Bạn không có quyền xóa danh mục này.");
+            return;
+        }
+    }
 
     const result = await Swal.fire({
       title: "Xác nhận xóa",
@@ -444,7 +451,8 @@ export default function TeacherCategoriesPage() {
                       </td>
                       <td className="px-4 py-3 text-center">
                         <div className="flex items-center justify-center gap-2">
-                          {currentUser && cat.createdBy === currentUser.email && (
+                          {currentUser && (
+                            (cat.createdBy?.toLowerCase()?.trim() === currentUser.username?.toLowerCase()?.trim() || currentUser.authorities.some(auth => auth.authority === "ROLE_ADMIN")) && (
                             <>
                               <button
                                 onClick={() => openEdit(cat)}
@@ -461,7 +469,7 @@ export default function TeacherCategoriesPage() {
                                 <TrashIcon className="w-5 h-5" />
                               </button>
                             </>
-                          )}
+                          ))}
                         </div>
                       </td>
                     </tr>
