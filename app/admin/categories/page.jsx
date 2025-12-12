@@ -99,24 +99,10 @@ function sentenceCase(value) {
   return value.charAt(0).toUpperCase() + value.slice(1);
 }
 
-function getCreatorBadgeRole(createdBy, currentUser) {
-  const v = (createdBy || "").toLowerCase();
-  if (currentUser) {
-    const u = (currentUser.username || "").toLowerCase();
-    const e = (currentUser.email || "").toLowerCase();
-    if (v && (v === u || v === e)) {
-      return (currentUser.role || "").toLowerCase();
-    }
-  }
-  return v.includes("admin") ? "admin" : "teacher";
-}
-
-
 // --- Component Chính ---
 export default function CategoriesPage() {
   const [categories, setCategories] = useState([]);
   const [currentUser, setCurrentUser] = useState(null);
-
   const [keyword, setKeyword] = useState("");
   // State cho Modal Thêm/Sửa
   const [modalOpen, setModalOpen] = useState(false);
@@ -144,21 +130,6 @@ export default function CategoriesPage() {
         return "bg-gray-100 text-gray-700 border border-gray-200";
     }
   };
-
-  // Load profile once
-  useEffect(() => {
-    const fetchProfile = async () => {
-      try {
-        const profile = await fetchApi(`${API_URL}/me`); // Assuming /api/me gives profile details
-        setCurrentUser(profile);
-      } catch (e) {
-        console.error("Error fetching user profile:", e);
-      }
-    };
-    fetchProfile();
-  }, []);
-
-  // Fetch categories from backend with pagination + optional search
   const fetchCategories = useCallback(async (pageParam = page, keywordParam = keyword) => {
     try {
       setLoading(true);
@@ -454,17 +425,12 @@ export default function CategoriesPage() {
                         {c.description}
                       </td>
                       <td className="px-4 py-3 hidden md:table-cell">
-                        {(() => {
-                          const role = ((c.createdByRole || (currentUser && ((c.createdBy || "").toLowerCase() === ((currentUser.email || "").toLowerCase()) || (c.createdBy || "").toLowerCase() === ((currentUser.username || "").toLowerCase())) ? (currentUser.role || "").toLowerCase() : null)) || getCreatorBadgeRole(c.createdBy, currentUser));
-                          return (
-                            <span
-                              title={c.createdBy}
-                              className={`px-3 py-1.5 rounded-full text-[0.7rem] font-semibold inline-flex items-center justify-center whitespace-nowrap ${creatorBadgeClass(role)}`}
-                            >
-                              {sentenceCase(c.createdByName || c.createdBy) || "N/A"}
-                            </span>
-                          );
-                        })()}
+                        <span
+                          title={c.createdBy}
+                          className={`px-3 py-1.5 rounded-full text-[0.7rem] font-semibold inline-flex items-center justify-center whitespace-nowrap ${creatorBadgeClass(c.createdByRole)}`}
+                        >
+                          {sentenceCase(c.createdByName || c.createdBy) || "N/A"}
+                        </span>
                       </td>
                       <td className="px-4 py-3">
                         <div className="flex items-center justify-center gap-2">

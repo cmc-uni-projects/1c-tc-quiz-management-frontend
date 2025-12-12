@@ -112,6 +112,7 @@ export default function TeacherCategoriesPage() {
   const [keyword, setKeyword] = useState("");
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState(null); // null: thêm mới, object: đang sửa
+  const [currentUser, setCurrentUser] = useState(null); // Added currentUser state
 
   // Phân trang phía backend: 20 danh mục/trang như yêu cầu
   const PAGE_SIZE = 20;
@@ -124,6 +125,18 @@ export default function TeacherCategoriesPage() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const { showError, showSuccess } = useToast();
+
+  /* --- Load profile once --- */
+  useEffect(() => {
+    (async () => {
+      try {
+        const profile = await fetchApi(`/me`); // Use imported fetchApi
+        setCurrentUser(profile);
+      } catch {
+        console.error("Failed to load user profile");
+      }
+    })();
+  }, []);
 
   // Fetch categories from backend with pagination + optional search
   const fetchCategories = async (pageParam = page, keywordParam = keyword, showError = true) => {
@@ -431,20 +444,24 @@ export default function TeacherCategoriesPage() {
                       </td>
                       <td className="px-4 py-3 text-center">
                         <div className="flex items-center justify-center gap-2">
-                          <button
-                            onClick={() => openEdit(cat)}
-                            className="p-2 text-blue-600 hover:text-blue-800 hover:bg-blue-100 rounded-full transition"
-                            title="Sửa"
-                          >
-                            <EditIcon className="w-5 h-5" />
-                          </button>
-                          <button
-                            onClick={() => handleDelete(cat.id)}
-                            className="p-2 text-rose-500 hover:text-rose-700 hover:bg-rose-100 rounded-full transition"
-                            title="Xóa"
-                          >
-                            <TrashIcon className="w-5 h-5" />
-                          </button>
+                          {currentUser && cat.createdBy === currentUser.email && (
+                            <>
+                              <button
+                                onClick={() => openEdit(cat)}
+                                className="p-2 text-blue-600 hover:text-blue-800 hover:bg-blue-100 rounded-full transition"
+                                title="Sửa"
+                              >
+                                <EditIcon className="w-5 h-5" />
+                              </button>
+                              <button
+                                onClick={() => handleDelete(cat.id)}
+                                className="p-2 text-rose-500 hover:text-rose-700 hover:bg-rose-100 rounded-full transition"
+                                title="Xóa"
+                              >
+                                <TrashIcon className="w-5 h-5" />
+                              </button>
+                            </>
+                          )}
                         </div>
                       </td>
                     </tr>
