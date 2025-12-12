@@ -401,6 +401,7 @@ export default function CategoriesPage() {
                   <th className="px-4 py-3 text-left w-16">STT</th>
                   <th className="px-4 py-3 text-left">Tên danh mục</th>
                   <th className="px-4 py-3 text-left hidden sm:table-cell">Mô tả</th>
+                  <th className="px-4 py-3 text-left w-24 hidden md:table-cell">Số câu hỏi</th>
                   <th className="px-4 py-3 text-left w-32 hidden md:table-cell">Người tạo</th>
                   <th className="px-4 py-3 text-center w-40">Thao tác</th>
                 </tr>
@@ -408,11 +409,11 @@ export default function CategoriesPage() {
               <tbody className="divide-y divide-gray-100">
                 {loading && filtered.length === 0 ? (
                   <tr>
-                    <td colSpan={5} className="px-4 py-10 text-center text-gray-500">Đang tải dữ liệu...</td>
+                    <td colSpan={6} className="px-4 py-10 text-center text-gray-500">Đang tải dữ liệu...</td>
                   </tr>
                 ) : filtered.length === 0 ? (
                   <tr>
-                    <td colSpan={5} className="px-4 py-10 text-center text-gray-500">
+                    <td colSpan={6} className="px-4 py-10 text-center text-gray-500">
                       Không tìm thấy danh mục phù hợp
                     </td>
                   </tr>
@@ -423,6 +424,9 @@ export default function CategoriesPage() {
                       <td className="px-4 py-3 font-medium text-gray-900">{c.name}</td>
                       <td className="px-4 py-3 text-gray-700 hidden sm:table-cell max-w-xs overflow-hidden text-ellipsis whitespace-nowrap">
                         {c.description}
+                      </td>
+                      <td className="px-4 py-3 hidden md:table-cell text-gray-700">
+                        {c.questionCount ?? 0}
                       </td>
                       <td className="px-4 py-3 hidden md:table-cell">
                         <span
