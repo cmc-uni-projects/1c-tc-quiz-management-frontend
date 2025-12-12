@@ -92,73 +92,88 @@ export default function CreateExamPage() {
     fetchDropdownData();
   }, []);
 
-  const handleSubmit = async (status: ExamStatus) => {
-    if (!examTitle.trim()) {
-      toastError("Vui lòng nhập tên bài thi");
-      return;
-    }
-    if (!examType) {
-      toastError("Vui lòng chọn độ khó");
-      return;
-    }
-    if (!examCategory) {
-      toastError("Vui lòng chọn danh mục");
-      return;
-    }
-    if (!duration || Number(duration) <= 0) {
-      toastError("Thời gian làm bài phải lớn hơn 0");
-      return;
-    }
-
-    if (!startDate || !startTime) {
-      toastError("Vui lòng chọn ngày và giờ bắt đầu");
-      return;
-    }
-
-    const now = new Date();
-    const startDateTime = new Date(`${startDate}T${startTime}:00`);
-    if (isNaN(startDateTime.getTime())) {
-      toastError("Thời gian bắt đầu không hợp lệ");
-      return;
-    }
-
-    if (startDateTime < now) {
-      toastError("Thời gian bắt đầu phải lớn hơn hoặc bằng thời gian hiện tại");
-      return;
-    }
-
-    if (!endDate || !endTime) {
-      toastError("Vui lòng chọn ngày và giờ kết thúc");
-      return;
-    }
-
-    const endDateTime = new Date(`${endDate}T${endTime}:00`);
-    if (isNaN(endDateTime.getTime())) {
-      toastError("Thời gian kết thúc không hợp lệ");
-      return;
-    }
-
-    if (endDateTime <= startDateTime) {
-      toastError("Thời gian kết thúc phải sau thời gian bắt đầu");
-      return;
-    }
-
-    setIsSubmitting(true);
-    try {
-      const questionIds: number[] = []; // Initially empty as per original code behavior
-
-      const examPayload = {
-        title: examTitle,
-        categoryId: examCategory,
-        durationMinutes: Number(duration),
-        startTime: `${startDate}T${startTime}:00`,
-        endTime: `${endDate}T${endTime}:00`,
-        questionIds: questionIds,
-        description: `Bài thi ${examType}`,
-        examLevel: examType.toUpperCase(),
-        status: status
+      const handleSubmit = async (status: ExamStatus) => {
+      // Helper to format local date and time for payload
+      const formatLocal = (date: Date) => {
+        const year = date.getFullYear();
+        const month = (date.getMonth() + 1).toString().padStart(2, '0');
+        const day = date.getDate().toString().padStart(2, '0');
+        const hours = date.getHours().toString().padStart(2, '0');
+        const minutes = date.getMinutes().toString().padStart(2, '0');
+        const seconds = date.getSeconds().toString().padStart(2, '0');
+        return `${year}-${month}-${day}T${hours}:${minutes}:${seconds}`;
       };
-
+  
+      if (!examTitle.trim()) {
+        toastError("Vui lòng nhập tên bài thi");
+        return;
+      }
+      if (!examType) {
+        toastError("Vui lòng chọn độ khó");
+        return;
+      }
+      if (!examCategory) {
+        toastError("Vui lòng chọn danh mục");
+        return;
+      }
+      if (!duration || Number(duration) <= 0) {
+        toastError("Thời gian làm bài phải lớn hơn 0");
+        return;
+      }
+  
+      if (!startDate || !startTime) {
+        toastError("Vui lòng chọn ngày và giờ bắt đầu");
+        return;
+      }
+  
+      const now = new Date();
+      const startDateTime = new Date(`${startDate}T${startTime}:00`);
+      if (isNaN(startDateTime.getTime())) {
+        toastError("Thời gian bắt đầu không hợp lệ");
+        return;
+      }
+  
+      // Check if start time is in the past, accounting for local timezone differences
+      // Convert current time to a comparable format for local date comparison
+      const nowLocalString = `${now.getFullYear()}-${(now.getMonth() + 1).toString().padStart(2, '0')}-${now.getDate().toString().padStart(2, '0')}T${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}:${now.getSeconds().toString().padStart(2, '0')}`;
+      const nowLocal = new Date(nowLocalString);
+  
+      if (startDateTime < nowLocal) { // Compare local times
+        toastError("Thời gian bắt đầu phải lớn hơn hoặc bằng thời gian hiện tại");
+        return;
+      }
+  
+      if (!endDate || !endTime) {
+        toastError("Vui lòng chọn ngày và giờ kết thúc");
+        return;
+      }
+  
+      const endDateTime = new Date(`${endDate}T${endTime}:00`);
+      if (isNaN(endDateTime.getTime())) {
+        toastError("Thời gian kết thúc không hợp lệ");
+        return;
+      }
+  
+      if (endDateTime <= startDateTime) {
+        toastError("Thời gian kết thúc phải sau thời gian bắt đầu");
+        return;
+      }
+  
+      setIsSubmitting(true);
+      try {
+        const questionIds: number[] = []; // Initially empty as per original code behavior
+  
+        const examPayload = {
+          title: examTitle,
+          categoryId: examCategory,
+          durationMinutes: Number(duration),
+          startTime: formatLocal(startDateTime), // Use local formatted string
+          endTime: formatLocal(endDateTime),     // Use local formatted string
+          questionIds: questionIds,
+          description: `Bài thi ${examType}`,
+          examLevel: examType.toUpperCase(),
+          status: status
+        };
       await fetchApi('/exams/create', {
         method: 'POST',
         body: examPayload
