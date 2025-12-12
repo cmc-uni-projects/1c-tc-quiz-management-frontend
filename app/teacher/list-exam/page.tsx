@@ -493,11 +493,6 @@ export default function TeacherExamListPage() {
         )}
 
       </main>
-
-      {/* ============ FOOTER ============ */}
-      <footer className="bg-[#F5F5F5] border-t border-gray-200 py-4 text-center text-gray-500 text-sm">
-        © 2025 QuizzZone. Mọi quyền được bảo lưu.
-      </footer>
     </div>
   );
 }
