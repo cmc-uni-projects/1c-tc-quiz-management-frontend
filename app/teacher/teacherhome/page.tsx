@@ -77,7 +77,31 @@ const TeacherHome = () => {
           return sum;
         }, 0);
 
-        setStats({ exams: examsCount, questions: questionsCount, students: 0 });
+        // Tính số học viên đã thi (đếm studentId duy nhất trong lịch sử bài thi)
+        const uniqueStudentIds = new Set<number>();
+        try {
+          const historyResponses = await Promise.all(
+            examsArray
+              .filter((exam: any) => exam.examId)
+              .map((exam: any) =>
+                fetchApi(`/examHistory/get/${exam.examId}`).catch(() => [])
+              )
+          );
+
+          for (const histories of historyResponses) {
+            if (Array.isArray(histories)) {
+              for (const h of histories as any[]) {
+                if (h && typeof h.studentId === 'number') {
+                  uniqueStudentIds.add(h.studentId);
+                }
+              }
+            }
+          }
+        } catch (err) {
+          console.error('Failed to load exam history stats', err);
+        }
+
+        setStats({ exams: examsCount, questions: questionsCount, students: uniqueStudentIds.size });
       } catch (error: any) {
         console.error('Failed to load teacher stats', error);
         toast.error(error?.message || 'Không thể tải thống kê.');
