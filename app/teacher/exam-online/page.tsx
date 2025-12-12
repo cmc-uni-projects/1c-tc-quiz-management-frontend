@@ -165,9 +165,6 @@ export default function CreateExamPage() {
           'EASY': 'Dễ',
           'MEDIUM': 'Trung bình',
           'HARD': 'Khó',
-          'Easy': 'Dễ',
-          'Medium': 'Trung bình',
-          'Hard': 'Khó'
         };
         const formattedDifficulties = difficultiesRes.map((d: string) => ({
           id: d.toUpperCase(),

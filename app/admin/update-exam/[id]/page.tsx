@@ -24,6 +24,7 @@ interface Question {
     categoryName?: string; // New field
     answers: Answer[];
     createdBy?: string; // New field
+    visibility?: string; // New field
     isReadOnly?: boolean;
 }
 
@@ -557,7 +558,7 @@ export default function AdminUpdateExamPage() {
                                     ))}
 
                                     {/* Add Question Button */}
-                                    <div className="flex justify-center">
+                                    <div className="flex justify-center mt-6">
                                         <button
                                             type="button"
                                             onClick={() =>
@@ -572,7 +573,7 @@ export default function AdminUpdateExamPage() {
                                                     ],
                                                 })
                                             }
-                                            className="bg-purple-600 text-white px-6 py-2 rounded-full hover:bg-purple-700"
+                                            className="px-6 py-2 rounded-full bg-purple-600 text-white hover:bg-purple-700 shadow-md transition-all hover:scale-105"
                                         >
                                             + Thêm câu hỏi
                                         </button>
