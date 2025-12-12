@@ -797,8 +797,12 @@ export default function QuestionsPage() {
                       <td className="px-4 py-3">
                         <div className="flex items-center justify-center gap-2">
                           <button onClick={() => openDetail(q)} className="p-2 text-gray-900 hover:text-black hover:bg-gray-200 rounded-full transition" title="Xem chi tiết"><EyeIcon className="w-5 h-5" /></button>
-                          <button onClick={() => openEdit(q)} className="p-2 text-blue-600 hover:text-blue-800 hover:bg-blue-100 rounded-full transition" title="Sửa"><EditIcon className="w-5 h-5" /></button>
-                          <button onClick={() => handleDelete(q.id)} className="p-2 text-rose-500 hover:text-rose-700 hover:bg-rose-100 rounded-full transition" title="Xóa"><TrashIcon className="w-5 h-5" /></button>
+                          {currentUser && q.createdBy === currentUser.email && (
+                            <>
+                              <button onClick={() => openEdit(q)} className="p-2 text-blue-600 hover:text-blue-800 hover:bg-blue-100 rounded-full transition" title="Sửa"><EditIcon className="w-5 h-5" /></button>
+                              <button onClick={() => handleDelete(q.id)} className="p-2 text-rose-500 hover:text-rose-700 hover:bg-rose-100 rounded-full transition" title="Xóa"><TrashIcon className="w-5 h-5" /></button>
+                            </>
+                          )}
                         </div>
                       </td>
                     </tr>
