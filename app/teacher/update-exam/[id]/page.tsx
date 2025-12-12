@@ -283,15 +283,22 @@ export default function UpdateExamPage() {
                     });
                 }
 
+                const formatLocalDate = (date: Date) => {
+                    const year = date.getFullYear();
+                    const month = (date.getMonth() + 1).toString().padStart(2, '0');
+                    const day = date.getDate().toString().padStart(2, '0');
+                    return `${year}-${month}-${day}`;
+                };
+
                 setInitialValues({
                     title: exam.title,
                     durationMinutes: exam.durationMinutes,
                     categoryId: exam.category?.id || "",
                     examLevel: exam.examLevel || "", // Map examLevel
                     startTime: startTimeObj.toTimeString().slice(0, 5),
-                    startDate: startTimeObj.toISOString().slice(0, 10),
+                    startDate: formatLocalDate(startTimeObj), // Use local formatted date
                     endTime: endTimeObj.toTimeString().slice(0, 5),
-                    endDate: endTimeObj.toISOString().slice(0, 10),
+                    endDate: formatLocalDate(endTimeObj),   // Use local formatted date
                     questions: mappedQuestions,
                 });
             } catch (error) {

@@ -180,65 +180,60 @@ export default function TeacherExamListPage() {
   return (
     <div className="flex-1 flex flex-col">
       <main className="flex-1 px-10 py-8">
-{/* TAB DANH SÁCH BÀI THI / LỊCH SỬ */}
+    {/* TAB DANH SÁCH BÀI THI / LỊCH SỬ */}
 <div className="flex items-center mb-8">
   <div className="flex gap-10 font-bold border-b border-gray-200 w-full">
 
-    {(() => {
-      const pathname = usePathname();
+    {/* Use the pathname declared at the top level */}
+    <>
+      {/* TAB BÀI THI */}
+      <button
+        onClick={() => router.push("/teacher/list-exam")}
+        className={`pb-3 relative transition-colors ${
+          pathname === "/teacher/list-exam"
+            ? "text-[#A53AEC]"
+            : "text-gray-500 hover:text-[#A53AEC]"
+        }`}
+      >
+        <span className="text-base">Bài thi</span>
 
-      return (
-        <>
-          {/* TAB BÀI THI */}
-          <button
-            onClick={() => router.push("/teacher/list-exam")}
-            className={`pb-3 relative transition-colors ${
-              pathname === "/teacher/list-exam"
-                ? "text-[#A53AEC]"
-                : "text-gray-500 hover:text-[#A53AEC]"
-            }`}
-          >
-            <span className="text-base">Bài thi</span>
+        {pathname === "/teacher/list-exam" && (
+          <span className="absolute left-0 right-0 -bottom-[1px] h-[2px] bg-[#A53AEC] rounded-full" />
+        )}
+      </button>
 
-            {pathname === "/teacher/list-exam" && (
-              <span className="absolute left-0 right-0 -bottom-[1px] h-[2px] bg-[#A53AEC] rounded-full" />
-            )}
-          </button>
+      {/* TAB LỊCH SỬ THI OFFLINE */}
+      <button
+        onClick={() => router.push("/teacher/history-exam")}
+        className={`pb-3 relative transition-colors ${
+          pathname === "/teacher/history-exam"
+            ? "text-[#A53AEC]"
+            : "text-gray-500 hover:text-[#A53AEC]"
+        }`}
+      >
+        <span className="text-base">Lịch sử thi offline</span>
 
-          {/* TAB LỊCH SỬ THI OFFLINE */}
-          <button
-            onClick={() => router.push("/teacher/history-exam")}
-            className={`pb-3 relative transition-colors ${
-              pathname === "/teacher/history-exam"
-                ? "text-[#A53AEC]"
-                : "text-gray-500 hover:text-[#A53AEC]"
-            }`}
-          >
-            <span className="text-base">Lịch sử thi offline</span>
+        {pathname === "/teacher/history-exam" && (
+          <span className="absolute left-0 right-0 -bottom-[1px] h-[2px] bg-[#A53AEC] rounded-full" />
+        )}
+      </button>
 
-            {pathname === "/teacher/history-exam" && (
-              <span className="absolute left-0 right-0 -bottom-[1px] h-[2px] bg-[#A53AEC] rounded-full" />
-            )}
-          </button>
+      {/* TAB LỊCH SỬ THI ONLINE */}
+      <button
+        onClick={() => router.push("/teacher/history-exam-online")}
+        className={`pb-3 relative transition-colors ${
+          pathname === "/teacher/history-exam-online"
+            ? "text-[#A53AEC]"
+            : "text-gray-500 hover:text-[#A53AEC]"
+        }`}
+      >
+        <span className="text-base">Lịch sử thi online</span>
 
-          {/* TAB LỊCH SỬ THI ONLINE */}
-          <button
-            onClick={() => router.push("/teacher/history-exam-online")}
-            className={`pb-3 relative transition-colors ${
-              pathname === "/teacher/history-exam-online"
-                ? "text-[#A53AEC]"
-                : "text-gray-500 hover:text-[#A53AEC]"
-            }`}
-          >
-            <span className="text-base">Lịch sử thi online</span>
-
-            {pathname === "/teacher/history-exam-online" && (
-              <span className="absolute left-0 right-0 -bottom-[1px] h-[2px] bg-[#A53AEC] rounded-full" />
-            )}
-          </button>
-        </>
-      );
-    })()}
+        {pathname === "/teacher/history-exam-online" && (
+          <span className="absolute left-0 right-0 -bottom-[1px] h-[2px] bg-[#A53AEC] rounded-full" />
+        )}
+      </button>
+    </>
   </div>
 </div>
 
