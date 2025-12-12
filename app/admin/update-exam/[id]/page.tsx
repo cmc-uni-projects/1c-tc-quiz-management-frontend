@@ -609,7 +609,7 @@ export default function AdminUpdateExamPage() {
                         {/* ================== MODAL THƯ VIỆN ================== */}
                         {openLibrary && (
                             <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-                                <div className="bg-white rounded-xl p-6 relative w-[95%] max-w-[1000px] min-h-[80vh] flex flex-col">
+                                <div className="bg-white rounded-xl p-6 relative w-[95%] max-w-[1000px] min-h-[80vh] max-h-[90vh] flex flex-col">
                                     <button
                                         type="button"
                                         onClick={() => setOpenLibrary(false)}
