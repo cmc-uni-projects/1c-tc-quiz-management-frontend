@@ -50,16 +50,10 @@ const AdminHome: React.FC = () => {
         const fetchStats = async () => {
             setStatsLoading(true);
             try {
-                // Dùng đúng endpoint backend:
-                // - /admin/accounts/students: danh sách học viên
-                // - /admin/accounts/teachers: danh sách giáo viên
-                // - /admin/teachers/pending: giáo viên chờ duyệt
-                // - /exams hoặc /exams/all: danh sách bài thi
                 const [studentsRes, teachersRes, pendingTeachersRes, examsRes] = await Promise.all([
                     fetchApi('/admin/accounts/students'),
                     fetchApi('/admin/accounts/teachers'),
                     fetchApi('/admin/teachers/pending'),
-                    // Backend maps /api/exams/all -> getAllExams(Pageable)
                     fetchApi('/exams/all'),
                 ]);
 

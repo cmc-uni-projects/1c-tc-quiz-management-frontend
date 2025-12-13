@@ -184,76 +184,78 @@ const ListExamsContent = () => {
                             acc[cat].push(exam);
                             return acc;
                         }, {} as Record<string, Exam[]>)
-                    ).map(([categoryName, categoryExams]) => (
-                        <div key={categoryName}>
-                            <h3 className="text-2xl font-bold text-gray-800 mb-6 border-l-4 border-[#A53AEC] pl-4">
-                                {categoryName}
-                            </h3>
-                            <div className="grid grid-cols-[repeat(auto-fill,minmax(260px,1fr))] gap-5">
-                                {categoryExams.map((exam) => (
-                                    <div
-                                        key={exam.id}
-                                        className="flex flex-col bg-white p-4 rounded-xl shadow-sm hover:shadow-md transition duration-300 border border-gray-100 h-full"
-                                    >
-                                        <div className="flex-1">
-                                            <h4 className="text-base font-bold text-[#A53AEC] mb-2 leading-tight line-clamp-2">{exam.title}</h4>
+                    )
+                        .sort((a, b) => a[0].localeCompare(b[0]))
+                        .map(([categoryName, categoryExams]) => (
+                            <div key={categoryName}>
+                                <h3 className="text-2xl font-bold text-gray-800 mb-6 border-l-4 border-[#A53AEC] pl-4">
+                                    {categoryName}
+                                </h3>
+                                <div className="grid grid-cols-[repeat(auto-fill,minmax(260px,1fr))] gap-5">
+                                    {categoryExams.map((exam) => (
+                                        <div
+                                            key={exam.id}
+                                            className="flex flex-col bg-white p-4 rounded-xl shadow-sm hover:shadow-md transition duration-300 border border-gray-100 h-full"
+                                        >
+                                            <div className="flex-1">
+                                                <h4 className="text-base font-bold text-[#A53AEC] mb-2 leading-tight line-clamp-2">{exam.title}</h4>
 
-                                            <div className="text-xs text-gray-600 space-y-1">
-                                                <p>
-                                                    <span className="text-gray-500">Số câu:</span>
-                                                    <span className="font-semibold text-gray-800 ml-1">{exam.questionCount}</span>
-                                                </p>
-                                                <p>
-                                                    <span className="text-gray-500">Mức độ:</span>
-                                                    <span className="font-semibold text-gray-800 ml-1">{exam.level}</span>
-                                                </p>
-                                                <p>
-                                                    <span className="text-gray-500">Thời gian:</span>
-                                                    <span className="font-semibold text-gray-800 ml-1">{exam.duration}</span>
-                                                </p>
+                                                <div className="text-xs text-gray-600 space-y-1">
+                                                    <p>
+                                                        <span className="text-gray-500">Số câu:</span>
+                                                        <span className="font-semibold text-gray-800 ml-1">{exam.questionCount}</span>
+                                                    </p>
+                                                    <p>
+                                                        <span className="text-gray-500">Mức độ:</span>
+                                                        <span className="font-semibold text-gray-800 ml-1">{exam.level}</span>
+                                                    </p>
+                                                    <p>
+                                                        <span className="text-gray-500">Thời gian:</span>
+                                                        <span className="font-semibold text-gray-800 ml-1">{exam.duration}</span>
+                                                    </p>
+                                                </div>
+
+                                                <div className="mt-3 pt-2 border-t border-gray-100 text-xs text-gray-500 space-y-1">
+                                                    <p className="flex items-center gap-1">
+                                                        <span>Bắt đầu:</span>
+                                                        <span className="font-medium text-gray-700">{exam.startTime}</span>
+                                                    </p>
+                                                    <p className="flex items-center gap-1">
+                                                        <span>Kết thúc:</span>
+                                                        <span className="font-medium text-gray-700">{exam.endTime}</span>
+                                                    </p>
+                                                    <p className="flex items-center gap-1">
+                                                        <span>Trạng thái:</span>
+                                                        <span className="font-semibold">
+                                                            {exam.status === 'READY' && (
+                                                                <span className="text-green-600">Sẵn sàng</span>
+                                                            )}
+                                                            {exam.status === 'BEFORE' && (
+                                                                <span className="text-blue-600">Chưa bắt đầu</span>
+                                                            )}
+                                                            {exam.status === 'ENDED' && (
+                                                                <span className="text-gray-500">Đã kết thúc</span>
+                                                            )}
+                                                            {(!exam.status || exam.status === 'UNKNOWN') && (
+                                                                <span className="text-gray-400">Không xác định</span>
+                                                            )}
+                                                        </span>
+                                                    </p>
+                                                </div>
                                             </div>
-
-                                            <div className="mt-3 pt-2 border-t border-gray-100 text-xs text-gray-500 space-y-1">
-                                                <p className="flex items-center gap-1">
-                                                    <span>Bắt đầu:</span>
-                                                    <span className="font-medium text-gray-700">{exam.startTime}</span>
-                                                </p>
-                                                <p className="flex items-center gap-1">
-                                                    <span>Kết thúc:</span>
-                                                    <span className="font-medium text-gray-700">{exam.endTime}</span>
-                                                </p>
-                                                <p className="flex items-center gap-1">
-                                                    <span>Trạng thái:</span>
-                                                    <span className="font-semibold">
-                                                        {exam.status === 'READY' && (
-                                                            <span className="text-green-600">Sẵn sàng</span>
-                                                        )}
-                                                        {exam.status === 'BEFORE' && (
-                                                            <span className="text-blue-600">Chưa bắt đầu</span>
-                                                        )}
-                                                        {exam.status === 'ENDED' && (
-                                                            <span className="text-gray-500">Đã kết thúc</span>
-                                                        )}
-                                                        {(!exam.status || exam.status === 'UNKNOWN') && (
-                                                            <span className="text-gray-400">Không xác định</span>
-                                                        )}
-                                                    </span>
-                                                </p>
+                                            <div className="mt-3 flex justify-center">
+                                                <button
+                                                    onClick={() => handleStartExam(exam)}
+                                                    className="bg-[#A53AEC] hover:bg-[#8B2BE2] text-white text-xs font-bold py-2 px-6 rounded-full transition duration-150 shadow-sm"
+                                                >
+                                                    Làm Bài
+                                                </button>
                                             </div>
                                         </div>
-                                        <div className="mt-3 flex justify-center">
-                                            <button
-                                                onClick={() => handleStartExam(exam)}
-                                                className="bg-[#A53AEC] hover:bg-[#8B2BE2] text-white text-xs font-bold py-2 px-6 rounded-full transition duration-150 shadow-sm"
-                                            >
-                                                Làm Bài
-                                            </button>
-                                        </div>
-                                    </div>
-                                ))}
+                                    ))}
+                                </div>
                             </div>
-                        </div>
-                    ))}
+                        ))}
                 </div>
             )}
         </div>
