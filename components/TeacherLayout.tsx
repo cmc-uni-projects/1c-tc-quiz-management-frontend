@@ -247,13 +247,16 @@ export default function TeacherLayout({
 }) {
     return (
         <TeacherAuthGuard>
-            <div className="flex flex-col min-h-screen bg-gray-50">
+            <div className="flex min-h-screen bg-gray-50">
                 <TeacherSidebar />
                 <div className="ml-64 flex flex-col flex-1 transition-[margin-left] duration-300 w-[calc(100%-16rem)]">
                     <TeacherTopBar />
                     <main className="flex-1 pb-10 bg-gray-50 w-full">
                         {children}
                     </main>
+                    <footer className="mt-auto bg-[#F5F5F5] border-t border-gray-200 py-4 text-center text-gray-500 text-sm">
+                        &copy; 2025 QuizzZone. Mọi quyền được bảo lưu.
+                    </footer>
                 </div>
             </div>
         </TeacherAuthGuard>

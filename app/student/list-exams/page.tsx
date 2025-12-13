@@ -21,6 +21,7 @@ interface Exam {
     level: string;
     startTime: string;
     endTime: string;
+    status?: 'BEFORE' | 'READY' | 'ENDED' | 'UNKNOWN';
 }
 
 const ListExamsContent = () => {
@@ -59,16 +60,38 @@ const ListExamsContent = () => {
                     return map[level] || level;
                 };
 
-                const mappedExams = Array.isArray(data) ? data.map((exam: any) => ({
-                    id: exam.examId,
-                    title: exam.title,
-                    category: exam.category?.name,
-                    duration: `${exam.durationMinutes} phút`,
-                    questionCount: exam.questionCount || 0,
-                    level: mapLevel(exam.examLevel),
-                    startTime: exam.startTime ? new Date(exam.startTime).toLocaleString('vi-VN') : 'Tự do',
-                    endTime: exam.endTime ? new Date(exam.endTime).toLocaleString('vi-VN') : 'Tự do'
-                })) : [];
+                const mappedExams = Array.isArray(data)
+                    ? [...data]
+                        .sort((a: any, b: any) =>
+                            Number(new Date(b.startTime || 0)) - Number(new Date(a.startTime || 0))
+                        )
+                        .map((exam: any) => {
+                            let status: Exam['status'] = 'UNKNOWN';
+                            if (exam.startTime && exam.endTime) {
+                                const now = new Date();
+                                const start = new Date(exam.startTime);
+                                const end = new Date(exam.endTime);
+
+                                if (!isNaN(start.getTime()) && !isNaN(end.getTime())) {
+                                    if (now < start) status = 'BEFORE';
+                                    else if (now > end) status = 'ENDED';
+                                    else status = 'READY';
+                                }
+                            }
+
+                            return {
+                                id: exam.examId,
+                                title: exam.title,
+                                category: exam.category?.name,
+                                duration: `${exam.durationMinutes} phút`,
+                                questionCount: exam.questionCount || 0,
+                                level: mapLevel(exam.examLevel),
+                                startTime: exam.startTime ? new Date(exam.startTime).toLocaleString('vi-VN') : 'Tự do',
+                                endTime: exam.endTime ? new Date(exam.endTime).toLocaleString('vi-VN') : 'Tự do',
+                                status,
+                            } as Exam;
+                        })
+                    : [];
 
                 setExams(mappedExams);
             } catch (error) {
@@ -198,6 +221,23 @@ const ListExamsContent = () => {
                                                 <p className="flex items-center gap-1">
                                                     <span>Kết thúc:</span>
                                                     <span className="font-medium text-gray-700">{exam.endTime}</span>
+                                                </p>
+                                                <p className="flex items-center gap-1">
+                                                    <span>Trạng thái:</span>
+                                                    <span className="font-semibold">
+                                                        {exam.status === 'READY' && (
+                                                            <span className="text-green-600">Sẵn sàng</span>
+                                                        )}
+                                                        {exam.status === 'BEFORE' && (
+                                                            <span className="text-blue-600">Chưa bắt đầu</span>
+                                                        )}
+                                                        {exam.status === 'ENDED' && (
+                                                            <span className="text-gray-500">Đã kết thúc</span>
+                                                        )}
+                                                        {(!exam.status || exam.status === 'UNKNOWN') && (
+                                                            <span className="text-gray-400">Không xác định</span>
+                                                        )}
+                                                    </span>
                                                 </p>
                                             </div>
                                         </div>

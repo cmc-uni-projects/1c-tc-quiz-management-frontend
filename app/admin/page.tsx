@@ -35,15 +35,6 @@ const AdminHome: React.FC = () => {
     const [statsLoading, setStatsLoading] = useState(false);
 
     useEffect(() => {
-        const tryFetch = async (endpoint: string) => {
-            try {
-                const res = await fetchApi(endpoint);
-                return res;
-            } catch (e) {
-                return null;
-            }
-        };
-
         const getCountFromResponse = (res: any) => {
             if (!res) return 0;
             if (Array.isArray(res)) return res.length;
@@ -59,31 +50,24 @@ const AdminHome: React.FC = () => {
         const fetchStats = async () => {
             setStatsLoading(true);
             try {
-                // Try several possible endpoints used in the codebase/backend
-                const usersEndpoints = ['/admin/users', '/users', '/accounts', '/admin/accounts'];
-                const teachersPendingEndpoints = ['/admin/teachers/pending', '/teachers/pending', '/admin/teachers'];
-                const examsEndpoints = ['/admin/exams', '/exams', '/exams/all'];
+                // Dùng đúng endpoint backend:
+                // - /admin/accounts/students: danh sách học viên
+                // - /admin/accounts/teachers: danh sách giáo viên
+                // - /admin/teachers/pending: giáo viên chờ duyệt
+                // - /exams hoặc /exams/all: danh sách bài thi
+                const [studentsRes, teachersRes, pendingTeachersRes, examsRes] = await Promise.all([
+                    fetchApi('/admin/accounts/students'),
+                    fetchApi('/admin/accounts/teachers'),
+                    fetchApi('/admin/teachers/pending'),
+                    // Backend maps /api/exams/all -> getAllExams(Pageable)
+                    fetchApi('/exams/all'),
+                ]);
 
-                let usersRes = null;
-                for (const ep of usersEndpoints) {
-                    usersRes = await tryFetch(ep);
-                    if (usersRes) break;
-                }
+                const studentsCount = getCountFromResponse(studentsRes);
+                const teachersCount = getCountFromResponse(teachersRes);
+                const usersCount = studentsCount + teachersCount;
 
-                let teachersRes = null;
-                for (const ep of teachersPendingEndpoints) {
-                    teachersRes = await tryFetch(ep);
-                    if (teachersRes) break;
-                }
-
-                let examsRes = null;
-                for (const ep of examsEndpoints) {
-                    examsRes = await tryFetch(ep);
-                    if (examsRes) break;
-                }
-
-                const usersCount = getCountFromResponse(usersRes);
-                const pendingCount = getCountFromResponse(teachersRes);
+                const pendingCount = getCountFromResponse(pendingTeachersRes);
                 const examsCount = getCountFromResponse(examsRes);
 
                 setStats({ users: usersCount, pendingTeachers: pendingCount, exams: examsCount });
@@ -108,8 +92,8 @@ const AdminHome: React.FC = () => {
     };
 
     return (
-        <div className="min-h-screen bg-gray-50 flex flex-1 flex-col">
-            <main className="flex-1 pb-10 bg-gray-50 w-full">
+        <div className="bg-gray-50 flex flex-col min-h-full">
+            <main className="pb-10 bg-gray-50 w-full">
                 <section
                     className="shadow-lg overflow-hidden text-white min-h-[220px] sm:min-h-[260px] lg:min-h-[300px]"
                     style={{
@@ -177,8 +161,6 @@ const AdminHome: React.FC = () => {
                 </section>
 
             </main>
-
-            <footer className="mt-auto border-t border-zinc-100 bg-white py-4 text-center text-sm text-zinc-600">&copy; 2025 QuizzZone. Mọi quyền được bảo lưu.</footer>
         </div>
     );
 };

@@ -97,8 +97,8 @@ export default function HistoryExamPage() {
 
   // ==================== RENDER ====================
   return (
-    <div className="min-h-screen flex flex-col bg-[#F5F5F5]">
-      <main className="flex-1 px-10 py-8">
+    <div className="flex flex-col bg-[#F5F5F5] flex-1 min-h-full">
+      <main className="px-10 py-8 flex-1">
 
         {/* ===================== TAB ===================== */}
         <div className="flex items-center justify-between mb-8">
@@ -255,10 +255,6 @@ export default function HistoryExamPage() {
           </div>
         )}
       </main>
-
-      <footer className="bg-[#F5F5F5] border-t text-center text-sm text-gray-500 py-4">
-        © 2025 QuizzZone. Mọi quyền được bảo lưu.
-      </footer>
     </div>
   );
 }

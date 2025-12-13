@@ -132,16 +132,23 @@ export default function AdminExamListPage() {
         return () => clearTimeout(timeoutId);
     }, [searchQuery, categoryId, examLevel]);
 
-    // Sắp xếp từ mới nhất → cũ nhất
-    const sortedExams = [...exams].sort(
-        (a, b) => Number(new Date(b.startTime || 0)) - Number(new Date(a.startTime || 0))
-    );
+    // Helper: exam has ended (based on endTime)
+    const isExamEnded = (exam: Exam) => {
+        if (!exam.endTime) return false;
+        const end = new Date(exam.endTime);
+        if (isNaN(end.getTime())) return false;
+        return end < new Date();
+    };
 
-    // Filter Logic
-    // Draft: status is DRAFT
+    // Sắp xếp từ mới nhất → cũ nhất, chỉ lấy các bài chưa kết thúc
+    const sortedExams = [...exams]
+        .filter((e) => !isExamEnded(e))
+        .sort(
+            (a, b) => Number(new Date(b.startTime || 0)) - Number(new Date(a.startTime || 0))
+        );
+
+    // Filter Logic trên danh sách đã lọc: chỉ các bài còn thời gian làm
     const draftExams = sortedExams.filter((x) => x.status === 'DRAFT');
-
-    // Ready: status is PUBLISHED
     const readyExams = sortedExams.filter((x) => x.status === 'PUBLISHED');
 
     const deleteExam = async (id: number) => {
@@ -176,75 +183,76 @@ export default function AdminExamListPage() {
     if (loading) return <div className="p-10">Đang tải...</div>;
 
     return (
+
         <div className="flex-1 flex flex-col">
             <main className="flex-1 px-10 py-8">
-<div className="flex items-center mb-8">
-  <div className="flex gap-10 font-bold border-b border-gray-200 w-full">
+                <div className="flex items-center mb-8">
+                    <div className="flex gap-10 font-bold border-b border-gray-200 w-full">
 
-    {(() => {
+                        {(() => {
 
-      return (
-        <>
-          {/* TAB BÀI THI */}
-          <button
-            onClick={() => router.push("/admin/list-exam")}
-            className={`pb-3 relative transition-colors ${
-              pathname === "/admin/list-exam"
-                ? "text-[#A53AEC]"
-                : "text-gray-500 hover:text-[#A53AEC]"
-            }`}
-          >
-            <span className="text-base">Bài thi</span>
+                            return (
+                                <>
+                                    {/* TAB BÀI THI */}
+                                    <button
+                                        onClick={() => router.push("/admin/list-exam")}
+                                        className={`pb-3 relative transition-colors ${
+                                            pathname === "/admin/list-exam"
+                                                ? "text-[#A53AEC]"
+                                                : "text-gray-500 hover:text-[#A53AEC]"
+                                            }`}
+                                    >
+                                        <span className="text-base">Bài thi</span>
 
-            {pathname === "/admin/list-exam" && (
-              <span className="absolute left-0 right-0 -bottom-[1px] h-[2px] bg-[#A53AEC] rounded-full" />
-            )}
-          </button>
+                                        {pathname === "/admin/list-exam" && (
+                                            <span className="absolute left-0 right-0 -bottom-[1px] h-[2px] bg-[#A53AEC] rounded-full" />
+                                        )}
+                                    </button>
 
-          {/* TAB LỊCH SỬ THI OFFLINE */}
-          <button
-            onClick={() => router.push("/admin/history-exam")}
-            className={`pb-3 relative transition-colors ${
-              pathname === "/admin/history-exam"
-                ? "text-[#A53AEC]"
-                : "text-gray-500 hover:text-[#A53AEC]"
-            }`}
-          >
-            <span className="text-base">Lịch sử thi offline</span>
+                                    {/* TAB LỊCH SỬ THI OFFLINE */}
+                                    <button
+                                        onClick={() => router.push("/admin/history-exam")}
+                                        className={`pb-3 relative transition-colors ${
+                                            pathname === "/admin/history-exam"
+                                                ? "text-[#A53AEC]"
+                                                : "text-gray-500 hover:text-[#A53AEC]"
+                                            }`}
+                                    >
+                                        <span className="text-base">Lịch sử thi offline</span>
 
-            {pathname === "/admin/history-exam" && (
-              <span className="absolute left-0 right-0 -bottom-[1px] h-[2px] bg-[#A53AEC] rounded-full" />
-            )}
-          </button>
+                                        {pathname === "/admin/history-exam" && (
+                                            <span className="absolute left-0 right-0 -bottom-[1px] h-[2px] bg-[#A53AEC] rounded-full" />
+                                        )}
+                                    </button>
 
-          {/* TAB LỊCH SỬ THI ONLINE */}
-          <button
-            onClick={() => router.push("/admin/list-history-exam")}
-            className={`pb-3 relative transition-colors ${
-              pathname === "/admin/list-history-exam"
-                ? "text-[#A53AEC]"
-                : "text-gray-500 hover:text-[#A53AEC]"
-            }`}
-          >
-            <span className="text-base">Lịch sử thi online</span>
+                                    {/* TAB LỊCH SỬ THI ONLINE */}
+                                    <button
+                                        onClick={() => router.push("/admin/list-history-exam")}
+                                        className={`pb-3 relative transition-colors ${
+                                            pathname === "/admin/list-history-exam"
+                                                ? "text-[#A53AEC]"
+                                                : "text-gray-500 hover:text-[#A53AEC]"
+                                            }`}
+                                    >
+                                        <span className="text-base">Lịch sử thi online</span>
 
-            {pathname === "/admin/list-history-exam" && (
-              <span className="absolute left-0 right-0 -bottom-[1px] h-[2px] bg-[#A53AEC] rounded-full" />
-            )}
-          </button>
-        </>
-      );
-    })()}
-  </div>
-</div>
-<div className="flex justify-end mb-4">
-    <button
-        onClick={() => router.push("/admin/exam-offline")}
-        className="bg-purple-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-purple-700"
-    >
-        + Tạo bài thi mới
-    </button>
-</div>
+                                        {pathname === "/admin/list-history-exam" && (
+                                            <span className="absolute left-0 right-0 -bottom-[1px] h-[2px] bg-[#A53AEC] rounded-full" />
+                                        )}
+                                    </button>
+                                </>
+                            );
+                        })()}
+                    </div>
+                </div>
+                <div className="flex justify-end mb-4">
+                    <button
+                        onClick={() => router.push("/admin/exam-offline")}
+                        className="bg-purple-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-purple-700"
+                    >
+                        + Tạo bài thi mới
+                    </button>
+                </div>
 
                 {/* ========== SEARCH & FILTER TOOLBAR ========== */}
                 <div className="flex flex-wrap gap-4 mb-8 bg-white p-4 rounded-lg shadow-sm">
@@ -486,13 +494,7 @@ export default function AdminExamListPage() {
                         </div>
                     </div>
                 )}
-
             </main>
-
-            {/* ============ FOOTER ============ */}
-            <footer className="bg-[#F5F5F5] border-t border-gray-200 py-4 text-center text-gray-500 text-sm">
-                © 2025 QuizzZone. Mọi quyền được bảo lưu.
-            </footer>
         </div>
     );
 }

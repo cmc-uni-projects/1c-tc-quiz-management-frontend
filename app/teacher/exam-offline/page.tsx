@@ -191,9 +191,8 @@ export default function CreateExamPage() {
   };
 
   return (
-    <div className="min-h-screen flex bg-[#F5F5F5] text-gray-900">
-      <div className="flex-1 flex flex-col">
-        <main className="flex-1 overflow-y-auto px-10 py-8">
+    <div className="bg-[#F5F5F5] text-gray-900 flex-1 flex flex-col">
+      <main className="flex-1 overflow-y-auto px-10 py-8">
           <section className="bg-white rounded-2xl shadow p-8 mb-6">
             <h2 className="text-2xl font-semibold text-center mb-8">
               Tạo bài thi offline
@@ -327,11 +326,6 @@ export default function CreateExamPage() {
             </button>
           </div>
         </main>
-
-        <footer className="h-12 bg-white border-t border-gray-200 flex items-center justify-center text-sm text-gray-500">
-          © 2025 QuizzZone. Mọi quyền được bảo lưu.
-        </footer>
-      </div>
     </div>
   );
 }

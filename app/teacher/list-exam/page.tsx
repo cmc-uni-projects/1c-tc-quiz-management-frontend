@@ -134,16 +134,23 @@ export default function TeacherExamListPage() {
     return () => clearTimeout(timeoutId);
   }, [searchQuery, categoryId, examLevel]);
 
-  // Sắp xếp từ mới nhất → cũ nhất
-  const sortedExams = [...exams].sort(
-    (a, b) => Number(new Date(b.startTime || 0)) - Number(new Date(a.startTime || 0))
-  );
+  // Helper: exam has ended (based on endTime)
+  const isExamEnded = (exam: Exam) => {
+    if (!exam.endTime) return false;
+    const end = new Date(exam.endTime);
+    if (isNaN(end.getTime())) return false;
+    return end < new Date();
+  };
 
-  // Filter Logic
-  // Draft: status is DRAFT
+  // Sắp xếp từ mới nhất → cũ nhất, chỉ lấy các bài chưa kết thúc
+  const sortedExams = [...exams]
+    .filter((e) => !isExamEnded(e))
+    .sort(
+      (a, b) => Number(new Date(b.startTime || 0)) - Number(new Date(a.startTime || 0))
+    );
+
+  // Filter Logic trên danh sách đã lọc: chỉ các bài còn thời gian làm
   const draftExams = sortedExams.filter((x) => x.status === 'DRAFT');
-
-  // Ready: status is PUBLISHED
   const readyExams = sortedExams.filter((x) => x.status === 'PUBLISHED');
 
   const deleteExam = async (id: number) => {
@@ -481,11 +488,6 @@ export default function TeacherExamListPage() {
         )}
 
       </main>
-
-      {/* ============ FOOTER ============ */}
-      <footer className="bg-[#F5F5F5] border-t border-gray-200 py-4 text-center text-gray-500 text-sm">
-        © 2025 QuizzZone. Mọi quyền được bảo lưu.
-      </footer>
     </div>
   );
 }
