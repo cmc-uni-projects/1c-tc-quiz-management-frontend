@@ -21,9 +21,11 @@ interface Exam {
     id: number;
     name: string;
   };
-  status?: "DRAFT" | "PUBLISHED";
+  status?: "DRAFT" | "PUBLISHED" | "PRIVATE";
   durationMinutes: number;
   examLevel?: string;
+  code?: string; // New field for private exams
+  url?: string;  // New field for private exams
 }
 
 // ===== SVG ICONS =====
@@ -87,7 +89,7 @@ export default function TeacherExamListPage() {
   const pathname = usePathname();
   const [exams, setExams] = useState<Exam[]>([]);
   const [loading, setLoading] = useState(true);
-  const [openMenu, setOpenMenu] = useState<number | string | null>(null);
+  const [openMenu, setOpenMenu] = useState<number | null>(null);
   const [openShare, setOpenShare] = useState(false);
   const [shareLink, setShareLink] = useState("");
   const [activeTab, setActiveTab] = useState<"link" | "qr">("link");
@@ -100,15 +102,11 @@ export default function TeacherExamListPage() {
 
   const router = useRouter();
 
-  // Online Exams State
-  const [onlineExams, setOnlineExams] = useState<any[]>([]);
-
   // Fetch Categories
   useEffect(() => {
     fetchApi("/categories/all").then(setCategories).catch(console.error);
   }, []);
 
-  // Fetch Offline Exams
   useEffect(() => {
     const fetchExams = async () => {
       try {
@@ -121,7 +119,21 @@ export default function TeacherExamListPage() {
         // Fetch using the new search endpoint
         // Note: Backend returns Page<ExamResponseDto>, so we take .content
         const response = await fetchApi(`/exams/search?${params.toString()}`);
-        setExams(response.content || []);
+        const fetchedExams = (response.content || []).map((exam: any) => ({
+          examId: exam.examId,
+          title: exam.title,
+          startTime: exam.startTime,
+          endTime: exam.endTime,
+          questionCount: exam.questionCount,
+          examQuestions: exam.examQuestions,
+          category: exam.category,
+          status: exam.status,
+          durationMinutes: exam.durationMinutes,
+          examLevel: exam.examLevel,
+          code: exam.code, // Map code
+          url: exam.url,   // Map url
+        }));
+        setExams(fetchedExams);
       } catch (error) {
         console.error("Failed to fetch exams:", error);
         toastError("Không thể tải danh sách bài thi.");
@@ -138,20 +150,6 @@ export default function TeacherExamListPage() {
     return () => clearTimeout(timeoutId);
   }, [searchQuery, categoryId, examLevel]);
 
-  // Fetch Online Exams
-  useEffect(() => {
-    const fetchOnlineExams = async () => {
-      try {
-        const response = await fetchApi("/online-exams/my");
-        setOnlineExams(response || []);
-      } catch (error) {
-        console.error("Failed to fetch online exams:", error);
-      }
-    };
-
-    fetchOnlineExams();
-  }, []);
-
   // Helper: exam has ended (based on endTime)
   const isExamEnded = (exam: Exam) => {
     if (!exam.endTime) return false;
@@ -160,16 +158,26 @@ export default function TeacherExamListPage() {
     return end < new Date();
   };
 
-  // Sắp xếp từ mới nhất → cũ nhất, chỉ lấy các bài chưa kết thúc
+  // Helper: exam is currently ongoing (based on startTime and endTime)
+  const isExamOngoing = (exam: Exam) => {
+    if (!exam.startTime || !exam.endTime) return false;
+    const start = new Date(exam.startTime);
+    const end = new Date(exam.endTime);
+    const now = new Date();
+    if (isNaN(start.getTime()) || isNaN(end.getTime())) return false;
+    return now >= start && now <= end;
+  };
+
+  // Sắp xếp từ mới nhất → cũ nhất
   const sortedExams = [...exams]
-    .filter((e) => !isExamEnded(e))
     .sort(
       (a, b) => Number(new Date(b.startTime || 0)) - Number(new Date(a.startTime || 0))
     );
 
   // Filter Logic trên danh sách đã lọc: chỉ các bài còn thời gian làm
-  const draftExams = sortedExams.filter((x) => x.status === 'DRAFT');
-  const readyExams = sortedExams.filter((x) => x.status === 'PUBLISHED');
+  const draftExams = sortedExams.filter((x) => x.status === 'DRAFT' && !isExamEnded(x));
+  const publishedExams = sortedExams.filter((x) => x.status === 'PUBLISHED' && !isExamEnded(x));
+  const privateExams = sortedExams.filter((x) => x.status === 'PRIVATE' && !isExamEnded(x));
 
   const deleteExam = async (id: number) => {
     const result = await Swal.fire({
@@ -205,59 +213,71 @@ export default function TeacherExamListPage() {
   return (
     <div className="flex-1 flex flex-col">
       <main className="flex-1 px-10 py-8">
-        {/* TAB DANH SÁCH BÀI THI / LỊCH SỬ */}
-        <div className="flex items-center mb-8">
-          <div className="flex gap-10 font-bold border-b border-gray-200 w-full">
+        <button
+          onClick={() => router.push("/teacher/teacherhome")}
+          className="mb-6 inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+        >
+          <svg className="-ml-1 mr-2 h-5 w-5 text-gray-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+            <path fillRule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clipRule="evenodd" />
+          </svg>
+          Quay lại
+        </button>
+    {/* TAB DANH SÁCH BÀI THI / LỊCH SỬ */}
+<div className="flex items-center mb-8">
+  <div className="flex gap-10 font-bold border-b border-gray-200 w-full">
 
-            {/* Use the pathname declared at the top level */}
-            <>
-              {/* TAB BÀI THI */}
-              <button
-                onClick={() => router.push("/teacher/list-exam")}
-                className={`pb-3 relative transition-colors ${pathname === "/teacher/list-exam"
-                  ? "text-[#A53AEC]"
-                  : "text-gray-500 hover:text-[#A53AEC]"
-                  }`}
-              >
-                <span className="text-base">Bài thi</span>
+    {/* Use the pathname declared at the top level */}
+    <>
+      {/* TAB BÀI THI */}
+      <button
+        onClick={() => router.push("/teacher/list-exam")}
+        className={`pb-3 relative transition-colors ${
+          pathname === "/teacher/list-exam"
+            ? "text-[#A53AEC]"
+            : "text-gray-500 hover:text-[#A53AEC]"
+        }`}
+      >
+        <span className="text-base">Bài thi</span>
 
-                {pathname === "/teacher/list-exam" && (
-                  <span className="absolute left-0 right-0 -bottom-[1px] h-[2px] bg-[#A53AEC] rounded-full" />
-                )}
-              </button>
+        {pathname === "/teacher/list-exam" && (
+          <span className="absolute left-0 right-0 -bottom-[1px] h-[2px] bg-[#A53AEC] rounded-full" />
+        )}
+      </button>
 
-              {/* TAB LỊCH SỬ THI OFFLINE */}
-              <button
-                onClick={() => router.push("/teacher/history-exam")}
-                className={`pb-3 relative transition-colors ${pathname === "/teacher/history-exam"
-                  ? "text-[#A53AEC]"
-                  : "text-gray-500 hover:text-[#A53AEC]"
-                  }`}
-              >
-                <span className="text-base">Lịch sử thi offline</span>
+      {/* TAB LỊCH SỬ THI OFFLINE */}
+      <button
+        onClick={() => router.push("/teacher/history-exam")}
+        className={`pb-3 relative transition-colors ${
+          pathname === "/teacher/history-exam"
+            ? "text-[#A53AEC]"
+            : "text-gray-500 hover:text-[#A53AEC]"
+        }`}
+      >
+        <span className="text-base">Lịch sử thi offline</span>
 
-                {pathname === "/teacher/history-exam" && (
-                  <span className="absolute left-0 right-0 -bottom-[1px] h-[2px] bg-[#A53AEC] rounded-full" />
-                )}
-              </button>
+        {pathname === "/teacher/history-exam" && (
+          <span className="absolute left-0 right-0 -bottom-[1px] h-[2px] bg-[#A53AEC] rounded-full" />
+        )}
+      </button>
 
-              {/* TAB LỊCH SỬ THI ONLINE */}
-              <button
-                onClick={() => router.push("/teacher/history-exam-online")}
-                className={`pb-3 relative transition-colors ${pathname === "/teacher/history-exam-online"
-                  ? "text-[#A53AEC]"
-                  : "text-gray-500 hover:text-[#A53AEC]"
-                  }`}
-              >
-                <span className="text-base">Lịch sử thi online</span>
+      {/* TAB LỊCH SỬ THI ONLINE */}
+      <button
+        onClick={() => router.push("/teacher/history-exam-online")}
+        className={`pb-3 relative transition-colors ${
+          pathname === "/teacher/history-exam-online"
+            ? "text-[#A53AEC]"
+            : "text-gray-500 hover:text-[#A53AEC]"
+        }`}
+      >
+        <span className="text-base">Lịch sử thi online</span>
 
-                {pathname === "/teacher/history-exam-online" && (
-                  <span className="absolute left-0 right-0 -bottom-[1px] h-[2px] bg-[#A53AEC] rounded-full" />
-                )}
-              </button>
-            </>
-          </div>
-        </div>
+        {pathname === "/teacher/history-exam-online" && (
+          <span className="absolute left-0 right-0 -bottom-[1px] h-[2px] bg-[#A53AEC] rounded-full" />
+        )}
+      </button>
+    </>
+  </div>
+</div>
 
 
 
@@ -294,9 +314,8 @@ export default function TeacherExamListPage() {
           />
         </div>
 
-        {/* ========== ĐANG TẠO (Draft - No Questions) ========== */}
-        <h2 className="text-xl font-semibold mb-4">Đang tạo</h2>
-
+        {/* ========== ĐANG TẠO (Draft) ========== */}
+        <h2 className="text-xl font-semibold mb-4">Bài thi nháp</h2>
         {draftExams.length === 0 ? (
           <p className="text-gray-500 mb-8">Không có bài thi nháp.</p>
         ) : (
@@ -306,18 +325,14 @@ export default function TeacherExamListPage() {
                 key={exam.examId}
                 className="w-64 bg-white rounded-lg shadow p-4 relative border border-gray-100 border-l-4 border-l-yellow-400"
               >
+                {isExamOngoing(exam) && (
+                  <span className="absolute top-0 right-0 bg-blue-500 text-white text-xs px-2 py-1 rounded-bl-lg">Đang diễn ra</span>
+                )}
                 <p className="font-semibold text-lg mb-2 truncate" title={exam.title}>{exam.title}</p>
                 <div className="text-sm space-y-1 text-gray-600">
-                  <p className="flex items-center gap-2">
-                    <ClockIcon /> Bắt đầu: {exam.startTime ? new Date(exam.startTime).toLocaleString('vi-VN', { hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit', year: 'numeric' }) : 'N/A'}
-                  </p>
-                  <p className="flex items-center gap-2">
-                    <ClockIcon /> Kết thúc: {exam.endTime ? new Date(exam.endTime).toLocaleString('vi-VN', { hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit', year: 'numeric' }) : 'N/A'}
-                  </p>
                   <p>⏳ Thời gian: {exam.durationMinutes} phút</p>
                   <p className="text-yellow-600 font-medium">⚠ Bản nháp</p>
                 </div>
-
                 <div className="flex items-center justify-between mt-3">
                   <button
                     onClick={() => router.push(`/teacher/update-exam/${exam.examId}`)}
@@ -338,73 +353,38 @@ export default function TeacherExamListPage() {
           </div>
         )}
 
-        {/* ========== DANH SÁCH BÀI THI (Ready - Has Questions) ========== */}
-        <h2 className="text-xl font-semibold mb-4">
-          Danh sách bài thi
-        </h2>
-
-        {readyExams.length === 0 ? (
-          <p className="text-gray-500">Chưa có bài thi nào.</p>
+        {/* ========== BÀI THI CÔNG KHAI ========== */}
+        <h2 className="text-xl font-semibold mb-4">Bài thi công khai</h2>
+        {publishedExams.length === 0 ? (
+          <p className="text-gray-500 mb-8">Chưa có bài thi công khai.</p>
         ) : (
-          <div className="flex flex-wrap gap-6">
-            {readyExams.map((exam) => (
+          <div className="flex flex-wrap gap-6 mb-8">
+            {publishedExams.map((exam) => (
               <div
                 key={exam.examId}
-                className="w-64 bg-white rounded-lg shadow p-4 relative border border-gray-100"
+                className="w-64 bg-white rounded-lg shadow p-4 relative border border-gray-100 border-l-4 border-l-green-500"
               >
+                {isExamOngoing(exam) && (
+                  <span className="absolute top-0 right-0 bg-blue-500 text-white text-xs px-2 py-1 rounded-bl-lg">Đang diễn ra</span>
+                )}
                 <p className="font-semibold text-lg mb-2 truncate" title={exam.title}>{exam.title}</p>
-
                 <div className="text-sm space-y-1">
-                  <p className="flex items-center gap-2">
-                    <ClockIcon /> {exam.startTime ? new Date(exam.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'N/A'}
-                  </p>
-                  <p className="flex items-center gap-2">
-                    <CalendarIcon /> {formatDate(exam.startTime)}
-                  </p>
                   <p>⏳ {exam.durationMinutes} Phút</p>
                   <p>📘 Câu hỏi: {exam.questionCount}</p>
-                  <p>🏷 Danh mục: {exam.category?.name || "N/A"}</p>
                   <p>📊 Độ khó: <span className="font-medium">{getDifficultyLabel(exam.examLevel)}</span></p>
                 </div>
-                {/* Trạng thái + nút menu */}
                 <div className="flex items-center justify-between mt-3">
-                  <span className="flex-1 text-center text-green-600 font-medium">
-                    Sẵn sàng
-                  </span>
-                  <button
-                    onClick={() =>
-                      setOpenMenu(openMenu === exam.examId ? null : exam.examId)
-                    }
-                    className="ml-2 p-1 rounded hover:bg-gray-100"
-                  >
-                    <MoreIcon />
-                  </button>
+                  <span className="flex-1 text-center text-green-600 font-medium">Công khai</span>
+                  <button onClick={() => setOpenMenu(openMenu === exam.examId ? null : exam.examId)} className="ml-2 p-1 rounded hover:bg-gray-100"><MoreIcon /></button>
                 </div>
-
-                {/* Dropdown menu */}
                 {openMenu === exam.examId && (
                   <div className="absolute right-0 top-8 bg-white shadow-lg border rounded-md w-32 py-2 z-20">
-                    <button
-                      onClick={() => router.push(`/teacher/detail-exam/${exam.examId}`)}
-                      className="block w-full text-left px-4 py-2 hover:bg-gray-100"
-                    >
-                      Chi tiết
-                    </button>
-                    <button
-                      onClick={() => deleteExam(exam.examId)}
-                      className="block w-full text-left px-4 py-2 hover:bg-gray-100 text-red-600"
-                    >
-                      Xóa bài thi
-                    </button>
-                    <button
-                      onClick={() => router.push(`/teacher/update-exam/${exam.examId}`)} // Assuming update route
-                      className="block w-full text-left px-4 py-2 hover:bg-gray-100"
-                    >
-                      Cập nhật
-                    </button>
+                    <button onClick={() => router.push(`/teacher/detail-exam/${exam.examId}`)} className="block w-full text-left px-4 py-2 hover:bg-gray-100">Chi tiết</button>
+                    <button onClick={() => router.push(`/teacher/update-exam/${exam.examId}`)} className="block w-full text-left px-4 py-2 hover:bg-gray-100">Cập nhật</button>
+                    <button onClick={() => deleteExam(exam.examId)} className="block w-full text-left px-4 py-2 hover:bg-gray-100 text-red-600">Xóa</button>
                     <button
                       onClick={() => {
-                        setShareLink(`${window.location.origin}/teacher/exam/${exam.examId}`);
+                        setShareLink(`${window.location.origin}/student/startexam?examId=${exam.examId}`);
                         setOpenShare(true);
                         setOpenMenu(null);
                       }}
@@ -419,258 +399,52 @@ export default function TeacherExamListPage() {
           </div>
         )}
 
-        {/* ONLINE EXAMS SECTION */}
-        <div className="mt-12">
-          <h2 className="text-xl font-semibold mb-6">Bài thi Online ({onlineExams.length})</h2>
-
-          {onlineExams.length === 0 ? (
-            <div className="text-center py-12 text-gray-500">
-              Chưa có bài thi online nào
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {onlineExams.map((exam: any) => (
-                <div
-                  key={exam.id}
-                  className={`bg-white rounded-2xl shadow-md p-6 hover:shadow-lg transition-shadow cursor-pointer border-2 ${exam.status === 'DRAFT' ? 'border-yellow-400' :
-                    exam.status === 'WAITING' ? 'border-blue-400' :
-                      exam.status === 'IN_PROGRESS' ? 'border-green-400' :
-                        'border-gray-200'
-                    }`}
-                >
-                  {/* Header với 3-dot menu */}
-                  <div className="flex justify-between items-start mb-3">
-                    <h3 className="text-lg font-semibold line-clamp-2 pr-2">{exam.name}</h3>
-                    <div className="flex items-center gap-2 flex-shrink-0">
-                      <span className={`px-3 py-1 rounded-full text-xs font-medium whitespace-nowrap ${exam.status === 'DRAFT' ? 'bg-yellow-100 text-yellow-700' :
-                        exam.status === 'WAITING' ? 'bg-blue-100 text-blue-700' :
-                          exam.status === 'IN_PROGRESS' ? 'bg-green-100 text-green-700' :
-                            'bg-gray-100 text-gray-700'
-                        }`}>
-                        {exam.status === 'DRAFT' ? 'Nháp' :
-                          exam.status === 'WAITING' ? 'Chờ' :
-                            exam.status === 'IN_PROGRESS' ? 'Đang diễn ra' :
-                              'Kết thúc'}
-                      </span>
-
-                      {/* 3-dot menu cho DRAFT */}
-                      {exam.status === 'DRAFT' && (
-                        <>
-                          <div className="relative">
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setOpenMenu(openMenu === `online-${exam.id}` ? null : `online-${exam.id}`);
-                              }}
-                              className="p-1 hover:bg-gray-100 rounded text-lg leading-none"
-                            >
-                              ⋮
-                            </button>
-                            {openMenu === `online-${exam.id}` && (
-                              <>
-                                <div
-                                  className="fixed inset-0 z-10"
-                                  onClick={() => setOpenMenu(null)}
-                                />
-                                <div className="absolute right-0 top-8 bg-white shadow-lg rounded-lg py-2 w-40 z-20 border">
-                                  <button
-                                    onClick={() => {
-                                      router.push(`/teacher/exam-online/update/${exam.id}`);
-                                      setOpenMenu(null);
-                                    }}
-                                    className="block w-full text-left px-4 py-2 hover:bg-gray-100"
-                                  >
-                                    Cập nhật
-                                  </button>
-                                  <button
-                                    onClick={async () => {
-                                      setOpenMenu(null);
-                                      if (confirm(`Bạn có chắc muốn xóa bài thi "${exam.name}"?`)) {
-                                        try {
-                                          await fetchApi(`/online-exams/${exam.id}`, { method: 'DELETE' });
-                                          toastSuccess('Đã xóa bài thi');
-                                          const response = await fetchApi("/online-exams/my");
-                                          setOnlineExams(response || []);
-                                        } catch (error: any) {
-                                          toastError(error.message || 'Không thể xóa bài thi');
-                                        }
-                                      }
-                                    }}
-                                    className="block w-full text-left px-4 py-2 hover:bg-gray-100 text-red-600"
-                                  >
-                                    Xóa bài thi
-                                  </button>
-                                </div>
-                              </>
-                            )}
-                          </div>
-                          <button
-                            onClick={async () => {
-                              if (confirm(`Bạn có chắc muốn mở phòng chờ cho bài thi "${exam.name}"?`)) {
-                                try {
-                                  await fetchApi(`/online-exams/${exam.id}/start`, { method: "POST" });
-                                  toastSuccess("Đã mở phòng chờ!");
-                                  router.push(`/teacher/waiting-room/${exam.accessCode}`);
-                                } catch (error: any) {
-                                  toastError(error.message || "Không thể mở phòng chờ");
-                                }
-                              }
-                            }}
-                            className="px-3 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm font-medium"
-                            title="Mở phòng chờ"
-                          >
-                            ▶
-                          </button>
-                        </>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Info */}
-                  <div className="space-y-2 text-sm mb-4">
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">Độ khó:</span>
-                      <span className="font-medium">{exam.level}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">Số câu hỏi:</span>
-                      <span className="font-medium">{exam.actualQuestionCount || 0}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">Thời gian:</span>
-                      <span className="font-medium">{exam.durationMinutes} phút</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">Mã truy cập:</span>
-                      <span className="font-mono text-purple-600 font-bold">{exam.accessCode}</span>
-                    </div>
-                  </div>
-
-                  {/* Actions */}
-                  <div className="flex gap-2">
-                    {exam.status === 'DRAFT' && (
-                      <button
-                        onClick={() => router.push(`/teacher/exam-online/edit/${exam.id}`)}
-                        className="flex-1 bg-purple-600 text-white py-2 rounded-lg hover:bg-purple-700 text-sm"
-                      >
-                        Thêm câu hỏi
-                      </button>
-                    )}
-                    {exam.status === 'WAITING' && (
-                      <button
-                        onClick={() => router.push(`/teacher/waiting-room/${exam.accessCode}`)}
-                        className="flex-1 bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 text-sm"
-                      >
-                        Xem phòng chờ
-                      </button>
-                    )}
-                    {exam.status === 'IN_PROGRESS' && (
-                      <button
-                        onClick={() => router.push(`/teacher/monitor-exam/${exam.id}`)}
-                        className="flex-1 bg-green-600 text-white py-2 rounded-lg hover:bg-green-700 text-sm"
-                      >
-                        Giám sát
-                      </button>
-                    )}
-                    {exam.status === 'FINISHED' && (
-                      <button
-                        onClick={() => router.push(`/teacher/exam-result/${exam.id}`)}
-                        className="flex-1 bg-gray-600 text-white py-2 rounded-lg hover:bg-gray-700 text-sm"
-                      >
-                        Xem kết quả
-                      </button>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-
-        {openShare && (
-          <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-            <div className="bg-white w-[520px] rounded-xl p-6 relative">
-
-              {/* Nút đóng */}
-              <button
-                onClick={() => setOpenShare(false)}
-                className="absolute top-3 right-4 text-gray-500 hover:text-black text-lg"
+        {/* ========== BÀI THI RIÊNG TƯ ========== */}
+        <h2 className="text-xl font-semibold mb-4">Bài thi riêng tư</h2>
+        {privateExams.length === 0 ? (
+          <p className="text-gray-500 mb-8">Chưa có bài thi riêng tư.</p>
+        ) : (
+          <div className="flex flex-wrap gap-6 mb-8">
+            {privateExams.map((exam) => (
+              <div
+                key={exam.examId}
+                className="w-64 bg-white rounded-lg shadow p-4 relative border border-gray-100 border-l-4 border-l-purple-500"
               >
-                x
-              </button>
-
-              {/* Tiêu đề */}
-              <h2 className="text-xl font-semibold text-center mb-4">
-                Chia sẻ
-              </h2>
-
-              {/* Tabs */}
-              <div className="flex border-b mb-4">
-                <button
-                  onClick={() => setActiveTab("link")}
-                  className={`flex-1 py-2 ${activeTab === "link"
-                    ? "border-b-2 border-black font-semibold"
-                    : "text-gray-400"
-                    }`}
-                >
-                  Link
-                </button>
-
-                <button
-                  onClick={() => setActiveTab("qr")}
-                  className={`flex-1 py-2 ${activeTab === "qr"
-                    ? "border-b-2 border-black font-semibold"
-                    : "text-gray-400"
-                    }`}
-                >
-                  Mã QR
-                </button>
-              </div>
-
-              {/* TAB LINK */}
-              {activeTab === "link" && (
-                <div className="space-y-3 mt-3">
-                  <p className="text-sm">Sao chép link</p>
-
-                  <div className="flex gap-2">
-                    <input
-                      value={shareLink}
-                      readOnly
-                      className="flex-1 border px-3 py-2 rounded-md text-sm"
-                    />
-
+                {isExamOngoing(exam) && (
+                  <span className="absolute top-0 right-0 bg-blue-500 text-white text-xs px-2 py-1 rounded-bl-lg">Đang diễn ra</span>
+                )}
+                <p className="font-semibold text-lg mb-2 truncate" title={exam.title}>{exam.title}</p>
+                <div className="text-sm space-y-1">
+                  <p>⏳ {exam.durationMinutes} Phút</p>
+                  <p>📘 Câu hỏi: {exam.questionCount}</p>
+                  <p>📊 Độ khó: <span className="font-medium">{getDifficultyLabel(exam.examLevel)}</span></p>
+                  {exam.code && <p>🔑 Mã: <span className="font-mono text-purple-700">{exam.code}</span></p>}
+                </div>
+                <div className="flex items-center justify-between mt-3">
+                  <span className="flex-1 text-center text-purple-600 font-medium">Riêng tư</span>
+                  <button onClick={() => setOpenMenu(openMenu === exam.examId ? null : exam.examId)} className="ml-2 p-1 rounded hover:bg-gray-100"><MoreIcon /></button>
+                </div>
+                {openMenu === exam.examId && (
+                  <div className="absolute right-0 top-8 bg-white shadow-lg border rounded-md w-32 py-2 z-20">
+                    <button onClick={() => router.push(`/teacher/detail-exam/${exam.examId}`)} className="block w-full text-left px-4 py-2 hover:bg-gray-100">Chi tiết</button>
+                    <button onClick={() => router.push(`/teacher/update-exam/${exam.examId}`)} className="block w-full text-left px-4 py-2 hover:bg-gray-100">Cập nhật</button>
+                    <button onClick={() => deleteExam(exam.examId)} className="block w-full text-left px-4 py-2 hover:bg-gray-100 text-red-600">Xóa</button>
                     <button
                       onClick={() => {
-                        navigator.clipboard.writeText(shareLink);
-                        toastSuccess("Đã sao chép liên kết!");
+                        setShareLink(`${window.location.origin}/student/startexam?examId=${exam.examId}`);
+                        setOpenShare(true);
+                        setOpenMenu(null);
                       }}
-                      className="bg-[#A53AEC] text-white px-4 py-2 rounded-md"
+                      className="block w-full text-left px-4 py-2 hover:bg-gray-100"
                     >
-                      Sao chép
+                      Chia sẻ
                     </button>
                   </div>
-                </div>
-              )}
-
-              {/* TAB QR */}
-              {activeTab === "qr" && (
-                <div className="flex flex-col items-center gap-4 mt-4">
-
-                  {/* Chưa dùng dữ liệu cứng - chỉ khung */}
-                  <div className="w-44 h-44 border-2 border-dashed text-gray-400 flex items-center justify-center">
-                    QR CODE
-                  </div>
-
-                  <button className="bg-[#A53AEC] text-white px-4 py-2 rounded-md">
-                    Tải xuống
-                  </button>
-
-                </div>
-              )}
-            </div>
+                )}
+              </div>
+            ))}
           </div>
         )}
-
       </main>
     </div>
   );
