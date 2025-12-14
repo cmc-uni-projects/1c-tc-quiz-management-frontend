@@ -19,9 +19,9 @@ export default function CreateOnlineExamPage() {
   const [name, setName] = useState("");
   const [categoryId, setCategoryId] = useState("");
   const [level, setLevel] = useState("");
-  const [durationMinutes, setDurationMinutes] = useState<number | "">(60);
+  const [durationMinutes, setDurationMinutes] = useState<number | "">(0);
   const [passingScore, setPassingScore] = useState<number | "">(5);
-  const [maxParticipants, setMaxParticipants] = useState<number | "">(30);
+  const [maxParticipants, setMaxParticipants] = useState<number | "">(0);
 
   useEffect(() => {
     fetchApi("/categories/all")
@@ -89,127 +89,144 @@ export default function CreateOnlineExamPage() {
   };
 
   return (
-    <div className="flex-1 px-10 py-8">
-      <div className="max-w-3xl mx-auto bg-white rounded-2xl shadow p-8">
-        <h1 className="text-2xl font-semibold text-center mb-8">
-          Tạo bài thi Online
-        </h1>
+    <div className="bg-[#F5F5F5] text-gray-900 flex-1 flex flex-col">
+      <main className="flex-1 overflow-y-auto px-10 py-8">
 
-        <form onSubmit={handleSubmit} className="space-y-6">
-          {/* Tên bài thi */}
-          <div>
-            <label className="block text-sm font-medium mb-2">
-              Tên bài thi <span className="text-red-500">*</span>
-            </label>
-            <input
-              type="text"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              className="w-full border border-gray-300 rounded-lg px-4 py-2"
-              placeholder="Nhập tên bài thi..."
-            />
-          </div>
-
-          {/* Row 1: Category + Level */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* Danh mục */}
-            <div>
-              <label className="block text-sm font-medium mb-2">
-                Danh mục <span className="text-red-500">*</span>
-              </label>
-              <select
-                value={categoryId}
-                onChange={(e) => setCategoryId(e.target.value)}
-                className="w-full border border-gray-300 rounded-lg px-4 py-2 bg-white"
-              >
-                <option value="">Chọn danh mục</option>
-                {categories.map((cat) => (
-                  <option key={cat.id} value={cat.id}>
-                    {cat.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            {/* Độ khó */}
-            <div>
-              <label className="block text-sm font-medium mb-2">
-                Độ khó <span className="text-red-500">*</span>
-              </label>
-              <select
-                value={level}
-                onChange={(e) => setLevel(e.target.value)}
-                className="w-full border border-gray-300 rounded-lg px-4 py-2 bg-white"
-              >
-                <option value="">Chọn độ khó</option>
-                <option value="EASY">Dễ</option>
-                <option value="MEDIUM">Trung bình</option>
-                <option value="HARD">Khó</option>
-              </select>
-            </div>
-          </div>
-
-          {/* Thời gian làm bài */}
-          <div>
-            <label className="block text-sm font-medium mb-2">
-              Thời gian làm bài (phút) <span className="text-red-500">*</span>
-            </label>
-            <input
-              type="number"
-              min="1"
-              value={durationMinutes}
-              onChange={(e) =>
-                setDurationMinutes(e.target.value === "" ? "" : Number(e.target.value))
-              }
-              className="w-full border border-gray-300 rounded-lg px-4 py-2"
-              placeholder="60"
-            />
-          </div>
-
-          {/* Số người tham gia */}
-          <div>
-            <label className="block text-sm font-medium mb-2">
-              Số người tham gia tối đa <span className="text-red-500">*</span>
-            </label>
-            <input
-              type="number"
-              min="1"
-              value={maxParticipants}
-              onChange={(e) =>
-                setMaxParticipants(e.target.value === "" ? "" : Number(e.target.value))
-              }
-              className="w-full border border-gray-300 rounded-lg px-4 py-2"
-              placeholder="30"
-            />
-          </div>
-
-          {/* Buttons */}
-          <div className="flex justify-end gap-4 pt-4">
-            <button
-              type="button"
-              onClick={() => router.back()}
-              className="px-6 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
-              disabled={loading}
-            >
-              Hủy
+        {/* Tabs: Offline / Online */}
+        <div className="flex justify-start gap-6 mb-2 border-b border-gray-300">
+          <a href="/teacher/exam-offline">
+            <button className="pb-2 font-medium text-gray-500 hover:text-black hover:border-b-2 hover:border-gray-200">
+              Bài thi Offline
             </button>
-            <button
-              type="submit"
-              disabled={loading}
-              className="px-6 py-2 bg-[#A53AEC] text-white rounded-lg hover:bg-[#8B2FC9] disabled:opacity-50"
-            >
-              {loading ? "Đang tạo..." : "Tạo bài thi"}
+          </a>
+          <a href="/teacher/exam-online">
+            <button className="pb-2 font-medium border-b-2 border-black">
+              Bài thi Online
             </button>
-          </div>
-        </form>
-
-        <div className="mt-8 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-          <p className="text-sm text-blue-800">
-            <strong>Lưu ý:</strong> Sau khi tạo bài thi, bạn sẽ được chuyển đến trang thêm câu hỏi.
-            Bài thi sẽ ở trạng thái <strong>DRAFT</strong> cho đến khi bạn thêm câu hỏi và sẵn sàng bắt đầu.
-          </p>
+          </a>
         </div>
-      </div>
+
+        <section className="bg-white rounded-2xl shadow p-8">
+          <h1 className="text-2xl font-semibold text-center mb-8">
+            Tạo bài thi Online
+          </h1>
+
+          <form onSubmit={handleSubmit} className="space-y-6">
+            {/* Tên bài thi */}
+            <div>
+              <label className="block text-sm font-medium mb-2">
+                Tên bài thi <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="text"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                className="w-full border border-gray-300 rounded-lg px-4 py-2"
+                placeholder="Nhập tên bài thi..."
+              />
+            </div>
+
+            {/* Row 1: Category + Level */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Danh mục */}
+              <div>
+                <label className="block text-sm font-medium mb-2">
+                  Danh mục <span className="text-red-500">*</span>
+                </label>
+                <select
+                  value={categoryId}
+                  onChange={(e) => setCategoryId(e.target.value)}
+                  className="w-full border border-gray-300 rounded-lg px-4 py-2 bg-white"
+                >
+                  <option value="">Chọn danh mục</option>
+                  {categories.map((cat) => (
+                    <option key={cat.id} value={cat.id}>
+                      {cat.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Độ khó */}
+              <div>
+                <label className="block text-sm font-medium mb-2">
+                  Độ khó <span className="text-red-500">*</span>
+                </label>
+                <select
+                  value={level}
+                  onChange={(e) => setLevel(e.target.value)}
+                  className="w-full border border-gray-300 rounded-lg px-4 py-2 bg-white"
+                >
+                  <option value="">Chọn độ khó</option>
+                  <option value="EASY">Dễ</option>
+                  <option value="MEDIUM">Trung bình</option>
+                  <option value="HARD">Khó</option>
+                </select>
+              </div>
+            </div>
+
+            {/* Thời gian làm bài */}
+            <div>
+              <label className="block text-sm font-medium mb-2">
+                Thời gian làm bài (phút) <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="number"
+                min="1"
+                value={durationMinutes}
+                onChange={(e) =>
+                  setDurationMinutes(e.target.value === "" ? "" : Number(e.target.value))
+                }
+                className="w-full border border-gray-300 rounded-lg px-4 py-2"
+                placeholder="60"
+              />
+            </div>
+
+            {/* Số người tham gia */}
+            <div>
+              <label className="block text-sm font-medium mb-2">
+                Số người tham gia tối đa <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="number"
+                min="1"
+                value={maxParticipants}
+                onChange={(e) =>
+                  setMaxParticipants(e.target.value === "" ? "" : Number(e.target.value))
+                }
+                className="w-full border border-gray-300 rounded-lg px-4 py-2"
+                placeholder="30"
+              />
+            </div>
+
+            {/* Buttons */}
+            <div className="flex justify-end gap-4 pt-4">
+              <button
+                type="button"
+                onClick={() => router.back()}
+                className="px-6 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
+                disabled={loading}
+              >
+                Hủy
+              </button>
+              <button
+                type="submit"
+                disabled={loading}
+                className="px-6 py-2 bg-[#A53AEC] text-white rounded-lg hover:bg-[#8B2FC9] disabled:opacity-50"
+              >
+                {loading ? "Đang tạo..." : "Tạo bài thi"}
+              </button>
+            </div>
+          </form>
+
+          <div className="mt-8 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+            <p className="text-sm text-blue-800">
+              <strong>Lưu ý:</strong> Sau khi tạo bài thi, bạn sẽ được chuyển đến trang thêm câu hỏi.
+              Bài thi sẽ ở trạng thái <strong>DRAFT</strong> cho đến khi bạn thêm câu hỏi và sẵn sàng bắt đầu.
+            </p>
+          </div>
+        </section>
+      </main>
     </div>
   );
 }
