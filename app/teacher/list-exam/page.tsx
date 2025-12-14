@@ -87,7 +87,7 @@ export default function TeacherExamListPage() {
   const pathname = usePathname();
   const [exams, setExams] = useState<Exam[]>([]);
   const [loading, setLoading] = useState(true);
-  const [openMenu, setOpenMenu] = useState<number | null>(null);
+  const [openMenu, setOpenMenu] = useState<number | string | null>(null);
   const [openShare, setOpenShare] = useState(false);
   const [shareLink, setShareLink] = useState("");
   const [activeTab, setActiveTab] = useState<"link" | "qr">("link");
@@ -100,11 +100,15 @@ export default function TeacherExamListPage() {
 
   const router = useRouter();
 
+  // Online Exams State
+  const [onlineExams, setOnlineExams] = useState<any[]>([]);
+
   // Fetch Categories
   useEffect(() => {
     fetchApi("/categories/all").then(setCategories).catch(console.error);
   }, []);
 
+  // Fetch Offline Exams
   useEffect(() => {
     const fetchExams = async () => {
       try {
@@ -133,6 +137,20 @@ export default function TeacherExamListPage() {
 
     return () => clearTimeout(timeoutId);
   }, [searchQuery, categoryId, examLevel]);
+
+  // Fetch Online Exams
+  useEffect(() => {
+    const fetchOnlineExams = async () => {
+      try {
+        const response = await fetchApi("/online-exams/my");
+        setOnlineExams(response || []);
+      } catch (error) {
+        console.error("Failed to fetch online exams:", error);
+      }
+    };
+
+    fetchOnlineExams();
+  }, []);
 
   // Helper: exam has ended (based on endTime)
   const isExamEnded = (exam: Exam) => {
@@ -187,62 +205,59 @@ export default function TeacherExamListPage() {
   return (
     <div className="flex-1 flex flex-col">
       <main className="flex-1 px-10 py-8">
-    {/* TAB DANH SÁCH BÀI THI / LỊCH SỬ */}
-<div className="flex items-center mb-8">
-  <div className="flex gap-10 font-bold border-b border-gray-200 w-full">
+        {/* TAB DANH SÁCH BÀI THI / LỊCH SỬ */}
+        <div className="flex items-center mb-8">
+          <div className="flex gap-10 font-bold border-b border-gray-200 w-full">
 
-    {/* Use the pathname declared at the top level */}
-    <>
-      {/* TAB BÀI THI */}
-      <button
-        onClick={() => router.push("/teacher/list-exam")}
-        className={`pb-3 relative transition-colors ${
-          pathname === "/teacher/list-exam"
-            ? "text-[#A53AEC]"
-            : "text-gray-500 hover:text-[#A53AEC]"
-        }`}
-      >
-        <span className="text-base">Bài thi</span>
+            {/* Use the pathname declared at the top level */}
+            <>
+              {/* TAB BÀI THI */}
+              <button
+                onClick={() => router.push("/teacher/list-exam")}
+                className={`pb-3 relative transition-colors ${pathname === "/teacher/list-exam"
+                  ? "text-[#A53AEC]"
+                  : "text-gray-500 hover:text-[#A53AEC]"
+                  }`}
+              >
+                <span className="text-base">Bài thi</span>
 
-        {pathname === "/teacher/list-exam" && (
-          <span className="absolute left-0 right-0 -bottom-[1px] h-[2px] bg-[#A53AEC] rounded-full" />
-        )}
-      </button>
+                {pathname === "/teacher/list-exam" && (
+                  <span className="absolute left-0 right-0 -bottom-[1px] h-[2px] bg-[#A53AEC] rounded-full" />
+                )}
+              </button>
 
-      {/* TAB LỊCH SỬ THI OFFLINE */}
-      <button
-        onClick={() => router.push("/teacher/history-exam")}
-        className={`pb-3 relative transition-colors ${
-          pathname === "/teacher/history-exam"
-            ? "text-[#A53AEC]"
-            : "text-gray-500 hover:text-[#A53AEC]"
-        }`}
-      >
-        <span className="text-base">Lịch sử thi offline</span>
+              {/* TAB LỊCH SỬ THI OFFLINE */}
+              <button
+                onClick={() => router.push("/teacher/history-exam")}
+                className={`pb-3 relative transition-colors ${pathname === "/teacher/history-exam"
+                  ? "text-[#A53AEC]"
+                  : "text-gray-500 hover:text-[#A53AEC]"
+                  }`}
+              >
+                <span className="text-base">Lịch sử thi offline</span>
 
-        {pathname === "/teacher/history-exam" && (
-          <span className="absolute left-0 right-0 -bottom-[1px] h-[2px] bg-[#A53AEC] rounded-full" />
-        )}
-      </button>
+                {pathname === "/teacher/history-exam" && (
+                  <span className="absolute left-0 right-0 -bottom-[1px] h-[2px] bg-[#A53AEC] rounded-full" />
+                )}
+              </button>
 
-      {/* TAB LỊCH SỬ THI ONLINE */}
-      <button
-        onClick={() => router.push("/teacher/history-exam-online")}
-        className={`pb-3 relative transition-colors ${
-          pathname === "/teacher/history-exam-online"
-            ? "text-[#A53AEC]"
-            : "text-gray-500 hover:text-[#A53AEC]"
-        }`}
-      >
-        <span className="text-base">Lịch sử thi online</span>
+              {/* TAB LỊCH SỬ THI ONLINE */}
+              <button
+                onClick={() => router.push("/teacher/history-exam-online")}
+                className={`pb-3 relative transition-colors ${pathname === "/teacher/history-exam-online"
+                  ? "text-[#A53AEC]"
+                  : "text-gray-500 hover:text-[#A53AEC]"
+                  }`}
+              >
+                <span className="text-base">Lịch sử thi online</span>
 
-        {pathname === "/teacher/history-exam-online" && (
-          <span className="absolute left-0 right-0 -bottom-[1px] h-[2px] bg-[#A53AEC] rounded-full" />
-        )}
-      </button>
-    </>
-  </div>
-</div>
+                {pathname === "/teacher/history-exam-online" && (
+                  <span className="absolute left-0 right-0 -bottom-[1px] h-[2px] bg-[#A53AEC] rounded-full" />
+                )}
+              </button>
+            </>
+          </div>
+        </div>
 
 
 
@@ -403,6 +418,175 @@ export default function TeacherExamListPage() {
             ))}
           </div>
         )}
+
+        {/* ONLINE EXAMS SECTION */}
+        <div className="mt-12">
+          <h2 className="text-xl font-semibold mb-6">Bài thi Online ({onlineExams.length})</h2>
+
+          {onlineExams.length === 0 ? (
+            <div className="text-center py-12 text-gray-500">
+              Chưa có bài thi online nào
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {onlineExams.map((exam: any) => (
+                <div
+                  key={exam.id}
+                  className={`bg-white rounded-2xl shadow-md p-6 hover:shadow-lg transition-shadow cursor-pointer border-2 ${exam.status === 'DRAFT' ? 'border-yellow-400' :
+                    exam.status === 'WAITING' ? 'border-blue-400' :
+                      exam.status === 'IN_PROGRESS' ? 'border-green-400' :
+                        'border-gray-200'
+                    }`}
+                >
+                  {/* Header với 3-dot menu */}
+                  <div className="flex justify-between items-start mb-3">
+                    <h3 className="text-lg font-semibold line-clamp-2 pr-2">{exam.name}</h3>
+                    <div className="flex items-center gap-2 flex-shrink-0">
+                      <span className={`px-3 py-1 rounded-full text-xs font-medium whitespace-nowrap ${exam.status === 'DRAFT' ? 'bg-yellow-100 text-yellow-700' :
+                        exam.status === 'WAITING' ? 'bg-blue-100 text-blue-700' :
+                          exam.status === 'IN_PROGRESS' ? 'bg-green-100 text-green-700' :
+                            'bg-gray-100 text-gray-700'
+                        }`}>
+                        {exam.status === 'DRAFT' ? 'Nháp' :
+                          exam.status === 'WAITING' ? 'Chờ' :
+                            exam.status === 'IN_PROGRESS' ? 'Đang diễn ra' :
+                              'Kết thúc'}
+                      </span>
+
+                      {/* 3-dot menu cho DRAFT */}
+                      {exam.status === 'DRAFT' && (
+                        <>
+                          <div className="relative">
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setOpenMenu(openMenu === `online-${exam.id}` ? null : `online-${exam.id}`);
+                              }}
+                              className="p-1 hover:bg-gray-100 rounded text-lg leading-none"
+                            >
+                              ⋮
+                            </button>
+                            {openMenu === `online-${exam.id}` && (
+                              <>
+                                <div
+                                  className="fixed inset-0 z-10"
+                                  onClick={() => setOpenMenu(null)}
+                                />
+                                <div className="absolute right-0 top-8 bg-white shadow-lg rounded-lg py-2 w-40 z-20 border">
+                                  <button
+                                    onClick={() => {
+                                      router.push(`/teacher/exam-online/update/${exam.id}`);
+                                      setOpenMenu(null);
+                                    }}
+                                    className="block w-full text-left px-4 py-2 hover:bg-gray-100"
+                                  >
+                                    Cập nhật
+                                  </button>
+                                  <button
+                                    onClick={async () => {
+                                      setOpenMenu(null);
+                                      if (confirm(`Bạn có chắc muốn xóa bài thi "${exam.name}"?`)) {
+                                        try {
+                                          await fetchApi(`/online-exams/${exam.id}`, { method: 'DELETE' });
+                                          toastSuccess('Đã xóa bài thi');
+                                          const response = await fetchApi("/online-exams/my");
+                                          setOnlineExams(response || []);
+                                        } catch (error: any) {
+                                          toastError(error.message || 'Không thể xóa bài thi');
+                                        }
+                                      }
+                                    }}
+                                    className="block w-full text-left px-4 py-2 hover:bg-gray-100 text-red-600"
+                                  >
+                                    Xóa bài thi
+                                  </button>
+                                </div>
+                              </>
+                            )}
+                          </div>
+                          <button
+                            onClick={async () => {
+                              if (confirm(`Bạn có chắc muốn mở phòng chờ cho bài thi "${exam.name}"?`)) {
+                                try {
+                                  await fetchApi(`/online-exams/${exam.id}/start`, { method: "POST" });
+                                  toastSuccess("Đã mở phòng chờ!");
+                                  router.push(`/teacher/waiting-room/${exam.accessCode}`);
+                                } catch (error: any) {
+                                  toastError(error.message || "Không thể mở phòng chờ");
+                                }
+                              }
+                            }}
+                            className="px-3 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm font-medium"
+                            title="Mở phòng chờ"
+                          >
+                            ▶
+                          </button>
+                        </>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Info */}
+                  <div className="space-y-2 text-sm mb-4">
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Độ khó:</span>
+                      <span className="font-medium">{exam.level}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Số câu hỏi:</span>
+                      <span className="font-medium">{exam.actualQuestionCount || 0}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Thời gian:</span>
+                      <span className="font-medium">{exam.durationMinutes} phút</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Mã truy cập:</span>
+                      <span className="font-mono text-purple-600 font-bold">{exam.accessCode}</span>
+                    </div>
+                  </div>
+
+                  {/* Actions */}
+                  <div className="flex gap-2">
+                    {exam.status === 'DRAFT' && (
+                      <button
+                        onClick={() => router.push(`/teacher/exam-online/edit/${exam.id}`)}
+                        className="flex-1 bg-purple-600 text-white py-2 rounded-lg hover:bg-purple-700 text-sm"
+                      >
+                        Thêm câu hỏi
+                      </button>
+                    )}
+                    {exam.status === 'WAITING' && (
+                      <button
+                        onClick={() => router.push(`/teacher/waiting-room/${exam.accessCode}`)}
+                        className="flex-1 bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 text-sm"
+                      >
+                        Xem phòng chờ
+                      </button>
+                    )}
+                    {exam.status === 'IN_PROGRESS' && (
+                      <button
+                        onClick={() => router.push(`/teacher/monitor-exam/${exam.id}`)}
+                        className="flex-1 bg-green-600 text-white py-2 rounded-lg hover:bg-green-700 text-sm"
+                      >
+                        Giám sát
+                      </button>
+                    )}
+                    {exam.status === 'FINISHED' && (
+                      <button
+                        onClick={() => router.push(`/teacher/exam-result/${exam.id}`)}
+                        className="flex-1 bg-gray-600 text-white py-2 rounded-lg hover:bg-gray-700 text-sm"
+                      >
+                        Xem kết quả
+                      </button>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
         {openShare && (
           <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
             <div className="bg-white w-[520px] rounded-xl p-6 relative">
