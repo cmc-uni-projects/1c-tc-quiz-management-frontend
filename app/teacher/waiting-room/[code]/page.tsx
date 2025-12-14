@@ -138,18 +138,18 @@ export default function TeacherWaitingRoomPage() {
     const joinUrl = `${window.location.origin}/student/join/${exam.accessCode}`;
 
     return (
-        <div className="min-h-screen bg-[#1F2937] text-white p-6">
+        <div className="min-h-screen bg-[#F5F5F5] text-gray-900 p-6">
             <div className="max-w-7xl mx-auto">
                 {/* Header */}
-                <div className="flex justify-between items-center px-6 py-4 bg-[#2D3748] rounded-xl mb-6 shadow-lg">
+                <div className="flex justify-between items-center px-6 py-4 bg-white rounded-xl mb-6 shadow">
                     <div>
-                        <h1 className="text-xl font-bold text-gray-200">Phòng chờ: {exam.name}</h1>
-                        <p className="text-sm text-gray-400">Trạng thái: {exam.status}</p>
+                        <h1 className="text-xl font-bold text-gray-900">Phòng chờ: {exam.name}</h1>
+                        <p className="text-sm text-gray-500">Trạng thái: {exam.status}</p>
                     </div>
                     <div className="flex gap-3">
                         <button
                             onClick={() => router.push("/teacher/list-exam")}
-                            className="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg transition flex items-center gap-2"
+                            className="px-4 py-2 bg-white border border-gray-300 hover:bg-gray-50 rounded-lg transition flex items-center gap-2 text-gray-700"
                         >
                             <LogOut size={18} /> Thoát
                         </button>
@@ -160,44 +160,44 @@ export default function TeacherWaitingRoomPage() {
                     {/* Left Column: Info & Controls */}
                     <div className="w-full lg:w-3/5 space-y-6">
                         {/* Join Info */}
-                        <div className="bg-[#2D3748] rounded-2xl p-6 shadow-xl">
+                        <div className="bg-white rounded-2xl p-6 shadow">
                             <div className="flex flex-col md:flex-row gap-6">
                                 <div className="flex-1 space-y-4">
                                     {/* Join Link */}
-                                    <div className="bg-[#1A202C] p-4 rounded-xl">
-                                        <div className="text-sm text-gray-400 mb-1">Link tham gia:</div>
+                                    <div className="bg-gray-50 p-4 rounded-xl">
+                                        <div className="text-sm text-gray-600 mb-1">Link tham gia:</div>
                                         <div className="flex items-center justify-between gap-4">
-                                            <code className="text-teal-400 truncate">{joinUrl}</code>
+                                            <code className="text-purple-700 truncate">{joinUrl}</code>
                                             <button
                                                 onClick={() => handleCopy(joinUrl)}
-                                                className="p-2 hover:bg-gray-700 rounded-lg transition"
+                                                className="p-2 hover:bg-gray-100 rounded-lg transition"
                                             >
-                                                <Copy size={20} className="text-gray-400 hover:text-white" />
+                                                <Copy size={20} className="text-gray-500 hover:text-gray-700" />
                                             </button>
                                         </div>
                                     </div>
 
                                     {/* Access Code */}
-                                    <div className="bg-[#1A202C] p-4 rounded-xl">
-                                        <div className="text-sm text-gray-400 mb-1">Mã truy cập:</div>
+                                    <div className="bg-gray-50 p-4 rounded-xl">
+                                        <div className="text-sm text-gray-600 mb-1">Mã truy cập:</div>
                                         <div className="flex items-center justify-between">
-                                            <span className="text-4xl font-extrabold tracking-wider text-white">
+                                            <span className="text-4xl font-extrabold tracking-wider text-gray-900">
                                                 {exam.accessCode}
                                             </span>
                                             <button
                                                 onClick={() => handleCopy(exam.accessCode)}
-                                                className="p-2 hover:bg-gray-700 rounded-lg transition"
+                                                className="p-2 hover:bg-gray-100 rounded-lg transition"
                                             >
-                                                <Copy size={20} className="text-gray-400 hover:text-white" />
+                                                <Copy size={20} className="text-gray-500 hover:text-gray-700" />
                                             </button>
                                         </div>
                                     </div>
                                 </div>
 
                                 {/* QR Code */}
-                                <div className="flex flex-col items-center justify-center p-4 bg-white rounded-xl">
+                                <div className="flex flex-col items-center justify-center p-4 bg-white rounded-xl border border-gray-200">
                                     <QRCodeSVG value={joinUrl} size={150} />
-                                    <span className="text-gray-900 text-xs mt-2 font-medium">Quét để tham gia</span>
+                                    <span className="text-gray-700 text-xs mt-2 font-medium">Quét để tham gia</span>
                                 </div>
                             </div>
                         </div>
@@ -206,7 +206,7 @@ export default function TeacherWaitingRoomPage() {
                         <div className="flex justify-center pt-4">
                             <button
                                 onClick={handleStartExam}
-                                className="px-8 py-4 bg-purple-600 hover:bg-purple-700 rounded-xl font-bold text-xl shadow-lg shadow-purple-900/50 flex items-center gap-3 transition transform hover:scale-105"
+                                className="px-8 py-4 bg-[#A53AEC] hover:bg-[#8B2FC9] rounded-xl font-bold text-xl shadow-lg flex items-center gap-3 transition transform hover:scale-105 text-white"
                             >
                                 <Play size={24} fill="currentColor" />
                                 BẮT ĐẦU BÀI THI
@@ -214,20 +214,20 @@ export default function TeacherWaitingRoomPage() {
                         </div>
 
                         <div className="flex justify-center">
-                            <div className="bg-[#1A202C] text-gray-300 px-6 py-2 rounded-full flex items-center gap-2 text-sm">
+                            <div className="bg-purple-50 text-purple-700 px-6 py-2 rounded-full flex items-center gap-2 text-sm border border-purple-100">
                                 <Users size={16} /> Đang chờ học sinh tham gia...
                             </div>
                         </div>
                     </div>
 
                     {/* Right Column: Participants */}
-                    <div className="w-full lg:w-2/5 bg-[#2D3748] rounded-2xl p-6 shadow-xl flex flex-col h-[600px]">
-                        <div className="flex justify-between items-center mb-4 pb-4 border-b border-gray-600">
-                            <h3 className="text-xl font-bold text-gray-200 flex items-center gap-2">
-                                <Users className="text-purple-400" />
+                    <div className="w-full lg:w-2/5 bg-white rounded-2xl p-6 shadow flex flex-col h-[600px]">
+                        <div className="flex justify-between items-center mb-4 pb-4 border-b border-gray-200">
+                            <h3 className="text-xl font-bold text-gray-900 flex items-center gap-2">
+                                <Users className="text-[#A53AEC]" />
                                 Danh sách tham gia
                             </h3>
-                            <span className="bg-purple-900/50 text-purple-300 px-3 py-1 rounded-full text-sm font-medium">
+                            <span className="bg-purple-50 text-purple-700 px-3 py-1 rounded-full text-sm font-medium border border-purple-100">
                                 {participants.length} / {exam.maxParticipants}
                             </span>
                         </div>
@@ -240,13 +240,13 @@ export default function TeacherWaitingRoomPage() {
                                 </div>
                             ) : (
                                 participants.map((p) => (
-                                    <div key={p.userId} className="bg-[#1A202C] p-3 rounded-xl flex items-center gap-3 animate-in fade-in slide-in-from-bottom-2">
+                                    <div key={p.userId} className="bg-gray-50 p-3 rounded-xl flex items-center gap-3 animate-in fade-in slide-in-from-bottom-2">
                                         <img
                                             src={p.avatarUrl || "https://ui-avatars.com/api/?name=" + p.displayName}
                                             alt={p.displayName}
-                                            className="w-10 h-10 rounded-full bg-gray-600 object-cover"
+                                            className="w-10 h-10 rounded-full bg-gray-200 object-cover"
                                         />
-                                        <span className="font-medium text-gray-200">{p.displayName}</span>
+                                        <span className="font-medium text-gray-800">{p.displayName}</span>
                                     </div>
                                 ))
                             )}
