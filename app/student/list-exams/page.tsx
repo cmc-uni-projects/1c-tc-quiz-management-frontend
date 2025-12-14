@@ -8,6 +8,74 @@ import Swal from 'sweetalert2';
 import StudentLayout from '@/components/StudentLayout'; // Import layout mới
 import { fetchApi } from '@/lib/apiClient'; // Import fetchApi trực tiếp
 
+const JoinPrivateExamForm = ({ router }: { router: any }) => {
+    const [code, setCode] = useState('');
+    const [isLoading, setIsLoading] = useState(false);
+
+    const handleJoinExam = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!code.trim()) {
+            toast.error("Vui lòng nhập mã tham gia.");
+            return;
+        }
+        setIsLoading(true);
+        try {
+            // The API is expected to return the exam details, including the ID
+            const exam = await fetchApi(`/student/exams/join-by-code`, {
+                method: 'POST',
+                body: JSON.stringify({ code: code.trim() }),
+            });
+
+            if (exam && exam.examId) {
+                Swal.fire({
+                    title: `Tham gia bài thi ${exam.title}?`,
+                    text: "Bạn có chắc chắn muốn bắt đầu làm bài thi này không?",
+                    icon: 'info',
+                    showCancelButton: true,
+                    confirmButtonColor: '#A53AEC',
+                    cancelButtonColor: '#d33',
+                    confirmButtonText: 'Bắt đầu',
+                    cancelButtonText: 'Hủy'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        router.push(`/student/do-exam?examId=${exam.examId}`);
+                    }
+                });
+            } else {
+                // This case might not be reached if API throws an error for invalid codes
+                toast.error("Không tìm thấy bài thi với mã này.");
+            }
+        } catch (error: any) {
+            toast.error(error.message || "Mã tham gia không hợp lệ hoặc đã hết hạn.");
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    return (
+        <div className="bg-white p-6 rounded-lg shadow-sm border border-purple-100">
+            <h3 className="text-xl font-bold text-gray-800 mb-4">Tham gia bài thi riêng tư</h3>
+            <form onSubmit={handleJoinExam} className="flex flex-col sm:flex-row items-center gap-3">
+                <input
+                    type="text"
+                    value={code}
+                    onChange={(e) => setCode(e.target.value)}
+                    placeholder="Nhập mã tham gia tại đây..."
+                    className="flex-1 w-full border px-4 py-2 rounded-full focus:ring-2 focus:ring-purple-400 focus:border-transparent transition"
+                    disabled={isLoading}
+                />
+                <button
+                    type="submit"
+                    disabled={isLoading}
+                    className="w-full sm:w-auto px-8 py-2 bg-purple-600 text-white font-bold rounded-full hover:bg-purple-700 disabled:bg-gray-400 transition shadow"
+                >
+                    {isLoading ? "Đang kiểm tra..." : "Tham gia"}
+                </button>
+            </form>
+        </div>
+    );
+};
+
 /* ===========================================================
     MAIN CONTENT
 =========================================================== */
@@ -21,7 +89,11 @@ interface Exam {
     level: string;
     startTime: string;
     endTime: string;
-    status?: 'BEFORE' | 'READY' | 'ENDED' | 'UNKNOWN';
+    status?: 'BEFORE' | 'READY' | 'ENDED' | 'UNKNOWN' | 'PRIVATE';
+    isPrivate?: boolean;
+    isAuthorized?: boolean;
+    code?: string;
+    url?: string;
 }
 
 const ListExamsContent = () => {
@@ -46,8 +118,11 @@ const ListExamsContent = () => {
                 if (searchQuery) params.append('title', searchQuery);
                 if (selectedCategory) params.append('categoryId', selectedCategory);
                 if (difficulty) params.append('examLevel', difficulty);
+                params.append('includeAuthorizedPrivate', 'true'); // Explicitly request authorized private exams
 
-                const response = await fetchApi(`/student/exams/search?${params.toString()}`);
+                const fullUrl = `/student/exams/search?${params.toString()}`;
+                const response = await fetchApi(fullUrl);
+                
                 // Backend returns Page<ExamResponseDto>. Content is in response.content
                 const data = response.content || response.data || [];
 
@@ -88,7 +163,11 @@ const ListExamsContent = () => {
                                 level: mapLevel(exam.examLevel),
                                 startTime: exam.startTime ? new Date(exam.startTime).toLocaleString('vi-VN') : 'Tự do',
                                 endTime: exam.endTime ? new Date(exam.endTime).toLocaleString('vi-VN') : 'Tự do',
-                                status,
+                                status: exam.status === 'PRIVATE' ? 'PRIVATE' : status, // Preserve PRIVATE status from backend
+                                isPrivate: exam.status === 'PRIVATE',
+                                isAuthorized: exam.authorized, // Correctly map from backend's 'authorized' field
+                                code: exam.code, // Assuming backend provides this
+                                url: exam.url,   // Assuming backend provides this
                             } as Exam;
                         })
                     : [];
@@ -106,9 +185,14 @@ const ListExamsContent = () => {
     }, [difficulty, searchQuery, selectedCategory]); // Re-fetch when filters change
 
     const handleStartExam = (exam: Exam) => {
+        let confirmationText = "Bạn có chắc chắn muốn bắt đầu làm bài không? Đã bắt đầu bài thi thì sẽ không thể quay lại.";
+        if (exam.status === 'PRIVATE') {
+            confirmationText = "Bạn đã được cấp quyền làm bài thi riêng tư này. Bạn có chắc chắn muốn bắt đầu làm bài không? Đã bắt đầu bài thi thì sẽ không thể quay lại.";
+        }
+
         Swal.fire({
             title: `Bắt đầu bài thi ${exam.title}?`,
-            text: "Bạn có chắc chắn muốn bắt đầu làm bài không? Đã bắt đầu bài thi thì sẽ không thể quay lại.",
+            text: confirmationText,
             icon: 'warning',
             showCancelButton: true,
             confirmButtonColor: '#E33AEC',
@@ -128,51 +212,52 @@ const ListExamsContent = () => {
             <h2 className="text-3xl font-bold text-gray-900 mb-8">Danh sách bài thi</h2>
 
             {/* Thanh tìm kiếm theo giao diện bạn cung cấp */}
-            <div className='flex gap-4 mb-8 p-4 bg-white rounded-lg shadow-sm flex-wrap'>
-                <select
-                    className='border rounded-lg p-2 flex-1 min-w-[150px]'
-                    value={selectedCategory}
-                    onChange={(e) => setSelectedCategory(e.target.value)}
-                >
-                    <option value="">Tất cả danh mục</option>
-                    {categories.map((c) => (
+                <div className='flex gap-4 mb-8 p-4 bg-white rounded-lg shadow-sm flex-wrap'>
+                    <select
+                      className='border rounded-lg p-2 flex-1 min-w-[150px]'
+                      value={selectedCategory}
+                      onChange={(e) => setSelectedCategory(e.target.value)}
+                    >
+                      <option value="">Tất cả danh mục</option>
+                      {categories.map((c) => (
                         <option key={c.id} value={c.id}>{c.name}</option>
-                    ))}
-                </select>
-
-                <select
-                    className='border rounded-lg p-2 flex-1 min-w-[150px]'
-                    value={difficulty}
-                    onChange={(e) => setDifficulty(e.target.value)}
-                >
-                    <option value="">Tất cả độ khó</option>
-                    <option value="EASY">Dễ</option>
-                    <option value="MEDIUM">Trung bình</option>
-                    <option value="HARD">Khó</option>
-                </select>
-
-                <input
-                    type='text'
-                    placeholder='Nhập tên bài thi...'
-                    className='border rounded-lg p-2 flex-[2] min-w-[200px]'
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                />
-                <button
-                    onClick={() => {
+                      ))}
+                    </select>
+            
+                    <select
+                      className='border rounded-lg p-2 flex-1 min-w-[150px]'
+                      value={difficulty}
+                      onChange={(e) => setDifficulty(e.target.value)}
+                    >
+                      <option value="">Tất cả độ khó</option>
+                      <option value="EASY">Dễ</option>
+                      <option value="MEDIUM">Trung bình</option>
+                      <option value="HARD">Khó</option>
+                    </select>
+            
+                    <input
+                      type='text'
+                      placeholder='Nhập tên bài thi...'
+                      className='border rounded-lg p-2 flex-[2] min-w-[200px]'
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                    />
+                    <button
+                      onClick={() => {
                         setSearchQuery(searchQuery);
-                    }}
-                    className="bg-[#A53AEC] hover:bg-[#8B2BE2] text-white font-bold py-2 px-6 rounded-full transition duration-150"
-                >
-                    Tìm kiếm
-                </button>
-            </div>
-
-            {isLoading ? (
-                <div className="text-center py-10">
-                    <div className="mx-auto h-8 w-8 animate-spin rounded-full border-purple-500 border-b-2" />
-                    <p className="mt-4 text-gray-700">Đang tải bài thi...</p>
-                </div>
+                      }}
+                      className="bg-[#A53AEC] hover:bg-[#8B2BE2] text-white font-bold py-2 px-6 rounded-full transition duration-150"
+                    >
+                      Tìm kiếm
+                    </button>
+                  </div>
+                  <div className="mb-8">
+                    <JoinPrivateExamForm router={router} />
+                  </div>
+                  {isLoading ? (
+                    <div className="text-center py-10">
+                      <div className="mx-auto h-8 w-8 animate-spin rounded-full border-purple-500 border-b-2" />
+                      <p className="mt-4 text-gray-700">Đang tải bài thi...</p>                </div>
             ) : exams.length === 0 ? (
                 <p className="text-center text-gray-500 pt-10">Không tìm thấy bài thi nào phù hợp.</p>
             ) : (
@@ -195,8 +280,11 @@ const ListExamsContent = () => {
                                     {categoryExams.map((exam) => (
                                         <div
                                             key={exam.id}
-                                            className="flex flex-col bg-white p-4 rounded-xl shadow-sm hover:shadow-md transition duration-300 border border-gray-100 h-full"
+                                            className="flex flex-col bg-white p-4 rounded-xl shadow-sm hover:shadow-md transition duration-300 border border-gray-100 h-full relative"
                                         >
+                                            {exam.isPrivate && (
+                                                <span className="absolute top-0 right-0 bg-purple-500 text-white text-xs px-2 py-1 rounded-bl-lg">Riêng tư</span>
+                                            )}
                                             <div className="flex-1">
                                                 <h4 className="text-base font-bold text-[#A53AEC] mb-2 leading-tight line-clamp-2">{exam.title}</h4>
 
@@ -236,7 +324,10 @@ const ListExamsContent = () => {
                                                             {exam.status === 'ENDED' && (
                                                                 <span className="text-gray-500">Đã kết thúc</span>
                                                             )}
-                                                            {(!exam.status || exam.status === 'UNKNOWN') && (
+                                                            {exam.status === 'PRIVATE' && (
+                                                                <span className="text-purple-600">Riêng tư</span>
+                                                            )}
+                                                            {exam.status === 'UNKNOWN' && (
                                                                 <span className="text-gray-400">Không xác định</span>
                                                             )}
                                                         </span>
@@ -246,7 +337,8 @@ const ListExamsContent = () => {
                                             <div className="mt-3 flex justify-center">
                                                 <button
                                                     onClick={() => handleStartExam(exam)}
-                                                    className="bg-[#A53AEC] hover:bg-[#8B2BE2] text-white text-xs font-bold py-2 px-6 rounded-full transition duration-150 shadow-sm"
+                                                    disabled={exam.isPrivate && !exam.isAuthorized}
+                                                    className={`bg-[#A53AEC] hover:bg-[#8B2BE2] text-white text-xs font-bold py-2 px-6 rounded-full transition duration-150 shadow-sm ${exam.isPrivate && !exam.isAuthorized ? 'opacity-50 cursor-not-allowed' : ''}`}
                                                 >
                                                     Làm Bài
                                                 </button>
