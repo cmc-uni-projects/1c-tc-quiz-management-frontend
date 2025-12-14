@@ -12,6 +12,8 @@ interface ExamHistory {
     submittedAt: string;
     attemptNumber: number;
     score: number;
+    examId?: number;
+    examOnlineId?: number;
 }
 
 export default function StudentHistoryPage() {
@@ -164,7 +166,14 @@ export default function StudentHistoryPage() {
                                             </td>
                                             <td className="py-4 px-6">
                                                 <button
-                                                    onClick={() => router.push(`/student/history-exam/${item.id}`)}
+                                                    onClick={() => {
+                                                        // Online exam -> redirect to results page
+                                                        // Offline exam -> redirect to detail page
+                                                        const targetPath = item.examOnlineId
+                                                            ? `/student/exam-result/${item.id}`
+                                                            : `/student/history-exam/${item.id}`;
+                                                        router.push(targetPath);
+                                                    }}
                                                     className="group flex items-center justify-center gap-1 mx-auto text-[#A53AEC] hover:text-white hover:bg-[#A53AEC] border border-[#A53AEC] px-3 py-1.5 rounded-lg transition-all duration-200 text-xs font-bold uppercase tracking-wide"
                                                 >
                                                     <span>Chi tiết</span>
