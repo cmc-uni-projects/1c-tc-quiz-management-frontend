@@ -7,6 +7,7 @@ import { toastSuccess, toastError } from '@/lib/toast';
 import { fetchApi, ApiError } from '@/lib/apiClient';
 import { useUser } from '@/lib/user';
 import AccountLockedPopup from '@/components/AccountLockedPopup';
+import AccountPendingPopup from '@/components/AccountPendingPopup';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -19,6 +20,7 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showLockedPopup, setShowLockedPopup] = useState(false);
+  const [showPendingPopup, setShowPendingPopup] = useState(false);
   const [accountType, setAccountType] = useState<'teacher' | 'student'>('student');
 
   // Clear error when user starts typing
@@ -36,7 +38,7 @@ export default function LoginPage() {
     e.preventDefault();
     e.stopPropagation();
     console.log('Login form submitted with:', { email, password });
-    
+
     setError(null);
     setLoading(true);
 
@@ -50,7 +52,7 @@ export default function LoginPage() {
 
       if (response.token) {
         localStorage.setItem('jwt', response.token);
-        
+
         // Mutate to re-fetch user data across the app
         await mutate();
 
@@ -90,10 +92,10 @@ export default function LoginPage() {
       }
     } catch (err: any) {
       console.error('Login Error:', err);
-      
+
       // Extract error message from backend response
       let errorMessage = 'Sai tài khoản hoặc mật khẩu.';
-      
+
       if (err instanceof ApiError) {
         errorMessage = err.message;
       } else if (err.error) {
@@ -101,20 +103,23 @@ export default function LoginPage() {
       } else if (err.message) {
         errorMessage = err.message;
       }
-      
+
       console.log('Setting error message:', errorMessage);
       setError(errorMessage);
-      
-      // Kiểm tra nếu là lỗi khóa tài khoản thì hiển thị popup
-      if (errorMessage.includes('khóa') || err.status === 403) {
-        // Xác định loại tài khoản dựa trên email (hoặc có thể từ backend)
+
+      // Kiểm tra loại lỗi và hiển thị popup tương ứng
+      if (errorMessage.includes('chờ phê duyệt') || errorMessage.includes('bị từ chối')) {
+        // Tài khoản đang chờ duyệt hoặc bị từ chối
+        setShowPendingPopup(true);
+      } else if (errorMessage.includes('khóa') || err.status === 403) {
+        // Tài khoản bị khóa
         const accType = email.includes('teacher') || email.includes('gv') ? 'teacher' : 'student';
         setAccountType(accType);
         setShowLockedPopup(true);
       } else {
         toastError(errorMessage, 5000); // Hiển thị trong 5 giây
       }
-      
+
       // Không xóa email và password khi login thất bại
       // localStorage.removeItem('jwt'); // Chỉ xóa khi có token cũ
     } finally {
@@ -205,12 +210,18 @@ export default function LoginPage() {
           </div>
         </form>
       </div>
-      
+
       {/* Account Locked Popup */}
       <AccountLockedPopup
         isOpen={showLockedPopup}
         onClose={() => setShowLockedPopup(false)}
         accountType={accountType}
+      />
+
+      {/* Account Pending Approval Popup */}
+      <AccountPendingPopup
+        isOpen={showPendingPopup}
+        onClose={() => setShowPendingPopup(false)}
       />
     </div>
   );
