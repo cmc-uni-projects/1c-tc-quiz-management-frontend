@@ -67,19 +67,13 @@ export default function DetailExamPage() {
     const { user } = useUser();
     const [loading, setLoading] = useState(true);
     const [examData, setExamData] = useState<ExamData | null>(null);
-    const [authorizedStudents, setAuthorizedStudents] = useState<any[]>([]); // New state for authorized students
 
     // Fetch Data
     useEffect(() => {
         const fetchData = async () => {
             if (!user || !id) return;
             try {
-                const [exam, students] = await Promise.all([
-                    fetchApi(`/exams/get/${id}`),
-                    fetchApi(`/exams/${id}/authorized-students`) // Fetch authorized students
-                ]);
-
-                setAuthorizedStudents(students || []); // Set authorized students
+                const exam = await fetchApi(`/exams/get/${id}`);
 
                 const startTimeObj = exam.startTime ? new Date(exam.startTime) : null;
                 const endTimeObj = exam.endTime ? new Date(exam.endTime) : null;
@@ -173,20 +167,6 @@ export default function DetailExamPage() {
                         </div>
                     </div>
                 </section>
-
-                {/* ======= DANH SÁCH HỌC SINH ĐƯỢC CẤP QUYỀN ======= */}
-                {authorizedStudents.length > 0 && (
-                    <section className="bg-white rounded-2xl shadow p-8">
-                        <h3 className="text-xl font-semibold mb-4">Học sinh được cấp quyền ({authorizedStudents.length})</h3>
-                        <ul className="space-y-2">
-                            {authorizedStudents.map((student, index) => (
-                                <li key={index} className="bg-gray-50 p-3 rounded-md border border-gray-100 text-sm">
-                                    {student.email}
-                                </li>
-                            ))}
-                        </ul>
-                    </section>
-                )}
 
                 {/* ======= KHUNG NỘI DUNG CÂU HỎI ======= */}
                 <section className="bg-white rounded-2xl shadow p-8 space-y-6">
