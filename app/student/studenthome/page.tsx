@@ -4,6 +4,7 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
+import Swal from 'sweetalert2';
 import { useUser } from '@/lib/user';
 import StudentLayout from '@/components/StudentLayout'; // Import layout mới
 import { fetchApi } from '@/lib/apiClient'; // Fix apiClient import to import fetchApi instead
@@ -46,12 +47,15 @@ const loadFirebase = async () => {
     MAIN HOME CONTENT
 =========================================================== */
 
-interface Subject {
+interface HotExam {
     id: number;
     title: string;
-    subtitle: string;
-    color: string;
-    image: string;
+    questionCount: number;
+    level: string;
+    duration: string;
+    startTime: string;
+    endTime: string;
+    status?: 'BEFORE' | 'READY' | 'ENDED' | 'UNKNOWN';
 }
 
 const StudentHomeContent = () => {
@@ -62,7 +66,7 @@ const StudentHomeContent = () => {
     const [isJoining, setIsJoining] = useState(false);
     const [db, setDb] = useState<any>(null);
     const [isFirebaseReady, setIsFirebaseReady] = useState(false);
-    const [subjects, setSubjects] = useState<Subject[]>([]); // Dữ liệu môn học
+    const [hotExams, setHotExams] = useState<HotExam[]>([]);
     const [completedExams, setCompletedExams] = useState<number | null>(null);
     const [averageScore, setAverageScore] = useState<number | null>(null);
 
@@ -111,29 +115,82 @@ const StudentHomeContent = () => {
         initFirebase();
     }, []);
 
-    // Lấy dữ liệu Môn học từ API (THAY THẾ DỮ LIỆU CỨNG)
+    // Lấy danh sách "bài thi hot" từ API bài thi của học sinh
     useEffect(() => {
-        const fetchSubjects = async () => {
+        const fetchHotExams = async () => {
             try {
-                // Thay thế bằng endpoint API thực tế của bạn
-                // const response = await apiClient.get('/api/subjects');
-                // setSubjects(response.data);
+                // Gọi API tìm kiếm bài thi cho học sinh (không filter để lấy danh sách chung)
+                const response = await fetchApi(`/student/exams/search`);
+                const data = response?.content || response?.data || [];
 
-                // Dữ liệu mẫu thay thế tạm thời cho API call
-                const mockSubjects: Subject[] = [
-                    { id: 1, title: 'Toán học', subtitle: 'Giải tích', color: '#FBC02D', image: '/roles/Math.jpg' },
-                    { id: 2, title: 'Tiếng anh', subtitle: 'Tiếng anh cấp độ 1', color: '#FBC02D', image: '/roles/English.jpg' },
-                    { id: 3, title: 'Vật lý', subtitle: 'Cơ học', color: '#7B1FA2', image: '/roles/Physics.jpg' },
-                ];
-                setSubjects(mockSubjects);
+                if (!Array.isArray(data)) {
+                    setHotExams([]);
+                    return;
+                }
 
+                // Ưu tiên sắp xếp theo số lượt làm (attemptCount / timesTaken),
+                // nếu không có thì fallback theo số câu hỏi.
+                const sorted = [...data].sort((a: any, b: any) => {
+                    const attemptsA =
+                        typeof a.attemptCount === 'number'
+                            ? a.attemptCount
+                            : typeof a.timesTaken === 'number'
+                            ? a.timesTaken
+                            : 0;
+                    const attemptsB =
+                        typeof b.attemptCount === 'number'
+                            ? b.attemptCount
+                            : typeof b.timesTaken === 'number'
+                            ? b.timesTaken
+                            : 0;
+
+                    if (attemptsA !== attemptsB) {
+                        return attemptsB - attemptsA; // nhiều lượt làm hơn xếp trước
+                    }
+
+                    const qa = typeof a.questionCount === 'number' ? a.questionCount : 0;
+                    const qb = typeof b.questionCount === 'number' ? b.questionCount : 0;
+                    return qb - qa;
+                });
+
+                const topExams: HotExam[] = sorted.slice(0, 4).map((exam: any) => {
+                    const questionCount = typeof exam.questionCount === 'number' ? exam.questionCount : 0;
+                    const duration = typeof exam.durationMinutes === 'number' ? `${exam.durationMinutes} phút` : '';
+                    const level = exam.examLevel || '';
+                    let status: HotExam['status'] = 'UNKNOWN';
+
+                    if (exam.startTime && exam.endTime) {
+                        const now = new Date();
+                        const start = new Date(exam.startTime);
+                        const end = new Date(exam.endTime);
+
+                        if (!isNaN(start.getTime()) && !isNaN(end.getTime())) {
+                            if (now < start) status = 'BEFORE';
+                            else if (now > end) status = 'ENDED';
+                            else status = 'READY';
+                        }
+                    }
+
+                    return {
+                        id: exam.examId,
+                        title: exam.title || 'Bài thi',
+                        questionCount,
+                        level,
+                        duration,
+                        startTime: exam.startTime ? new Date(exam.startTime).toLocaleString('vi-VN') : 'Tự do',
+                        endTime: exam.endTime ? new Date(exam.endTime).toLocaleString('vi-VN') : 'Tự do',
+                        status,
+                    };
+                });
+
+                setHotExams(topExams);
             } catch (error) {
-                console.error("Failed to fetch subjects:", error);
-                toast.error("Không thể tải danh sách môn học.");
+                console.error('Failed to fetch hot exams:', error);
+                toast.error('Không thể tải danh sách bài thi hot.');
             }
         };
 
-        fetchSubjects();
+        fetchHotExams();
     }, []);
 
     // Lấy thống kê thật cho thanh tổng kết từ lịch sử làm bài của sinh viên
@@ -201,10 +258,22 @@ const StudentHomeContent = () => {
         }
     };
 
-    /* SUBJECT CLICK (GIỮ NGUYÊN) */
-    const handleSubjectClick = (id: number, title: string) => {
-        // Tốt hơn là chuyển đến list-exams với query subjectId, nhưng giữ nguyên theo cấu trúc cũ
-        router.push(`/student/startexam?subjectId=${id}&title=${title}`);
+    // Xác nhận trước khi bắt đầu làm bài thi hot
+    const handleStartHotExam = (exam: HotExam) => {
+        Swal.fire({
+            title: `Bắt đầu bài thi ${exam.title}?`,
+            text: 'Bạn có chắc chắn muốn bắt đầu làm bài không? Đã bắt đầu bài thi thì sẽ không thể quay lại.',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#E33AEC',
+            cancelButtonColor: '#d33',
+            confirmButtonText: 'Bắt đầu ngay',
+            cancelButtonText: 'Hủy',
+        }).then((result) => {
+            if (result.isConfirmed) {
+                router.push(`/student/do-exam?examId=${exam.id}`);
+            }
+        });
     };
 
     return (
@@ -272,35 +341,73 @@ const StudentHomeContent = () => {
                 </div>
             </div>
 
-            {/* Subjects Grid */}
+            {/* Hot Exams Grid */}
             <div className="px-8 py-8 bg-white">
-                <h2 className="text-2xl font-bold text-gray-900 mb-6">Khám phá các môn học</h2>
+                <h2 className="text-2xl font-bold text-gray-900 mb-6">Bài thi hot nhất</h2>
 
-                <div className="flex flex-wrap gap-8">
-                    {subjects.length === 0 ? (
-                        <p className='text-gray-500'>Đang tải danh sách môn học...</p>
-                    ) : (
-                        subjects.map((s) => (
+                {hotExams.length === 0 ? (
+                    <p className="text-gray-500">Hiện chưa có bài thi hot để hiển thị.</p>
+                ) : (
+                    <div className="grid grid-cols-[repeat(auto-fill,minmax(260px,1fr))] gap-5">
+                        {hotExams.map((exam) => (
                             <div
-                                key={s.id}
-                                onClick={() => handleSubjectClick(s.id, s.title)}
-                                className="flex flex-col cursor-pointer hover:scale-[1.03] transition"
+                                key={exam.id}
+                                className="flex flex-col bg-white p-4 rounded-xl shadow-sm hover:shadow-md transition duration-300 border border-gray-100 h-full"
                             >
-                                <h3 className="text-base font-bold text-gray-900 mb-3">{s.title}</h3>
+                                <div className="flex-1">
+                                    <h4 className="text-base font-bold text-[#A53AEC] mb-2 leading-tight line-clamp-2">
+                                        {exam.title}
+                                    </h4>
 
-                                <div className="overflow-hidden rounded-sm shadow-sm">
-                                    <div
-                                        className="w-40 h-32 bg-cover bg-center"
-                                        style={{ backgroundImage: `url(${s.image})`, backgroundColor: s.color }}
-                                    />
-                                    <div className="bg-gray-400 text-gray-700 px-4 py-2 text-sm text-center w-40">
-                                        {s.subtitle}
+                                    <div className="text-xs text-gray-600 space-y-1">
+                                        <p>
+                                            <span className="text-gray-500">Số câu:</span>
+                                            <span className="font-semibold text-gray-800 ml-1">{exam.questionCount}</span>
+                                        </p>
+                                        <p>
+                                            <span className="text-gray-500">Mức độ:</span>
+                                            <span className="font-semibold text-gray-800 ml-1">{exam.level}</span>
+                                        </p>
+                                        <p>
+                                            <span className="text-gray-500">Thời gian:</span>
+                                            <span className="font-semibold text-gray-800 ml-1">{exam.duration}</span>
+                                        </p>
+                                    </div>
+
+                                    <div className="mt-3 pt-2 border-t border-gray-100 text-xs text-gray-500 space-y-1">
+                                        <p className="flex items-center gap-1">
+                                            <span>Bắt đầu:</span>
+                                            <span className="font-medium text-gray-700">{exam.startTime}</span>
+                                        </p>
+                                        <p className="flex items-center gap-1">
+                                            <span>Kết thúc:</span>
+                                            <span className="font-medium text-gray-700">{exam.endTime}</span>
+                                        </p>
+                                        <p className="flex items-center gap-1">
+                                            <span>Trạng thái:</span>
+                                            <span className="font-semibold">
+                                                {exam.status === 'READY' && <span className="text-green-600">Sẵn sàng</span>}
+                                                {exam.status === 'BEFORE' && <span className="text-blue-600">Chưa bắt đầu</span>}
+                                                {exam.status === 'ENDED' && <span className="text-gray-500">Đã kết thúc</span>}
+                                                {(!exam.status || exam.status === 'UNKNOWN') && (
+                                                    <span className="text-gray-400">Không xác định</span>
+                                                )}
+                                            </span>
+                                        </p>
                                     </div>
                                 </div>
+                                <div className="mt-3 flex justify-center">
+                                    <button
+                                        onClick={() => handleStartHotExam(exam)}
+                                        className="bg-[#A53AEC] hover:bg-[#8B2BE2] text-white text-xs font-bold py-2 px-6 rounded-full transition duration-150 shadow-sm"
+                                    >
+                                        Làm Bài
+                                    </button>
+                                </div>
                             </div>
-                        ))
-                    )}
-                </div>
+                        ))}
+                    </div>
+                )}
             </div>
         </div>
     );
