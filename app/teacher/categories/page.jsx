@@ -314,12 +314,12 @@ export default function TeacherCategoriesPage() {
       showError("Bạn không có quyền xóa danh mục này");
       return;
     }
-
+    
     if (!currentUser.authorities.some(auth => auth.authority === "ROLE_ADMIN")) {
-      if (cat.createdBy?.toLowerCase()?.trim() !== currentUser.username?.toLowerCase()?.trim()) {
-        showError("Bạn không có quyền xóa danh mục này.");
-        return;
-      }
+        if (cat.createdBy?.toLowerCase()?.trim() !== currentUser.username?.toLowerCase()?.trim()) {
+            showError("Bạn không có quyền xóa danh mục này.");
+            return;
+        }
     }
 
     const result = await Swal.fire({
@@ -337,7 +337,7 @@ export default function TeacherCategoriesPage() {
 
     try {
       setLoading(true);
-      await fetchApi(`/categories/delete/${id}`, {
+      await fetchApi(`/categories/${id}`, {
         method: "DELETE",
       });
       setCategories((prev) => prev.filter((c) => c.id !== id));
@@ -453,23 +453,23 @@ export default function TeacherCategoriesPage() {
                         <div className="flex items-center justify-center gap-2">
                           {currentUser && (
                             (cat.createdBy?.toLowerCase()?.trim() === currentUser.username?.toLowerCase()?.trim() || currentUser.authorities.some(auth => auth.authority === "ROLE_ADMIN")) && (
-                              <>
-                                <button
-                                  onClick={() => openEdit(cat)}
-                                  className="p-2 text-blue-600 hover:text-blue-800 hover:bg-blue-100 rounded-full transition"
-                                  title="Sửa"
-                                >
-                                  <EditIcon className="w-5 h-5" />
-                                </button>
-                                <button
-                                  onClick={() => handleDelete(cat.id)}
-                                  className="p-2 text-rose-500 hover:text-rose-700 hover:bg-rose-100 rounded-full transition"
-                                  title="Xóa"
-                                >
-                                  <TrashIcon className="w-5 h-5" />
-                                </button>
-                              </>
-                            ))}
+                            <>
+                              <button
+                                onClick={() => openEdit(cat)}
+                                className="p-2 text-blue-600 hover:text-blue-800 hover:bg-blue-100 rounded-full transition"
+                                title="Sửa"
+                              >
+                                <EditIcon className="w-5 h-5" />
+                              </button>
+                              <button
+                                onClick={() => handleDelete(cat.id)}
+                                className="p-2 text-rose-500 hover:text-rose-700 hover:bg-rose-100 rounded-full transition"
+                                title="Xóa"
+                              >
+                                <TrashIcon className="w-5 h-5" />
+                              </button>
+                            </>
+                          ))}
                         </div>
                       </td>
                     </tr>
