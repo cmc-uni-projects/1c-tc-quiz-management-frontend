@@ -5,12 +5,12 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   outputFileTracingRoot: __dirname,
   async rewrites() {                                                                                                                                     │
-       return [                                                                                                                                             │
-        {                                                                                                                                                  │
-           source: '/api/:path*',                                                                                                                           │
-           destination: 'https://quizi.up.railway.app/api/:path*',                                                                                          │
-        },                                                                                                                                                 │
-       ]                                                                                                                                                    │
+       return [
+        {
+           source: '/api/:path*',
+           destination: 'https://quizi.up.railway.app/api/:path*',
+        },
+       ]
     }
 };
 
