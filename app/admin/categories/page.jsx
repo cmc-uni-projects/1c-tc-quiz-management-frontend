@@ -8,7 +8,7 @@ const API_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "/api";
 const PRIMARY_COLOR = "#6A1B9A";
 const LOGO_TEXT_COLOR = "#E33AEC";
 const MAIN_CONTENT_BG = "#6D0446";
-const SEARCH_BAR_BG = "#E33AEC";
+const SEARCH_BAR_BG = "#A53AEC";
 const BUTTON_COLOR = "#9453C9";
 const PAGE_BG = "#F4F2FF";
 const HERO_GRADIENT = "linear-gradient(135deg, #FFB6FF 0%, #8A46FF 100%)";
@@ -192,6 +192,16 @@ export default function CategoriesPage() {
     }
   };
 
+  const handleClearFilters = () => {
+    setKeyword("");
+    setCreatorKeyword("");
+    if (page === 0) {
+      fetchCategories(0, "");
+    } else {
+      setPage(0);
+    }
+  };
+
   const filtered = useMemo(() => {
     // Vẫn giữ lọc client để người dùng gõ thấy hiệu ứng trong danh sách trang hiện tại
     const nameKw = keyword.trim().toLowerCase();
@@ -224,113 +234,6 @@ export default function CategoriesPage() {
   const closeModal = () => {
     setModalOpen(false);
   };
-
-  const onChangeName = (e) => {
-    const next = sentenceCase(e.target.value);
-    setForm((f) => ({ ...f, name: next }));
-  };
-
-  const onChangeDesc = (e) => {
-    const next = sentenceCase(e.target.value);
-    setForm((f) => ({ ...f, description: next }));
-  };
-
-  const validate = () => {
-    const name = form.name.trim();
-    if (!name) {
-      return "Tên danh mục là bắt buộc";
-    }
-    return "";
-  };
-
-  const handleSave = async () => {
-    const err = validate();
-    setFormError(err);
-    if (err) return;
-
-    try {
-      setLoading(true);
-      if (editing) {
-        // Update
-        const body = { id: editing.id, name: form.name.trim(), description: form.description?.trim() || "" };
-        await fetchApi(`${API_URL}/categories/edit/${editing.id}`, {
-          method: "PATCH",
-          body: body,
-        });
-
-        // Cập nhật local state sau khi thành công
-        setCategories((prev) => prev.map((c) =>
-        (c.id === editing.id
-          ? { ...c, name: form.name.trim(), description: form.description?.trim() || "" }
-          : c
-        )
-        ));
-        toast.success("Cập nhật danh mục thành công");
-      } else {
-        // Create
-        const body = { name: form.name.trim(), description: form.description?.trim() || "" };
-        // API call to create, note: the response may contain the new object
-        await fetchApi(`${API_URL}/categories/create`, {
-          method: "POST",
-          body: body,
-        });
-
-        toast.success("Tạo danh mục thành công");
-
-        // Sau khi tạo thành công, reset về trang 0 và load lại danh sách
-        setPage(0);
-        await fetchCategories(0, keyword);
-      }
-      setModalOpen(false);
-
-    } catch (e) {
-      console.error(e);
-      setFormError(e?.message || "Có lỗi xảy ra");
-      toast.error(e?.message || "Lưu danh mục thất bại");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleDelete = (id) => {
-    const cat = categories.find((c) => c.id === id);
-    if (!cat) return;
-
-    Swal.fire({
-      title: 'Xác nhận xóa',
-      text: `Bạn có chắc chắn muốn xóa danh mục "${cat.name}"?`,
-      icon: 'warning',
-      showCancelButton: true,
-      confirmButtonColor: '#3085d6',
-      cancelButtonColor: '#d33',
-      confirmButtonText: 'Xóa',
-      cancelButtonText: 'Hủy',
-      background: '#fff',
-      customClass: {
-        confirmButton: 'px-4 py-2 rounded-md',
-        cancelButton: 'px-4 py-2 rounded-md'
-      }
-    }).then((result) => {
-      if (result.isConfirmed) {
-        (async () => {
-          try {
-            setLoading(true);
-            await fetchApi(`${API_URL}/categories/delete/${id}`, { method: "DELETE" });
-
-            // Xóa khỏi local state
-            setCategories((prev) => prev.filter((c) => c.id !== id));
-            toast.success("Đã xóa danh mục thành công");
-          } catch (e) {
-            console.error(e);
-            toast.error(e?.message || "Không thể xóa danh mục");
-          } finally {
-            setLoading(false);
-          }
-        })();
-      }
-    });
-  };
-
 
   return (
     <div className="w-full min-h-screen py-6 sm:py-10 px-4 sm:px-8" style={{ backgroundColor: PAGE_BG }}>
@@ -372,11 +275,19 @@ export default function CategoriesPage() {
                 />
               </div>
 
-              {/* Nút tìm kiếm */}
+              {/* Nút tìm kiếm + xóa bộ lọc */}
               <div className="flex gap-2 shrink-0">
                 <button
+                  onClick={handleClearFilters}
+                  className="px-6 py-2 rounded-xl text-sm font-semibold bg-white shadow-sm hover:bg-gray-50 border border-purple-200 whitespace-nowrap"
+                  style={{ color: SEARCH_BAR_BG }}
+                  disabled={loading}
+                >
+                  Xóa bộ lọc
+                </button>
+                <button
                   onClick={handleSearch}
-                  className="px-6 py-2 rounded-xl text-white text-sm font-semibold shadow-lg hover:brightness-110 transition whitespace-nowrap"
+                  className="px-6 py-2 rounded-xl text-white text-sm font-semibold shadow-md hover:brightness-110 transition whitespace-nowrap"
                   style={{ backgroundColor: SEARCH_BAR_BG }}
                   disabled={loading}
                 >

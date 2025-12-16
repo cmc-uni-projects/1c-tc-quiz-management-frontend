@@ -10,7 +10,7 @@ const PAGE_SIZE = 10;
 const PAGE_BG = "#F4F2FF";
 const HERO_GRADIENT = "linear-gradient(135deg, #FFB6FF 0%, #8A46FF 100%)";
 const BUTTON_COLOR = "#9453C9";
-const SEARCH_BAR_BG = "#E33AEC";
+const SEARCH_BAR_BG = "#A53AEC";
 const TABLE_SHADOW = "0 25px 60px rgba(126, 62, 255, 0.18)";
 
 /* --- fetchApi (reuse the pattern from your categories file) --- */
@@ -583,6 +583,16 @@ export default function QuestionsPage() {
     fetchQuestions(0, keyword, difficultyFilter, typeFilter, categoryFilter, visibilityFilter);
   };
 
+  const handleClearFilters = () => {
+    setKeyword("");
+    setDifficultyFilter("");
+    setTypeFilter("");
+    setCategoryFilter("");
+    setVisibilityFilter("");
+    setPage(0);
+    fetchQuestions(0, "", "", "", "", "");
+  };
+
   const filtered = useMemo(() => {
     // keep client-side small filtering for UX on current page
     const kw = keyword.trim().toLowerCase();
@@ -723,12 +733,21 @@ export default function QuestionsPage() {
 
               {/* Row 2: Buttons */}
               <div className="flex justify-end gap-2 border-t border-gray-100 pt-4">
-                <button onClick={handleSearch} className="px-6 py-2 rounded-xl text-white text-sm font-semibold" style={{ backgroundColor: SEARCH_BAR_BG }} disabled={loading}>
-                  Tìm kiếm
+                <button
+                  onClick={handleClearFilters}
+                  className="px-6 py-2 rounded-xl text-sm font-semibold bg-white shadow-sm hover:bg-gray-50 border border-purple-200"
+                  style={{ color: SEARCH_BAR_BG }}
+                  disabled={loading}
+                >
+                  Xóa bộ lọc
                 </button>
-
-                <button onClick={openAdd} className="px-6 py-2 rounded-xl text-white text-sm font-semibold flex items-center gap-2" style={{ backgroundColor: BUTTON_COLOR }} disabled={loading}>
-                  <PlusIcon /> Thêm câu hỏi
+                <button
+                  onClick={handleSearch}
+                  className="px-6 py-2 rounded-xl text-white text-sm font-semibold shadow-md hover:brightness-110"
+                  style={{ backgroundColor: SEARCH_BAR_BG }}
+                  disabled={loading}
+                >
+                  Tìm kiếm
                 </button>
               </div>
             </div>
@@ -738,9 +757,19 @@ export default function QuestionsPage() {
         {/* Table */}
         <div className="bg-white rounded-2xl border border-white/60 shadow-[0_25px_60px_rgba(131,56,236,0.12)] overflow-hidden" style={{ boxShadow: TABLE_SHADOW }}>
           <div className="p-5 border-b border-gray-100 bg-gradient-to-r from-white to-purple-50/60">
-            <p className="text-sm text-gray-600 font-medium flex flex-wrap items-center gap-2">
-              <span className="text-xs px-3 py-1 rounded-full bg-white shadow-inner">Trang {page + 1}/{totalPages}</span>
-            </p>
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <p className="text-sm text-gray-600 font-medium flex flex-wrap items-center gap-2">
+                <span className="text-xs px-3 py-1 rounded-full bg-white shadow-inner">Trang {page + 1}/{totalPages}</span>
+              </p>
+              <button
+                onClick={openAdd}
+                className="px-4 sm:px-5 py-2 rounded-xl text-white text-xs sm:text-sm font-semibold flex items-center gap-2 shadow-sm"
+                style={{ backgroundColor: BUTTON_COLOR }}
+                disabled={loading}
+              >
+                <PlusIcon /> Thêm câu hỏi
+              </button>
+            </div>
           </div>
 
           <div className="overflow-x-auto">

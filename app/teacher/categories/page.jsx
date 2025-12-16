@@ -39,7 +39,7 @@ const useToast = () => {
 const PAGE_BG = "#F4F2FF";
 const HERO_GRADIENT = "linear-gradient(135deg, #FFB6FF 0%, #8A46FF 100%)";
 const BUTTON_COLOR = "#9453C9";
-const SEARCH_BAR_BG = "#E33AEC";
+const SEARCH_BAR_BG = "#A53AEC";
 const TABLE_SHADOW = "0 25px 60px rgba(126, 62, 255, 0.18)";
 const PRIMARY_PURPLE_BG = "#9453C9";
 
@@ -216,6 +216,16 @@ export default function TeacherCategoriesPage() {
     const { success, error } = await fetchCategories(0, keyword, true);
     if (!success && error) {
       console.error('Search error:', error);
+    }
+  };
+
+  const handleClearFilters = async () => {
+    setKeyword("");
+    setCreatorKeyword("");
+    setPage(0);
+    const { success, error } = await fetchCategories(0, "", true);
+    if (!success && error) {
+      console.error('Clear filters error:', error);
     }
   };
 
@@ -399,8 +409,15 @@ export default function TeacherCategoriesPage() {
 
                 <div className="flex gap-2 shrink-0">
                   <button
+                    onClick={handleClearFilters}
+                    className="px-6 py-2 rounded-xl text-sm font-semibold bg-white shadow-sm hover:bg-gray-50 border border-purple-200"
+                    style={{ color: SEARCH_BAR_BG }}
+                  >
+                    Xóa bộ lọc
+                  </button>
+                  <button
                     onClick={handleSearch}
-                    className="px-6 py-2 rounded-xl text-white text-sm font-semibold"
+                    className="px-6 py-2 rounded-xl text-white text-sm font-semibold shadow-md hover:brightness-110"
                     style={{ backgroundColor: SEARCH_BAR_BG }}
                   >
                     Tìm kiếm
