@@ -101,39 +101,48 @@ export default function AdminExamListPage() {
 
     // Online Exams State
     const [onlineExams, setOnlineExams] = useState<any[]>([]);
+    // Show more / collapse per-category groups (Xem thêm / Thu gọn)
+    const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({});
+    const isExpanded = (key: string) => !!expandedGroups[key];
+    const toggleGroup = (key: string) => setExpandedGroups((prev) => ({ ...prev, [key]: !prev[key] }));
+    const LIMIT = 6;
 
     // Fetch Categories
     useEffect(() => {
         fetchApi("/categories/all").then(setCategories).catch(console.error);
     }, []);
 
+    // Load exams (reusable for debounce + manual search button)
+    const loadExams = React.useCallback(async () => {
+        try {
+            setLoading(true);
+            const params = new URLSearchParams();
+            if (searchQuery) params.append("title", searchQuery);
+            if (categoryId) params.append("categoryId", categoryId);
+            if (examLevel) params.append("examLevel", examLevel);
+
+            const response = await fetchApi(`/exams/search?${params.toString()}`);
+            setExams(response.content || []);
+        } catch (error) {
+            console.error("Failed to fetch exams:", error);
+            toastError("Không thể tải danh sách bài thi.");
+        } finally {
+            setLoading(false);
+        }
+    }, [searchQuery, categoryId, examLevel]);
+
+    // Debounced auto-search when filters change
     useEffect(() => {
-        const fetchExams = async () => {
-            try {
-                setLoading(true);
-                const params = new URLSearchParams();
-                if (searchQuery) params.append("title", searchQuery);
-                if (categoryId) params.append("categoryId", categoryId);
-                if (examLevel) params.append("examLevel", examLevel);
-
-                // Uses search endpoint like Teacher
-                const response = await fetchApi(`/exams/search?${params.toString()}`);
-                setExams(response.content || []);
-            } catch (error) {
-                console.error("Failed to fetch exams:", error);
-                toastError("Không thể tải danh sách bài thi.");
-            } finally {
-                setLoading(false);
-            }
-        };
-
-        // Debounce search
         const timeoutId = setTimeout(() => {
-            fetchExams();
+            loadExams();
         }, 300);
 
         return () => clearTimeout(timeoutId);
-    }, [searchQuery, categoryId, examLevel]);
+    }, [loadExams]);
+
+    const handleSearchClick = () => {
+        loadExams();
+    };
 
     // Fetch Online Exams
     useEffect(() => {
@@ -167,6 +176,28 @@ export default function AdminExamListPage() {
     // Filter Logic trên danh sách đã lọc: chỉ các bài còn thời gian làm
     const draftExams = sortedExams.filter((x) => x.status === 'DRAFT');
     const readyExams = sortedExams.filter((x) => x.status === 'PUBLISHED');
+
+    // Group exams by category name
+    const groupByCategory = React.useCallback((list: Exam[]) => {
+        const map = new Map<string, Exam[]>();
+        list.forEach((e) => {
+            const key = e.category?.name || 'Không có danh mục';
+            if (!map.has(key)) map.set(key, []);
+            map.get(key)!.push(e);
+        });
+        return Array.from(map.entries());
+    }, []);
+
+    // Group any list by category (for online exams objects)
+    const groupAnyByCategory = React.useCallback((list: any[]) => {
+        const map = new Map<string, any[]>();
+        list.forEach((e) => {
+            const key = e?.category?.name || 'Không có danh mục';
+            if (!map.has(key)) map.set(key, []);
+            map.get(key)!.push(e);
+        });
+        return Array.from(map.entries());
+    }, []);
 
     // Finished exams: offline exams that have ended
     const finishedOfflineExams = [...exams]
@@ -272,7 +303,7 @@ export default function AdminExamListPage() {
                 </div>
 
                 {/* ========== SEARCH & FILTER TOOLBAR ========== */}
-                <div className="flex flex-wrap gap-4 mb-8 bg-white p-4 rounded-lg shadow-sm">
+                <div className="flex flex-wrap gap-4 mb-8 bg-white p-4 rounded-lg shadow-sm items-center">
                     <select
                         className="border rounded-lg p-2 min-w-[150px]"
                         value={categoryId}
@@ -302,6 +333,14 @@ export default function AdminExamListPage() {
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
                     />
+
+                    <button
+                        onClick={handleSearchClick}
+                        className="px-6 py-2 rounded-full text-white text-sm font-semibold shadow-md hover:brightness-110"
+                        style={{ backgroundColor: "#A53AEC" }}
+                    >
+                        Tìm kiếm
+                    </button>
                 </div>
 
                 {/* ========== ĐANG TẠO (Draft) ========== */}
@@ -310,39 +349,59 @@ export default function AdminExamListPage() {
                 {draftExams.length === 0 ? (
                     <p className="text-gray-500 mb-8">Không có bài thi nháp.</p>
                 ) : (
-                    <div className="flex flex-wrap gap-6 mb-8">
-                        {draftExams.map((exam) => (
-                            <div
-                                key={exam.examId}
-                                className="w-64 bg-white rounded-lg shadow p-4 relative border border-gray-100 border-l-4 border-l-yellow-400"
-                            >
-                                <p className="font-semibold text-lg mb-2 truncate" title={exam.title}>{exam.title}</p>
-                                <div className="text-sm space-y-1 text-gray-600">
-                                    <p className="flex items-center gap-2">
-                                        <ClockIcon /> Bắt đầu: {exam.startTime ? new Date(exam.startTime).toLocaleString('vi-VN', { hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit', year: 'numeric' }) : 'N/A'}
-                                    </p>
-                                    <p className="flex items-center gap-2">
-                                        <ClockIcon /> Kết thúc: {exam.endTime ? new Date(exam.endTime).toLocaleString('vi-VN', { hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit', year: 'numeric' }) : 'N/A'}
-                                    </p>
-                                    <p>⏳ Thời gian: {exam.durationMinutes} phút</p>
-                                    <p className="text-yellow-600 font-medium">⚠ Bản nháp</p>
-                                </div>
+                    <div className="space-y-6 mb-8">
+                        {Array.from(groupByCategory(draftExams)).map(([catName, items]) => (
+                            <div key={catName}>
+                                {catName !== 'Không có danh mục' && (
+                                    <h3 className="text-lg font-semibold mb-3">{catName}</h3>
+                                )}
+                                <div className="flex flex-wrap gap-6">
+                                    {(isExpanded(`draft:${catName}`) ? items : items.slice(0, LIMIT)).map((exam) => (
+                                        <div
+                                            key={exam.examId}
+                                            className="w-64 bg-white rounded-lg shadow p-4 relative border border-gray-100 border-l-4 border-l-yellow-400"
+                                        >
+                                            <p className="font-semibold text-lg mb-2 truncate" title={exam.title}>{exam.title}</p>
+                                            <div className="text-sm space-y-1 text-gray-600">
+                                                <p className="flex items-center gap-2">
+                                                    <ClockIcon /> Bắt đầu: {exam.startTime ? new Date(exam.startTime).toLocaleString('vi-VN', { hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit', year: 'numeric' }) : 'N/A'}
+                                                </p>
+                                                <p className="flex items-center gap-2">
+                                                    <ClockIcon /> Kết thúc: {exam.endTime ? new Date(exam.endTime).toLocaleString('vi-VN', { hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit', year: 'numeric' }) : 'N/A'}
+                                                </p>
+                                                <p>⏳ Thời gian: {exam.durationMinutes} phút</p>
+                                                <p className="text-yellow-600 font-medium">⚠ Bản nháp</p>
+                                            </div>
 
-                                <div className="flex items-center justify-between mt-3">
-                                    <button
-                                        onClick={() => router.push(`/admin/update-exam/${exam.examId}`)}
-                                        className="text-sm bg-yellow-100 text-yellow-700 px-3 py-1 rounded hover:bg-yellow-200"
-                                    >
-                                        Tiếp tục chỉnh sửa
-                                    </button>
-                                    <button
-                                        onClick={() => deleteExam(exam.examId)}
-                                        className="text-gray-400 hover:text-red-500"
-                                        title="Xóa nháp"
-                                    >
-                                        <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12" /></svg>
-                                    </button>
+                                            <div className="flex items-center justify-between mt-3">
+                                                <button
+                                                    onClick={() => router.push(`/admin/update-exam/${exam.examId}`)}
+                                                    className="text-sm bg-yellow-100 text-yellow-700 px-3 py-1 rounded hover:bg-yellow-200"
+                                                >
+                                                    Tiếp tục chỉnh sửa
+                                                </button>
+                                                <button
+                                                    onClick={() => deleteExam(exam.examId)}
+                                                    className="text-gray-400 hover:text-red-500"
+                                                    title="Xóa nháp"
+                                                >
+                                                    <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12" /></svg>
+                                                </button>
+                                            </div>
+                                        </div>
+                                    ))}
                                 </div>
+                                {items.length > LIMIT && (
+                                    <div className="mt-3">
+                                        <button
+                                            onClick={() => toggleGroup(`draft:${catName}`)}
+                                            className="px-4 py-2 rounded-full text-sm font-medium border-2 hover:bg-gray-50"
+                                            style={{ borderColor: '#A53AEC', color: '#A53AEC' }}
+                                        >
+                                            {isExpanded(`draft:${catName}`) ? 'Thu gọn' : `Xem thêm (${items.length - LIMIT})`}
+                                        </button>
+                                    </div>
+                                )}
                             </div>
                         ))}
                     </div>
@@ -356,12 +415,18 @@ export default function AdminExamListPage() {
                 {readyExams.length === 0 ? (
                     <p className="text-gray-500">Chưa có bài thi nào.</p>
                 ) : (
-                    <div className="flex flex-wrap gap-6">
-                        {readyExams.map((exam) => (
-                            <div
-                                key={exam.examId}
-                                className="w-64 bg-white rounded-lg shadow p-4 relative border border-gray-100"
-                            >
+                    <div className="space-y-6">
+                        {Array.from(groupByCategory(readyExams)).map(([catName, items]) => (
+                            <div key={catName}>
+                                {catName !== 'Không có danh mục' && (
+                                    <h3 className="text-lg font-semibold mb-3">{catName}</h3>
+                                )}
+                                <div className="flex flex-wrap gap-6">
+                                    {(isExpanded(`ready:${catName}`) ? items : items.slice(0, LIMIT)).map((exam) => (
+                                        <div
+                                            key={exam.examId}
+                                            className="w-64 bg-white rounded-lg shadow p-4 relative border border-gray-100"
+                                        >
                                 <p className="font-semibold text-lg mb-2 truncate" title={exam.title}>{exam.title}</p>
 
                                 <div className="text-sm space-y-1">
@@ -394,33 +459,23 @@ export default function AdminExamListPage() {
                                 {/* Dropdown menu */}
                                 {openMenu === exam.examId && (
                                     <div className="absolute right-0 top-8 bg-white shadow-lg border rounded-md w-32 py-2 z-20">
+                                        <button onClick={() => router.push(`/admin/detail-exam/${exam.examId}`)} className="block w-full text-left px-4 py-2 hover:bg-gray-100">Chi tiết</button>
+                                        <button onClick={() => deleteExam(exam.examId)} className="block w-full text-left px-4 py-2 hover:bg-gray-100 text-red-600">Xóa bài thi</button>
+                                        <button onClick={() => router.push(`/admin/update-exam/${exam.examId}`)} className="block w-full text-left px-4 py-2 hover:bg-gray-100">Cập nhật</button>
+                                        <button onClick={() => { setShareLink(`${window.location.origin}/admin/exam/${exam.examId}`); setOpenShare(true); setOpenMenu(null); }} className="block w-full text-left px-4 py-2 hover:bg-gray-100">Chia sẻ</button>
+                                    </div>
+                                )}
+                                        </div>
+                                    ))}
+                                </div>
+                                {items.length > LIMIT && (
+                                    <div className="mt-3">
                                         <button
-                                            onClick={() => router.push(`/admin/detail-exam/${exam.examId}`)}
-                                            className="block w-full text-left px-4 py-2 hover:bg-gray-100"
+                                            onClick={() => toggleGroup(`ready:${catName}`)}
+                                            className="px-4 py-2 rounded-full text-sm font-medium border-2 hover:bg-gray-50"
+                                            style={{ borderColor: '#A53AEC', color: '#A53AEC' }}
                                         >
-                                            Chi tiết
-                                        </button>
-                                        <button
-                                            onClick={() => deleteExam(exam.examId)}
-                                            className="block w-full text-left px-4 py-2 hover:bg-gray-100 text-red-600"
-                                        >
-                                            Xóa bài thi
-                                        </button>
-                                        <button
-                                            onClick={() => router.push(`/admin/update-exam/${exam.examId}`)} // Admin route
-                                            className="block w-full text-left px-4 py-2 hover:bg-gray-100"
-                                        >
-                                            Cập nhật
-                                        </button>
-                                        <button
-                                            onClick={() => {
-                                                setShareLink(`${window.location.origin}/admin/exam/${exam.examId}`);
-                                                setOpenShare(true);
-                                                setOpenMenu(null);
-                                            }}
-                                            className="block w-full text-left px-4 py-2 hover:bg-gray-100"
-                                        >
-                                            Chia sẻ
+                                            {isExpanded(`ready:${catName}`) ? 'Thu gọn' : `Xem thêm (${items.length - LIMIT})`}
                                         </button>
                                     </div>
                                 )}
@@ -438,16 +493,22 @@ export default function AdminExamListPage() {
                             Chưa có bài thi online nào
                         </div>
                     ) : (
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                            {activeOnlineExams.map((exam: any) => (
-                                <div
-                                    key={exam.id}
-                                    className={`bg-white rounded-2xl shadow-md p-6 hover:shadow-lg transition-shadow cursor-pointer border-2 ${exam.status === 'DRAFT' ? 'border-yellow-400' :
-                                        exam.status === 'WAITING' ? 'border-blue-400' :
-                                            exam.status === 'IN_PROGRESS' ? 'border-green-400' :
-                                                'border-gray-200'
-                                        }`}
-                                >
+                        <div className="space-y-6">
+                            {Array.from(groupAnyByCategory(activeOnlineExams)).map(([catName, items]) => (
+                                <div key={`active-online-${catName}`}>
+                                    {catName !== 'Không có danh mục' && (
+                                        <h3 className="text-lg font-semibold mb-3">{catName}</h3>
+                                    )}
+                                    <div className="flex flex-wrap gap-6">
+                                        {(isExpanded(`onlineActive:${catName}`) ? items : items.slice(0, LIMIT)).map((exam: any) => (
+                                            <div
+                                                key={exam.id}
+                                                className={`w-64 bg-white rounded-lg shadow p-4 hover:shadow-lg transition-shadow cursor-pointer border-2 ${exam.status === 'DRAFT' ? 'border-yellow-400' :
+                                                    exam.status === 'WAITING' ? 'border-blue-400' :
+                                                        exam.status === 'IN_PROGRESS' ? 'border-green-400' :
+                                                            'border-gray-200'
+                                                    }`}
+                                            >
                                     {/* Header với 3-dot menu */}
                                     <div className="flex justify-between items-start mb-3">
                                         <h3 className="text-lg font-semibold line-clamp-2 pr-2">{exam.name}</h3>
@@ -591,6 +652,20 @@ export default function AdminExamListPage() {
                                             </button>
                                         )}
                                     </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                    {items.length > LIMIT && (
+                                        <div className="mt-3">
+                                            <button
+                                                onClick={() => toggleGroup(`onlineActive:${catName}`)}
+                                                className="px-4 py-2 rounded-full text-sm font-medium border-2 hover:bg-gray-50"
+                                                style={{ borderColor: '#A53AEC', color: '#A53AEC' }}
+                                            >
+                                                {isExpanded(`onlineActive:${catName}`) ? 'Thu gọn' : `Xem thêm (${items.length - LIMIT})`}
+                                            </button>
+                                        </div>
+                                    )}
                                 </div>
                             ))}
                         </div>
@@ -607,27 +682,47 @@ export default function AdminExamListPage() {
                         {finishedOfflineExams.length === 0 ? (
                             <p className="text-gray-500">Chưa có bài thi nào kết thúc</p>
                         ) : (
-                            <div className="flex flex-wrap gap-6">
-                                {finishedOfflineExams.map((exam) => (
-                                    <div
-                                        key={`offline-${exam.examId}`}
-                                        className="w-64 bg-white rounded-lg shadow p-4 relative border border-gray-300 opacity-75"
-                                    >
-                                        <p className="font-semibold text-lg mb-2 truncate" title={exam.title}>{exam.title}</p>
+                            <div className="space-y-6">
+                                {Array.from(groupByCategory(finishedOfflineExams)).map(([catName, items]) => (
+                                    <div key={`finished-offline-${catName}`}>
+                                        {catName !== 'Không có danh mục' && (
+                                            <h4 className="text-base font-semibold mb-3">{catName}</h4>
+                                        )}
+                                        <div className="flex flex-wrap gap-6">
+                                            {(isExpanded(`offlineFinished:${catName}`) ? items : items.slice(0, LIMIT)).map((exam) => (
+                                                <div
+                                                    key={`offline-${exam.examId}`}
+                                                    className="w-64 bg-white rounded-lg shadow p-4 relative border border-gray-300 opacity-75"
+                                                >
+                                                    <p className="font-semibold text-lg mb-2 truncate" title={exam.title}>{exam.title}</p>
 
-                                        <div className="text-sm space-y-1">
-                                            <p className="flex items-center gap-2">
-                                                <ClockIcon /> Bắt đầu: {exam.startTime ? new Date(exam.startTime).toLocaleString('vi-VN', { hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit', year: 'numeric' }) : 'N/A'}
-                                            </p>
-                                            <p className="flex items-center gap-2">
-                                                <ClockIcon /> Kết thúc: {exam.endTime ? new Date(exam.endTime).toLocaleString('vi-VN', { hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit', year: 'numeric' }) : 'N/A'}
-                                            </p>
-                                            <p>⏳ Thời gian: {exam.durationMinutes} phút</p>
-                                            <p>📘 Câu hỏi: {exam.questionCount}</p>
-                                            <p>🏷 Danh mục: {exam.category?.name || "N/A"}</p>
-                                            <p>📊 Độ khó: <span className="font-medium">{getDifficultyLabel(exam.examLevel)}</span></p>
-                                            <p className="text-red-600 font-medium">❌ Đã hết hạn</p>
+                                                    <div className="text-sm space-y-1">
+                                                        <p className="flex items-center gap-2">
+                                                            <ClockIcon /> Bắt đầu: {exam.startTime ? new Date(exam.startTime).toLocaleString('vi-VN', { hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit', year: 'numeric' }) : 'N/A'}
+                                                        </p>
+                                                        <p className="flex items-center gap-2">
+                                                            <ClockIcon /> Kết thúc: {exam.endTime ? new Date(exam.endTime).toLocaleString('vi-VN', { hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit', year: 'numeric' }) : 'N/A'}
+                                                        </p>
+                                                        <p>⏳ Thời gian: {exam.durationMinutes} phút</p>
+                                                        <p>📘 Câu hỏi: {exam.questionCount}</p>
+                                                        <p>🏷 Danh mục: {exam.category?.name || "N/A"}</p>
+                                                        <p>📊 Độ khó: <span className="font-medium">{getDifficultyLabel(exam.examLevel)}</span></p>
+                                                        <p className="text-red-600 font-medium">❌ Đã hết hạn</p>
+                                                    </div>
+                                                </div>
+                                            ))}
                                         </div>
+                                        {items.length > LIMIT && (
+                                            <div className="mt-3">
+                                                <button
+                                                    onClick={() => toggleGroup(`offlineFinished:${catName}`)}
+                                                    className="px-4 py-2 rounded-full text-sm font-medium border-2 hover:bg-gray-50"
+                                                    style={{ borderColor: '#A53AEC', color: '#A53AEC' }}
+                                                >
+                                                    {isExpanded(`offlineFinished:${catName}`) ? 'Thu gọn' : `Xem thêm (${items.length - LIMIT})`}
+                                                </button>
+                                            </div>
+                                        )}
                                     </div>
                                 ))}
                             </div>
@@ -640,46 +735,66 @@ export default function AdminExamListPage() {
                         {finishedOnlineExams.length === 0 ? (
                             <p className="text-gray-500">Chưa có bài thi online nào kết thúc</p>
                         ) : (
-                            <div className="flex flex-wrap gap-6">
-                                {finishedOnlineExams.map((exam: any) => (
-                                    <div
-                                        key={`online-${exam.id}`}
-                                        className="w-64 bg-white rounded-lg shadow p-4 relative border border-gray-300 opacity-75"
-                                    >
-                                        <div className="flex justify-between items-start mb-3">
-                                            <h3 className="text-lg font-semibold line-clamp-2 pr-2">{exam.name}</h3>
-                                            <span className="px-3 py-1 rounded-full text-xs font-medium whitespace-nowrap bg-gray-100 text-gray-700">
-                                                Kết thúc
-                                            </span>
-                                        </div>
+                            <div className="space-y-6">
+                                {Array.from(groupAnyByCategory(finishedOnlineExams)).map(([catName, items]) => (
+                                    <div key={`finished-online-${catName}`}>
+                                        {catName !== 'Không có danh mục' && (
+                                            <h4 className="text-base font-semibold mb-3">{catName}</h4>
+                                        )}
+                                        <div className="flex flex-wrap gap-6">
+                                            {(isExpanded(`onlineFinished:${catName}`) ? items : items.slice(0, LIMIT)).map((exam: any) => (
+                                                <div
+                                                    key={`online-${exam.id}`}
+                                                    className="w-64 bg-white rounded-lg shadow p-4 relative border border-gray-300 opacity-75"
+                                                >
+                                                    <div className="flex justify-between items-start mb-3">
+                                                        <h3 className="text-lg font-semibold line-clamp-2 pr-2">{exam.name}</h3>
+                                                        <span className="px-3 py-1 rounded-full text-xs font-medium whitespace-nowrap bg-gray-100 text-gray-700">
+                                                            Kết thúc
+                                                        </span>
+                                                    </div>
 
-                                        <div className="space-y-2 text-sm mb-4">
-                                            <div className="flex justify-between">
-                                                <span className="text-gray-600">Độ khó:</span>
-                                                <span className="font-medium">{exam.level}</span>
-                                            </div>
-                                            <div className="flex justify-between">
-                                                <span className="text-gray-600">Số câu hỏi:</span>
-                                                <span className="font-medium">{exam.actualQuestionCount || 0}</span>
-                                            </div>
-                                            <div className="flex justify-between">
-                                                <span className="text-gray-600">Thời gian:</span>
-                                                <span className="font-medium">{exam.durationMinutes} phút</span>
-                                            </div>
-                                            <div className="flex justify-between">
-                                                <span className="text-gray-600">Mã truy cập:</span>
-                                                <span className="font-mono text-purple-600 font-bold">{exam.accessCode}</span>
-                                            </div>
-                                        </div>
+                                                    <div className="space-y-2 text-sm mb-4">
+                                                        <div className="flex justify-between">
+                                                            <span className="text-gray-600">Độ khó:</span>
+                                                            <span className="font-medium">{exam.level}</span>
+                                                        </div>
+                                                        <div className="flex justify-between">
+                                                            <span className="text-gray-600">Số câu hỏi:</span>
+                                                            <span className="font-medium">{exam.actualQuestionCount || 0}</span>
+                                                        </div>
+                                                        <div className="flex justify-between">
+                                                            <span className="text-gray-600">Thời gian:</span>
+                                                            <span className="font-medium">{exam.durationMinutes} phút</span>
+                                                        </div>
+                                                        <div className="flex justify-between">
+                                                            <span className="text-gray-600">Mã truy cập:</span>
+                                                            <span className="font-mono text-purple-600 font-bold">{exam.accessCode}</span>
+                                                        </div>
+                                                    </div>
 
-                                        <div className="flex gap-2">
-                                            <button
-                                                onClick={() => router.push(`/admin/exam-online/${exam.id}/results`)}
-                                                className="flex-1 bg-gray-600 text-white py-2 rounded-lg hover:bg-gray-700 text-sm"
-                                            >
-                                                Xem kết quả
-                                            </button>
+                                                    <div className="flex gap-2">
+                                                        <button
+                                                            onClick={() => router.push(`/admin/exam-online/${exam.id}/results`)}
+                                                            className="flex-1 bg-gray-600 text-white py-2 rounded-lg hover:bg-gray-700 text-sm"
+                                                        >
+                                                            Xem kết quả
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            ))}
                                         </div>
+                                        {items.length > LIMIT && (
+                                            <div className="mt-3">
+                                                <button
+                                                    onClick={() => toggleGroup(`onlineFinished:${catName}`)}
+                                                    className="px-4 py-2 rounded-full text-sm font-medium border-2 hover:bg-gray-50"
+                                                    style={{ borderColor: '#A53AEC', color: '#A53AEC' }}
+                                                >
+                                                    {isExpanded(`onlineFinished:${catName}`) ? 'Thu gọn' : `Xem thêm (${items.length - LIMIT})`}
+                                                </button>
+                                            </div>
+                                        )}
                                     </div>
                                 ))}
                             </div>
