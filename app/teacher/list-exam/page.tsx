@@ -171,6 +171,17 @@ export default function TeacherExamListPage() {
   const draftExams = sortedExams.filter((x) => x.status === 'DRAFT');
   const readyExams = sortedExams.filter((x) => x.status === 'PUBLISHED');
 
+  // Finished exams: offline exams that have ended
+  const finishedOfflineExams = [...exams]
+    .filter((e) => isExamEnded(e))
+    .sort((a, b) => Number(new Date(b.endTime || 0)) - Number(new Date(a.endTime || 0)));
+
+  // Finished online exams
+  const finishedOnlineExams = onlineExams.filter((e) => e.status === 'FINISHED');
+
+  // Active online exams (not finished)
+  const activeOnlineExams = onlineExams.filter((e) => e.status !== 'FINISHED');
+
   const deleteExam = async (id: number) => {
     const result = await Swal.fire({
       title: "Xác nhận xóa",
@@ -356,12 +367,12 @@ export default function TeacherExamListPage() {
 
                 <div className="text-sm space-y-1">
                   <p className="flex items-center gap-2">
-                    <ClockIcon /> {exam.startTime ? new Date(exam.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'N/A'}
+                    <ClockIcon /> Bắt đầu: {exam.startTime ? new Date(exam.startTime).toLocaleString('vi-VN', { hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit', year: 'numeric' }) : 'N/A'}
                   </p>
                   <p className="flex items-center gap-2">
-                    <CalendarIcon /> {formatDate(exam.startTime)}
+                    <ClockIcon /> Kết thúc: {exam.endTime ? new Date(exam.endTime).toLocaleString('vi-VN', { hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit', year: 'numeric' }) : 'N/A'}
                   </p>
-                  <p>⏳ {exam.durationMinutes} Phút</p>
+                  <p>⏳ Thời gian: {exam.durationMinutes} phút</p>
                   <p>📘 Câu hỏi: {exam.questionCount}</p>
                   <p>🏷 Danh mục: {exam.category?.name || "N/A"}</p>
                   <p>📊 Độ khó: <span className="font-medium">{getDifficultyLabel(exam.examLevel)}</span></p>
@@ -421,15 +432,15 @@ export default function TeacherExamListPage() {
 
         {/* ONLINE EXAMS SECTION */}
         <div className="mt-12">
-          <h2 className="text-xl font-semibold mb-6">Bài thi Online ({onlineExams.length})</h2>
+          <h2 className="text-xl font-semibold mb-6">Bài thi Online ({activeOnlineExams.length})</h2>
 
-          {onlineExams.length === 0 ? (
+          {activeOnlineExams.length === 0 ? (
             <div className="text-center py-12 text-gray-500">
               Chưa có bài thi online nào
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {onlineExams.map((exam: any) => (
+              {activeOnlineExams.map((exam: any) => (
                 <div
                   key={exam.id}
                   className={`bg-white rounded-2xl shadow-md p-6 hover:shadow-lg transition-shadow cursor-pointer border-2 ${exam.status === 'DRAFT' ? 'border-yellow-400' :
@@ -566,7 +577,7 @@ export default function TeacherExamListPage() {
                     )}
                     {exam.status === 'IN_PROGRESS' && (
                       <button
-                        onClick={() => router.push(`/teacher/monitor-exam/${exam.id}`)}
+                        onClick={() => router.push(`/teacher/exam-online/${exam.id}/monitor`)}
                         className="flex-1 bg-green-600 text-white py-2 rounded-lg hover:bg-green-700 text-sm"
                       >
                         Giám sát
@@ -574,7 +585,7 @@ export default function TeacherExamListPage() {
                     )}
                     {exam.status === 'FINISHED' && (
                       <button
-                        onClick={() => router.push(`/teacher/exam-result/${exam.id}`)}
+                        onClick={() => router.push(`/teacher/exam-online/${exam.id}/results`)}
                         className="flex-1 bg-gray-600 text-white py-2 rounded-lg hover:bg-gray-700 text-sm"
                       >
                         Xem kết quả
@@ -585,6 +596,96 @@ export default function TeacherExamListPage() {
               ))}
             </div>
           )}
+        </div>
+
+        {/* FINISHED EXAMS SECTION */}
+        <div className="mt-12">
+          <h2 className="text-xl font-semibold mb-6">Bài thi đã kết thúc</h2>
+
+          {/* Finished Offline Exams */}
+          <div className="mb-8">
+            <h3 className="text-lg font-semibold mb-4">Bài thi ({finishedOfflineExams.length})</h3>
+            {finishedOfflineExams.length === 0 ? (
+              <p className="text-gray-500">Chưa có bài thi nào kết thúc</p>
+            ) : (
+              <div className="flex flex-wrap gap-6">
+                {finishedOfflineExams.map((exam) => (
+                  <div
+                    key={`offline-${exam.examId}`}
+                    className="w-64 bg-white rounded-lg shadow p-4 relative border border-gray-300 opacity-75"
+                  >
+                    <p className="font-semibold text-lg mb-2 truncate" title={exam.title}>{exam.title}</p>
+
+                    <div className="text-sm space-y-1">
+                      <p className="flex items-center gap-2">
+                        <ClockIcon /> Bắt đầu: {exam.startTime ? new Date(exam.startTime).toLocaleString('vi-VN', { hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit', year: 'numeric' }) : 'N/A'}
+                      </p>
+                      <p className="flex items-center gap-2">
+                        <ClockIcon /> Kết thúc: {exam.endTime ? new Date(exam.endTime).toLocaleString('vi-VN', { hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit', year: 'numeric' }) : 'N/A'}
+                      </p>
+                      <p>⏳ Thời gian: {exam.durationMinutes} phút</p>
+                      <p>📘 Câu hỏi: {exam.questionCount}</p>
+                      <p>🏷 Danh mục: {exam.category?.name || "N/A"}</p>
+                      <p>📊 Độ khó: <span className="font-medium">{getDifficultyLabel(exam.examLevel)}</span></p>
+                      <p className="text-red-600 font-medium">❌ Đã hết hạn</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Finished Online Exams */}
+          <div>
+            <h3 className="text-lg font-semibold mb-4">Bài thi Online ({finishedOnlineExams.length})</h3>
+            {finishedOnlineExams.length === 0 ? (
+              <p className="text-gray-500">Chưa có bài thi online nào kết thúc</p>
+            ) : (
+              <div className="flex flex-wrap gap-6">
+                {finishedOnlineExams.map((exam: any) => (
+                  <div
+                    key={`online-${exam.id}`}
+                    className="w-64 bg-white rounded-lg shadow p-4 relative border border-gray-300 opacity-75"
+                  >
+                    <div className="flex justify-between items-start mb-3">
+                      <h3 className="text-lg font-semibold line-clamp-2 pr-2">{exam.name}</h3>
+                      <span className="px-3 py-1 rounded-full text-xs font-medium whitespace-nowrap bg-gray-100 text-gray-700">
+                        Kết thúc
+                      </span>
+                    </div>
+
+                    <div className="space-y-2 text-sm mb-4">
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Độ khó:</span>
+                        <span className="font-medium">{exam.level}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Số câu hỏi:</span>
+                        <span className="font-medium">{exam.actualQuestionCount || 0}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Thời gian:</span>
+                        <span className="font-medium">{exam.durationMinutes} phút</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Mã truy cập:</span>
+                        <span className="font-mono text-purple-600 font-bold">{exam.accessCode}</span>
+                      </div>
+                    </div>
+
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => router.push(`/teacher/exam-online/${exam.id}/results`)}
+                        className="flex-1 bg-gray-600 text-white py-2 rounded-lg hover:bg-gray-700 text-sm"
+                      >
+                        Xem kết quả
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
 
         {openShare && (

@@ -156,7 +156,7 @@ export default function TeacherMonitorPage() {
     if (!exam) return null;
 
     return (
-        <div className="min-h-screen bg-gray-50 p-6">
+        <div className="min-h-screen bg-gray-100 p-6">
             <div className="max-w-7xl mx-auto">
                 {/* Header */}
                 <div className="bg-white rounded-xl shadow-md p-6 mb-6">
