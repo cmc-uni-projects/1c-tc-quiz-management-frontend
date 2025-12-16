@@ -297,9 +297,21 @@ export default function CreateExamPage() {
       <div className="flex-1 flex flex-col">
         <main className="flex-1 overflow-y-auto px-10 py-8">
           <section className="bg-white rounded-2xl shadow p-8 mb-6">
-            <h2 className="text-2xl font-semibold text-center mb-8">
+            <h2 className="text-2xl font-semibold text-center mb-4">
               Tạo bài thi offline - Admin
             </h2>
+            <div className="flex justify-start gap-6 border-b border-gray-300 mb-8">
+              <a href="/admin/exam-offline">
+                <button className="pb-2 font-medium border-b-2 border-black">
+                  Bài thi Offline
+                </button>
+              </a>
+              <a href="/admin/exam-online">
+                <button className="pb-2 font-medium text-gray-500 hover:text-black hover:border-b-2 hover:border-gray-200">
+                  Bài thi Online
+                </button>
+              </a>
+            </div>
 
             {/* Các input đầu */}
             <div className="space-y-4 mb-6">
@@ -402,28 +414,28 @@ export default function CreateExamPage() {
                       className="border px-2 py-1 rounded-md"
                     />
                   </div>
+                </div>
               </div>
             </div>
+          </section>
+
+          {/* NÚT LƯU – ĐĂNG BÀI */}
+          <div className="mt-6 flex justify-end gap-4">
+            <button
+              onClick={() => window.location.href = '/admin/list-exam'}
+              className="px-6 py-2 border border-purple-700 text-purple-700 rounded-md">
+              Hủy
+            </button>
+
+            <button
+              onClick={() => handleCreateExam('DRAFT')}
+              className="px-6 py-2 bg-purple-700 text-white rounded-md"
+            >
+              Tạo bài thi
+            </button>
           </div>
-        </section>
-
-        {/* NÚT LƯU – ĐĂNG BÀI */}
-        <div className="mt-6 flex justify-end gap-4">
-          <button
-            onClick={() => window.location.href = '/admin/list-exam'}
-            className="px-6 py-2 border border-purple-700 text-purple-700 rounded-md">
-            Hủy
-          </button>
-
-          <button
-            onClick={() => handleCreateExam('DRAFT')}
-            className="px-6 py-2 bg-purple-700 text-white rounded-md"
-          >
-            Tạo bài thi
-          </button>
-        </div>
-      </main>
+        </main>
+      </div>
     </div>
-  </div>
-);
+  );
 }
