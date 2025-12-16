@@ -594,6 +594,12 @@ export default function UpdateExamPage() {
                                                 </div>
                                             </div>
 
+                                            {/* Question Count Summary */}
+                                            <div className="mt-2 text-sm text-gray-600">
+                                                Tổng cộng: <span className="font-semibold text-purple-600">{values.questions.length} câu hỏi</span>
+                                                {" "}({values.questions.filter(q => !q.isReadOnly).length} thủ công + {values.questions.filter(q => q.isReadOnly).length} thư viện)
+                                            </div>
+
                                             {values.questions.map((q, qIndex) => (
                                                 <section
                                                     key={qIndex}
