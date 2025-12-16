@@ -88,7 +88,6 @@ async function fetchApi(url: string, options: any = {}) {
 
   return data;
 }
-
 const PRIMARY_COLOR = "#6A1B9A";
 const LOGO_TEXT_COLOR = "#E33AEC";
 const MAIN_CONTENT_BG = "#6D0446";
@@ -153,7 +152,7 @@ const formatDate = (dateString: string | null) => {
       minute: '2-digit',
     });
   } catch (e) {
-    return 'Lỗi định dạng';
+    return 'Lỗi định dạng.';
   }
 };
 
