@@ -2,7 +2,11 @@
 
 import type { NextConfig } from "next";
 
+console.log("Attempting to read BACKEND_URL:", process.env.BACKEND_URL);
+
 const backendUrl = process.env.BACKEND_URL || "http://localhost:8082";
+
+console.log("Using backend URL:", backendUrl);
 
 const nextConfig: NextConfig = {
   outputFileTracingRoot: __dirname,
