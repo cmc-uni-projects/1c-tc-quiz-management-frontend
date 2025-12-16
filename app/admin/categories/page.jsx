@@ -104,6 +104,7 @@ export default function CategoriesPage() {
   const [categories, setCategories] = useState([]);
   const [currentUser, setCurrentUser] = useState(null);
   const [keyword, setKeyword] = useState("");
+  const [creatorKeyword, setCreatorKeyword] = useState("");
   // State cho Modal Thêm/Sửa
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState(null);
@@ -193,10 +194,18 @@ export default function CategoriesPage() {
 
   const filtered = useMemo(() => {
     // Vẫn giữ lọc client để người dùng gõ thấy hiệu ứng trong danh sách trang hiện tại
-    const kw = keyword.trim().toLowerCase();
-    if (!kw) return categories;
-    return categories.filter((c) => c.name?.toLowerCase().includes(kw));
-  }, [categories, keyword]);
+    const nameKw = keyword.trim().toLowerCase();
+    const creatorKw = creatorKeyword.trim().toLowerCase();
+
+    if (!nameKw && !creatorKw) return categories;
+
+    return categories.filter((c) => {
+      const matchesName = !nameKw || c.name?.toLowerCase().includes(nameKw);
+      const creatorValue = (c.createdByName || c.createdBy || "").toLowerCase();
+      const matchesCreator = !creatorKw || creatorValue.includes(creatorKw);
+      return matchesName && matchesCreator;
+    });
+  }, [categories, keyword, creatorKeyword]);
 
   const openAdd = () => {
     setEditing(null);
@@ -343,10 +352,8 @@ export default function CategoriesPage() {
           </div>
 
           <div className="mt-6 bg-white/95 rounded-2xl p-4 shadow-inner">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-end">
-              {/* Tìm kiếm */}
-              <div>
-                <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1 block">Tìm kiếm danh mục</label>
+            <div className="flex flex-col sm:flex-row gap-3 items-end">
+              <div className="flex-1">
                 <input
                   value={keyword}
                   onChange={(e) => setKeyword(e.target.value)}
@@ -356,16 +363,17 @@ export default function CategoriesPage() {
                 />
               </div>
 
-              {/* Nút tìm kiếm và thêm mới */}
-              <div className="flex justify-end gap-2">
-                <button
-                  onClick={openAdd}
-                  className="px-6 py-2 rounded-xl text-white text-sm font-semibold shadow-lg hover:brightness-110 transition whitespace-nowrap flex items-center gap-2"
-                  style={{ backgroundColor: BUTTON_COLOR }}
-                  disabled={loading}
-                >
-                  <PlusIcon className="w-4 h-4" /> Thêm danh mục
-                </button>
+              <div className="flex-1">
+                <input
+                  value={creatorKeyword}
+                  onChange={(e) => setCreatorKeyword(e.target.value)}
+                  placeholder="Nhập tên hoặc tài khoản người tạo..."
+                  className="w-full px-4 py-2 rounded-xl border border-gray-200 bg-white text-gray-800 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-purple-400"
+                />
+              </div>
+
+              {/* Nút tìm kiếm */}
+              <div className="flex gap-2 shrink-0">
                 <button
                   onClick={handleSearch}
                   className="px-6 py-2 rounded-xl text-white text-sm font-semibold shadow-lg hover:brightness-110 transition whitespace-nowrap"
@@ -385,12 +393,21 @@ export default function CategoriesPage() {
           style={{ boxShadow: TABLE_SHADOW }}
         >
           {/* Tiêu đề bảng */}
-          <div className="p-5 border-b border-gray-100 bg-gradient-to-r from-white to-purple-50/60">
+          <div className="p-5 border-b border-gray-100 bg-gradient-to-r from-white to-purple-50/60 flex items-center justify-between">
             <p className="text-sm text-gray-600 font-medium flex flex-wrap items-center gap-2">
               <span className="text-xs px-3 py-1 rounded-full bg-white shadow-inner">
                 Trang {page + 1}/{totalPages}
               </span>
             </p>
+
+            <button
+              onClick={openAdd}
+              className="px-6 py-2 rounded-xl text-white text-sm font-semibold flex items-center gap-2 shadow-sm whitespace-nowrap"
+              style={{ backgroundColor: BUTTON_COLOR }}
+              disabled={loading}
+            >
+              <PlusIcon className="w-4 h-4" /> Thêm danh mục
+            </button>
           </div>
 
           {/* Bảng */}

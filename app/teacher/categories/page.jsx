@@ -110,6 +110,7 @@ function sentenceCase(value) {
 export default function TeacherCategoriesPage() {
   const [categories, setCategories] = useState([]);
   const [keyword, setKeyword] = useState("");
+  const [creatorKeyword, setCreatorKeyword] = useState("");
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState(null); // null: thêm mới, object: đang sửa
   const [currentUser, setCurrentUser] = useState(null); // Added currentUser state
@@ -219,10 +220,18 @@ export default function TeacherCategoriesPage() {
   };
 
   const filtered = useMemo(() => {
-    const kw = keyword.trim().toLowerCase();
-    if (!kw) return categories;
-    return categories.filter((c) => c.name?.toLowerCase().includes(kw));
-  }, [categories, keyword]);
+    const nameKw = keyword.trim().toLowerCase();
+    const creatorKw = creatorKeyword.trim().toLowerCase();
+
+    if (!nameKw && !creatorKw) return categories;
+
+    return categories.filter((c) => {
+      const matchesName = !nameKw || c.name?.toLowerCase().includes(nameKw);
+      const creatorValue = (c.createdByName || c.createdBy || "").toLowerCase();
+      const matchesCreator = !creatorKw || creatorValue.includes(creatorKw);
+      return matchesName && matchesCreator;
+    });
+  }, [categories, keyword, creatorKeyword]);
 
   const openAdd = () => {
     setEditing(null);
@@ -372,13 +381,21 @@ export default function TeacherCategoriesPage() {
           <div className="mt-6 bg-white/95 rounded-2xl p-4 shadow-inner">
             <div className="flex flex-col gap-4">
               <div className="flex flex-col sm:flex-row gap-3">
-                <input
-                  value={keyword}
-                  onChange={(e) => setKeyword(e.target.value)}
-                  placeholder="Tìm theo tên danh mục..."
-                  className="flex-1 px-4 py-2 rounded-xl border border-gray-200 text-gray-800 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-purple-400"
-                  onKeyDown={(e) => e.key === "Enter" && handleSearch()}
-                />
+                <div className="flex flex-1 flex-col sm:flex-row gap-3">
+                  <input
+                    value={keyword}
+                    onChange={(e) => setKeyword(e.target.value)}
+                    placeholder="Tìm theo tên danh mục..."
+                    className="flex-1 px-4 py-2 rounded-xl border border-gray-200 text-gray-800 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-purple-400"
+                    onKeyDown={(e) => e.key === "Enter" && handleSearch()}
+                  />
+                  <input
+                    value={creatorKeyword}
+                    onChange={(e) => setCreatorKeyword(e.target.value)}
+                    placeholder="Tìm theo người tạo..."
+                    className="flex-1 px-4 py-2 rounded-xl border border-gray-200 text-gray-800 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-purple-400"
+                  />
+                </div>
 
                 <div className="flex gap-2 shrink-0">
                   <button
@@ -387,14 +404,6 @@ export default function TeacherCategoriesPage() {
                     style={{ backgroundColor: SEARCH_BAR_BG }}
                   >
                     Tìm kiếm
-                  </button>
-
-                  <button
-                    onClick={openAdd}
-                    className="px-6 py-2 rounded-xl text-white text-sm font-semibold flex items-center gap-2"
-                    style={{ backgroundColor: BUTTON_COLOR }}
-                  >
-                    <PlusIcon /> Thêm mới
                   </button>
                 </div>
               </div>
@@ -407,12 +416,20 @@ export default function TeacherCategoriesPage() {
           className="bg-white rounded-2xl border border-white/60 shadow-[0_25px_60px_rgba(131,56,236,0.12)] overflow-hidden"
           style={{ boxShadow: TABLE_SHADOW }}
         >
-          <div className="p-5 border-b border-gray-100 bg-gradient-to-r from-white to-purple-50/60">
+          <div className="p-5 border-b border-gray-100 bg-gradient-to-r from-white to-purple-50/60 flex items-center justify-between">
             <p className="text-sm text-gray-600 font-medium flex flex-wrap items-center gap-2">
               <span className="text-xs px-3 py-1 rounded-full bg-white shadow-inner">
                 Trang {page + 1}/{totalPages}
               </span>
             </p>
+
+            <button
+              onClick={openAdd}
+              className="px-6 py-2 rounded-xl text-white text-sm font-semibold flex items-center gap-2 shadow-sm"
+              style={{ backgroundColor: BUTTON_COLOR }}
+            >
+              <PlusIcon /> Thêm mới
+            </button>
           </div>
 
           <div className="overflow-x-auto">
