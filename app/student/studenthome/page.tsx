@@ -20,12 +20,12 @@ let getDoc: any;
 // Load Firebase từ CDN
 const loadFirebase = async () => {
     try {
-        if (!window.firebase) {
+        if (!(window as any).firebase) {
             console.error("Firebase chưa load từ CDN!");
             return false;
         }
 
-        const firebase = window.firebase;
+        const firebase = (window as any).firebase;
 
         initializeApp = firebase.initializeApp;
         getAuth = () => firebase.auth();
