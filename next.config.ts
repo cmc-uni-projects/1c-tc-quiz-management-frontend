@@ -2,6 +2,8 @@
 
 import type { NextConfig } from "next";
 
+const backendUrl = process.env.BACKEND_URL || "http://localhost:8082";
+
 const nextConfig: NextConfig = {
   outputFileTracingRoot: __dirname,
   async rewrites() {
@@ -10,33 +12,33 @@ const nextConfig: NextConfig = {
       {
         // e.g. /teachers/all, /teachers/123/approve
         source: "/teachers/:path*",
-        destination: "http://localhost:8082/teachers/:path*",
+        destination: `${backendUrl}/teachers/:path*`,
       },
 
       // 2. NEW: Proxy for /admin/* endpoints (admin-only actions like approve/reject)
       // REMOVED: Conflics with frontend routes
       /* {
         source: "/admin/:path*",
-        destination: "http://localhost:8082/admin/:path*",
+        destination: `${backendUrl}/admin/:path*`,
       }, */
 
 
       // 3. Existing: /api/* endpoints
       {
         source: "/api/:path*",
-        destination: "http://localhost:8082/api/:path*",
+        destination: `${backendUrl}/api/:path*`,
       },
 
       // 4. Existing: Proxy uploaded images
       {
         source: "/uploads/:path*",
-        destination: "http://localhost:8082/uploads/:path*",
+        destination: `${backendUrl}/uploads/:path*`,
       },
 
       // 5. NEW: Proxy categories CRUD to backend Spring Boot
       {
         source: "/categories/:path*",
-        destination: "http://localhost:8082/categories/:path*",
+        destination: `${backendUrl}/categories/:path*`,
       },
     ];
   },

@@ -6,7 +6,7 @@ export class ApiError extends Error {
     this.status = status;
   }
 }
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8082/api';
+const API_BASE_URL = '/api';
 
 interface FetchApiOptions {
   method?: string;
