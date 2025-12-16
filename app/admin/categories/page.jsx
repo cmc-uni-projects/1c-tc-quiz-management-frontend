@@ -3,8 +3,8 @@
 import React, { useEffect, useMemo, useState, useCallback } from "react";
 import Swal from "sweetalert2";
 import toast from "react-hot-toast";
+import { fetchApi } from "@/lib/apiClient";
 
-const API_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "/api";
 const PRIMARY_COLOR = "#6A1B9A";
 const LOGO_TEXT_COLOR = "#E33AEC";
 const MAIN_CONTENT_BG = "#6D0446";
@@ -13,54 +13,6 @@ const BUTTON_COLOR = "#9453C9";
 const PAGE_BG = "#F4F2FF";
 const HERO_GRADIENT = "linear-gradient(135deg, #FFB6FF 0%, #8A46FF 100%)";
 const TABLE_SHADOW = "0 25px 60px rgba(126, 62, 255, 0.18)";
-
-
-const getAuthToken = () => {
-  if (typeof window !== 'undefined') {
-    return localStorage.getItem('jwt');
-  }
-  return null;
-};
-
-async function fetchApi(url, options = {}) {
-  const token = getAuthToken();
-  const defaultHeaders = {
-    'Content-Type': 'application/json',
-    ...(token && { 'Authorization': `Bearer ${token}` }),
-  };
-
-  const config = {
-    method: options.method || 'GET',
-    headers: {
-      ...defaultHeaders,
-      ...(options.headers || {}),
-    },
-    credentials: "include",
-  };
-
-  if (options.body) {
-    config.body = typeof options.body === 'string' ? options.body : JSON.stringify(options.body);
-  }
-
-  const response = await fetch(url, config);
-  const isJson = response.headers.get('content-type')?.includes('application/json');
-
-  if (!response.ok) {
-    let errorText = "Lỗi không xác định";
-    try {
-      errorText = isJson ? (await response.json()).message || (await response.json()).error : await response.text();
-    } catch {
-    }
-    const errorMessage = errorText.substring(0, 200) || `Lỗi (${response.status}): Không thể thực hiện thao tác.`;
-    throw new Error(errorMessage);
-  }
-
-  try {
-    return isJson ? await response.json() : await response.text();
-  } catch (e) {
-    return options.method === 'DELETE' || options.method === 'PUT' ? "Success" : null;
-  }
-}
 
 
 const PlusIcon = (props) => (
@@ -141,7 +93,7 @@ export default function CategoriesPage() {
           size: String(PAGE_SIZE),
           sort: "id,desc",
         });
-        url = `${API_URL}/categories/search?${params.toString()}`;
+        url = `/categories/search?${params.toString()}`;
       } else {
         const params = new URLSearchParams({
           name: q,
@@ -149,7 +101,7 @@ export default function CategoriesPage() {
           size: String(PAGE_SIZE),
           sort: "id,desc",
         });
-        url = `${API_URL}/categories/search?${params.toString()}`;
+        url = `/categories/search?${params.toString()}`;
       }
 
       const data = await fetchApi(url);
@@ -244,7 +196,7 @@ export default function CategoriesPage() {
       if (editing) {
         // Update
         const body = { id: editing.id, name: form.name.trim(), description: form.description?.trim() || "" };
-        await fetchApi(`${API_URL}/categories/edit/${editing.id}`, {
+        await fetchApi(`/categories/edit/${editing.id}`, {
           method: "PATCH",
           body: body,
         });
@@ -261,7 +213,7 @@ export default function CategoriesPage() {
         // Create
         const body = { name: form.name.trim(), description: form.description?.trim() || "" };
         // API call to create, note: the response may contain the new object
-        await fetchApi(`${API_URL}/categories/create`, {
+        await fetchApi(`/categories/create`, {
           method: "POST",
           body: body,
         });
@@ -306,7 +258,7 @@ export default function CategoriesPage() {
         (async () => {
           try {
             setLoading(true);
-            await fetchApi(`${API_URL}/categories/delete/${id}`, { method: "DELETE" });
+            await fetchApi(`/categories/delete/${id}`, { method: "DELETE" });
 
             // Xóa khỏi local state
             setCategories((prev) => prev.filter((c) => c.id !== id));
