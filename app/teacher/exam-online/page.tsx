@@ -19,9 +19,8 @@ export default function CreateOnlineExamPage() {
   const [name, setName] = useState("");
   const [categoryId, setCategoryId] = useState("");
   const [level, setLevel] = useState("");
-  const [durationMinutes, setDurationMinutes] = useState<number | "">(60);
-  const [passingScore, setPassingScore] = useState<number | "">(5);
-  const [maxParticipants, setMaxParticipants] = useState<number | "">(30);
+  const [durationMinutes, setDurationMinutes] = useState<number | "">("");
+  const [maxParticipants, setMaxParticipants] = useState<number | "">("");
 
   useEffect(() => {
     fetchApi("/categories/all")
@@ -52,10 +51,6 @@ export default function CreateOnlineExamPage() {
       toastError("Thời gian làm bài phải lớn hơn 0");
       return;
     }
-    if (passingScore === "" || passingScore < 0 || passingScore > 10) {
-      toastError("Điểm đạt phải từ 0-10");
-      return;
-    }
     if (!maxParticipants || maxParticipants <= 0) {
       toastError("Số người tham gia phải lớn hơn 0");
       return;
@@ -66,7 +61,7 @@ export default function CreateOnlineExamPage() {
       categoryId: parseInt(categoryId),
       level: level,
       durationMinutes: Number(durationMinutes),
-      passingScore: Number(passingScore),
+      passingScore: 5, // Default passing score
       maxParticipants: Number(maxParticipants),
     };
 
@@ -162,7 +157,7 @@ export default function CreateOnlineExamPage() {
                 setDurationMinutes(e.target.value === "" ? "" : Number(e.target.value))
               }
               className="w-full border border-gray-300 rounded-lg px-4 py-2"
-              placeholder="60"
+              placeholder="Nhập thời gian (ví dụ: 60)"
             />
           </div>
 
@@ -179,7 +174,7 @@ export default function CreateOnlineExamPage() {
                 setMaxParticipants(e.target.value === "" ? "" : Number(e.target.value))
               }
               className="w-full border border-gray-300 rounded-lg px-4 py-2"
-              placeholder="30"
+              placeholder="Nhập số người (ví dụ: 30)"
             />
           </div>
 

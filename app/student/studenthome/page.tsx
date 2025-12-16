@@ -167,33 +167,38 @@ const StudentHomeContent = () => {
         loadStats();
     }, [user]);
 
-    /* JOIN ROOM (GIỮ NGUYÊN) */
+    /* JOIN ROOM - Updated to use Online Exam API */
     const handleJoinRoom = async () => {
-        if (!roomCode.trim()) return toast.error("Vui lòng nhập mã phòng.");
-        if (!isFirebaseReady || !db) return toast.error("Dịch vụ chưa sẵn sàng.");
+        if (!roomCode.trim()) {
+            toast.error("Vui lòng nhập mã phòng.");
+            return;
+        }
 
         setIsJoining(true);
 
         try {
             const code = roomCode.trim();
-            const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
-            const docPath = `/artifacts/${appId}/public/data/quiz_rooms/${code}`;
 
-            const roomRef = doc(db, docPath);
-            const snapshot = await getDoc(roomRef);
+            // Call API to join online exam
+            const response = await fetchApi(`/online-exams/join/${code}`, {
+                method: "POST",
+            });
 
-            if (snapshot.exists()) {
+            if (response) {
                 toast.success(`Tham gia phòng ${code} thành công!`);
-                router.push(`/student/quiz-room/${code}`);
-            } else {
-                toast.error("Mã phòng không hợp lệ.");
+                // Redirect to waiting room
+                router.push(`/student/waiting-room/${code}`);
             }
-        } catch (e) {
-            console.error(e);
-            toast.error("Đã xảy ra lỗi khi tham gia phòng.");
+        } catch (error: any) {
+            console.error("Join room error:", error);
+            if (error.message) {
+                toast.error(error.message);
+            } else {
+                toast.error("Mã phòng không hợp lệ hoặc bài thi chưa bắt đầu.");
+            }
+        } finally {
+            setIsJoining(false);
         }
-
-        setIsJoining(false);
     };
 
     /* SUBJECT CLICK (GIỮ NGUYÊN) */

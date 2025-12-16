@@ -29,28 +29,27 @@ export default function StudentWaitingRoomPage() {
     useEffect(() => {
         if (!accessCode) return;
 
-        const joinAndConnect = async () => {
+        const loadExamInfo = async () => {
             try {
                 setLoading(true);
-                // Join the exam waiting room
-                const response = await fetchApi(`/online-exams/join/${accessCode}`, { method: "POST" });
+                // Fetch exam info (student already joined from home page)
+                const response = await fetchApi(`/online-exams/info/${accessCode}`);
                 setExamInfo(response);
 
                 // Get initial participants list
                 const parts = await fetchApi(`/waiting-room/${accessCode}/participants`);
                 setParticipants(Array.isArray(parts) ? parts : []);
 
-                // Connection logic handled in separate effect or function call
             } catch (error: any) {
-                console.error("Join error:", error);
-                toastError(error.message || "Không thể tham gia phòng chờ");
-                router.push("/student/join");
+                console.error("Load error:", error);
+                toastError(error.message || "Không thể tải thông tin phòng chờ");
+                router.push("/student/studenthome");
             } finally {
                 setLoading(false);
             }
         };
 
-        joinAndConnect();
+        loadExamInfo();
     }, [accessCode, router]);
 
     // WebSocket logic

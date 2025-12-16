@@ -38,9 +38,6 @@ interface ExamFormValues {
     endTime: string;   // HH:mm
     endDate: string;   // YYYY-MM-DD
     questions: Question[];
-    status: string; // 'DRAFT', 'PUBLISHED', 'PRIVATE'
-    code?: string;
-    url?: string;
 }
 
 interface Category {
@@ -194,88 +191,6 @@ function QuestionDetailModal({ open, onClose, question }: { open: boolean; onClo
     );
 }
 
-function AddStudentForm({ examId }: { examId: string }) {
-    const [email, setEmail] = useState("");
-    const [authorizedStudents, setAuthorizedStudents] = useState<any[]>([]);
-    const [loading, setLoading] = useState(false);
-
-    const fetchAuthorizedStudents = async () => {
-        try {
-            const students = await fetchApi(`/exams/${examId}/authorized-students`);
-            setAuthorizedStudents(students || []);
-        } catch (error) {
-            console.error("Failed to fetch authorized students", error);
-        }
-    };
-
-    useEffect(() => {
-        if (examId) {
-            fetchAuthorizedStudents();
-        }
-    }, [examId]);
-
-    const handleAddStudent = async (e: React.FormEvent) => {
-        e.preventDefault();
-        if (!email.trim()) {
-            toastError("Vui lòng nhập email.");
-            return;
-        }
-        setLoading(true);
-        try {
-            const requestBody = { studentEmails: [email] };
-            await fetchApi(`/exams/${examId}/add-students`, {
-                method: 'POST',
-                body: JSON.stringify(requestBody),
-            });
-            toastSuccess(`Đã thêm ${email} vào danh sách được phép.`);
-            setEmail(""); // Clear input
-            fetchAuthorizedStudents(); // Refresh the list from the server
-        } catch (error: any) {
-            toastError(error.message || "Không thể thêm học sinh.");
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    return (
-        <div className="bg-gray-50 p-6 rounded-lg border">
-            <h4 className="text-lg font-semibold text-gray-800 mb-3">Cho phép học sinh truy cập</h4>
-            <div className="flex items-center gap-3 mb-4">
-                <input
-                    type="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    placeholder="Nhập email học sinh"
-                    className="flex-1 border px-3 py-2 rounded-md"
-                />
-                <button
-                    type="button"
-                    onClick={handleAddStudent}
-                    disabled={loading}
-                    className="px-5 py-2 bg-green-600 text-white font-semibold rounded-md hover:bg-green-700 disabled:bg-gray-400"
-                >
-                    {loading ? "Đang thêm..." : "+ Thêm"}
-                </button>
-            </div>
-
-            <div className="mt-4">
-                <h5 className="font-semibold mb-2">Danh sách đã được cấp quyền:</h5>
-                {authorizedStudents.length > 0 ? (
-                    <ul className="space-y-2 max-h-40 overflow-y-auto">
-                        {authorizedStudents.map((student, index) => (
-                            <li key={index} className="bg-white p-2 border rounded-md text-sm">
-                                {student.email}
-                            </li>
-                        ))}
-                    </ul>
-                ) : (
-                    <p className="text-sm text-gray-500">Chưa có học sinh nào được thêm.</p>
-                )}
-            </div>
-        </div>
-    );
-}
-
 export default function UpdateExamPage() {
     const { id } = useParams();
     const router = useRouter();
@@ -385,9 +300,6 @@ export default function UpdateExamPage() {
                     endTime: endTimeObj.toTimeString().slice(0, 5),
                     endDate: formatLocalDate(endTimeObj),   // Use local formatted date
                     questions: mappedQuestions,
-                    status: exam.status || 'DRAFT',
-                    code: exam.code,
-                    url: exam.url,
                 });
             } catch (error) {
                 console.error("Failed to load data:", error);
@@ -448,10 +360,11 @@ export default function UpdateExamPage() {
         }
     };
 
-
+    // State for submit action
+    const [submitAction, setSubmitAction] = useState<'DRAFT' | 'PUBLISHED'>('DRAFT');
 
     // Submit Handler
-    const handleSubmit = async (values: ExamFormValues, { setFieldValue }: { setFieldValue: (field: string, value: any) => void }) => {
+    const handleSubmit = async (values: ExamFormValues) => {
         try {
             const questionIds: number[] = [];
 
@@ -534,23 +447,18 @@ export default function UpdateExamPage() {
                 endTime: `${values.endDate}T${values.endTime}:00`,
                 questionIds: questionIds,
                 description: "",
-                status: values.status // Use status from form
+                status: submitAction // Use state
             };
 
-            const updatedExam = await fetchApi(`/exams/edit/${id}`, {
+            console.log(`[DEBUG] Updating exam ${id}:`, examPayload);
+
+            await fetchApi(`/exams/edit/${id}`, {
                 method: "PUT",
                 body: JSON.stringify(examPayload),
             });
 
-            toastSuccess("Cập nhật bài thi thành công!");
-
-            // If the exam is private, update the form with the returned code and url
-            if (values.status === 'PRIVATE' && updatedExam) {
-                setFieldValue('code', updatedExam.code);
-                setFieldValue('url', updatedExam.url);
-            } else {
-                 router.push("/teacher/list-exam");
-            }
+            toastSuccess(submitAction === 'DRAFT' ? "Đã lưu nháp!" : "Đã đăng bài thành công!");
+            router.push("/teacher/list-exam");
         } catch (error: unknown) {
             const err = error as Error & { message?: string };
             console.error("Submit error:", error);
@@ -684,6 +592,12 @@ export default function UpdateExamPage() {
                                                     </button>
 
                                                 </div>
+                                            </div>
+
+                                            {/* Question Count Summary */}
+                                            <div className="mt-2 text-sm text-gray-600">
+                                                Tổng cộng: <span className="font-semibold text-purple-600">{values.questions.length} câu hỏi</span>
+                                                {" "}({values.questions.filter(q => !q.isReadOnly).length} thủ công + {values.questions.filter(q => q.isReadOnly).length} thư viện)
                                             </div>
 
                                             {values.questions.map((q, qIndex) => (
@@ -879,46 +793,6 @@ export default function UpdateExamPage() {
                             </FieldArray>
                         </section>
 
-                        {/* ======= STATUS & ACTIONS ======= */}
-                        <section className="bg-white rounded-2xl shadow p-8 mt-6">
-                             <h3 className="text-xl font-semibold mb-4">Trạng thái & Hành động</h3>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                <div>
-                                    <label className="block text-sm font-medium mb-1">Trạng thái</label>
-                                    <Field
-                                        as="select"
-                                        name="status"
-                                        className="w-full border px-3 py-2 rounded-md bg-white"
-                                    >
-                                        <option value="DRAFT">Bản nháp</option>
-                                        <option value="PUBLISHED">Công khai</option>
-                                        <option value="PRIVATE">Riêng tư</option>
-                                    </Field>
-                                </div>
-                            </div>
-
-                            {/* Conditionally render private exam info */}
-                            {values.status === 'PRIVATE' && values.code && values.url && (
-                                <div className="mt-6 bg-purple-50 p-4 rounded-lg border border-purple-200">
-                                    <h4 className="font-semibold text-purple-800 mb-2">Thông tin bài thi riêng tư</h4>
-                                    <div className="space-y-2">
-                                        <div>
-                                            <label className="text-sm font-medium text-gray-600">Mã code:</label>
-                                            <p className="font-mono bg-white p-2 rounded-md text-purple-700">{values.code}</p>
-                                        </div>
-                                        <div>
-                                            <label className="text-sm font-medium text-gray-600">URL:</label>
-                                             <p className="font-mono bg-white p-2 rounded-md text-purple-700">{values.url}</p>
-                                                                                 </div>
-                                                                            </div>
-                                                                        </div>
-                                                                    )}
-                                                                    {values.status === 'PRIVATE' && values.code && values.url && (
-                                                                        <div className="mt-6">
-                                                                            <AddStudentForm examId={id as string} />
-                                                                        </div>
-                                                                    )}
-                                                                </section>
                         {/* ======= ACTIONS ======= */}
                         <div className="flex justify-end gap-4 mt-8 pb-10">
                             <button
@@ -930,9 +804,17 @@ export default function UpdateExamPage() {
                             </button>
                             <button
                                 type="submit"
+                                onClick={() => setSubmitAction('DRAFT')}
+                                className="px-6 py-2 border border-purple-700 text-purple-700 font-medium rounded-lg hover:bg-purple-50 transition"
+                            >
+                                Lưu nháp
+                            </button>
+                            <button
+                                type="submit"
+                                onClick={() => setSubmitAction('PUBLISHED')}
                                 className="px-6 py-2 bg-purple-700 hover:bg-purple-800 text-white font-medium rounded-lg transition shadow-md"
                             >
-                                Cập nhật bài thi
+                                Đăng bài
                             </button>
                         </div>
 
