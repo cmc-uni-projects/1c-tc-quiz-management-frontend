@@ -259,13 +259,13 @@ export default function AddQuestionsToExamPage() {
                     durationMinutes: examData.durationMinutes,
                     passingScore: examData.passingScore,
                     maxParticipants: examData.maxParticipants,
-                    categoryId: examData.category?.id || 0,
+                    categoryId: examData.category?.id || examData.categoryId || 0,
                     manualQuestions: [
                         {
                             title: "",
                             type: "SINGLE",
                             difficulty: "EASY",
-                            categoryId: examData.category?.id || 0,
+                            categoryId: examData.category?.id || examData.categoryId || 0,
                             answers: [
                                 { text: "", isCorrect: false },
                                 { text: "", isCorrect: false },
@@ -317,7 +317,12 @@ export default function AddQuestionsToExamPage() {
     };
 
     const handleSubmit = async (values: FormValues) => {
-        const totalQuestions = values.manualQuestions.length + selectedLibraryQuestions.length;
+        // Filter out empty manual questions (questions without title or answers)
+        const validManualQuestions = values.manualQuestions.filter(
+            (q) => q.title.trim() !== "" && q.answers.some((a) => a.text.trim() !== "")
+        );
+
+        const totalQuestions = validManualQuestions.length + selectedLibraryQuestions.length;
 
         if (totalQuestions === 0) {
             toastError("Vui lòng thêm ít nhất một câu hỏi (thủ công hoặc từ thư viện)");
@@ -329,7 +334,7 @@ export default function AddQuestionsToExamPage() {
             const questionIds: number[] = [];
 
             // 1. Update exam info
-            await fetchApi(`/online-exams/${examId}`, {
+            await fetchApi(`/online-exams/${examId}/update`, {
                 method: "PUT",
                 body: {
                     name: values.name.trim(),
@@ -341,17 +346,23 @@ export default function AddQuestionsToExamPage() {
                 },
             });
 
-            // 2. Create manual questions
-            for (const q of values.manualQuestions) {
+            // 2. Create manual questions (only valid ones)
+            for (const q of validManualQuestions) {
+                // Ensure categoryId is valid
+                const questionCategoryId = Number(q.categoryId);
+                const validCategoryId = questionCategoryId > 0 ? questionCategoryId : Number(values.categoryId);
+
                 const payload = {
                     title: q.title.trim(),
                     type: q.type,
                     difficulty: q.difficulty,
-                    categoryId: Number(q.categoryId),
-                    answers: q.answers.map((a) => ({
-                        text: a.text.trim(),
-                        correct: a.isCorrect,
-                    })),
+                    categoryId: validCategoryId,
+                    answers: q.answers
+                        .filter((a) => a.text.trim() !== "") // Filter empty answers
+                        .map((a) => ({
+                            text: a.text.trim(),
+                            correct: a.isCorrect,
+                        })),
                     visibility: "PRIVATE",
                     createdBy: "TEACHER",
                 };
@@ -693,28 +704,6 @@ export default function AddQuestionsToExamPage() {
                                             </div>
                                         )}
 
-                                        {/* Add Question Button */}
-                                        <div className="mt-4 flex justify-center">
-                                            <button
-                                                type="button"
-                                                onClick={() =>
-                                                    push({
-                                                        title: "",
-                                                        type: "SINGLE",
-                                                        difficulty: "EASY",
-                                                        categoryId: values.categoryId || "",
-                                                        answers: [
-                                                            { text: "", isCorrect: false },
-                                                            { text: "", isCorrect: false },
-                                                        ],
-                                                    })
-                                                }
-                                                className="px-5 py-2 bg-purple-600 text-white rounded-full hover:bg-purple-700 transition"
-                                            >
-                                                + Thêm câu hỏi
-                                            </button>
-                                        </div>
-
                                         {/* Library Questions Display */}
                                         {selectedLibraryQuestions.length > 0 && (
                                             <div className="space-y-6 mt-6">
@@ -822,6 +811,28 @@ export default function AddQuestionsToExamPage() {
                                                     ))}
                                             </div>
                                         )}
+
+                                        {/* Add Question Button - Always at bottom */}
+                                        <div className="mt-4 flex justify-center">
+                                            <button
+                                                type="button"
+                                                onClick={() =>
+                                                    push({
+                                                        title: "",
+                                                        type: "SINGLE",
+                                                        difficulty: "EASY",
+                                                        categoryId: values.categoryId || "",
+                                                        answers: [
+                                                            { text: "", isCorrect: false },
+                                                            { text: "", isCorrect: false },
+                                                        ],
+                                                    })
+                                                }
+                                                className="px-5 py-2 bg-purple-600 text-white rounded-full hover:bg-purple-700 transition"
+                                            >
+                                                + Thêm câu hỏi
+                                            </button>
+                                        </div>
 
                                         {/* Empty State */}
                                         {values.manualQuestions.length === 0 && selectedLibraryQuestions.length === 0 && (
