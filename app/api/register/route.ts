@@ -11,7 +11,6 @@ export async function POST(request: NextRequest) {
     const data = await fetchApi('/register', {
       method: 'POST',
       body: body,
-      credentials: 'omit', // <-- SỬA LỖI: Dùng thuộc tính 'credentials: "omit"'
     });
 
     console.log('Backend response:', data);
