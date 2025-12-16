@@ -11,13 +11,12 @@ export async function POST(request: NextRequest) {
     const data = await fetchApi('/register', {
       method: 'POST',
       body: body,
-      omitCredentials: true, // Do not send cookies for registration
+      credentials: 'omit', // <-- SỬA LỖI: Dùng thuộc tính 'credentials: "omit"'
     });
 
     console.log('Backend response:', data);
 
-    // fetchApi throws on error, so if we get here, it was successful.
-    // The backend might return a simple text response on success.
+    // ... (Phần còn lại của code giữ nguyên)
     const responseData = data instanceof Response ? await data.text() : data;
 
     return new NextResponse(responseData || 'Registration successful', {
