@@ -25,6 +25,7 @@ interface ExamResultDto {
     studentName?: string;
     attemptNumber?: number;
     categoryName?: string;
+    timeSpent?: number; // Seconds
 }
 
 interface AnswerOption {
@@ -126,6 +127,13 @@ export default function StudentHistoryDetailPage() {
         return new Date(isoString).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
     };
 
+    const formatDuration = (seconds?: number) => {
+        if (!seconds && seconds !== 0) return "---";
+        const m = Math.floor(seconds / 60);
+        const s = seconds % 60;
+        return `${m} phút ${s} giây`;
+    };
+
     const getDifficultyLabel = (level: string) => {
         const map: Record<string, string> = {
             'EASY': 'Dễ',
@@ -159,7 +167,7 @@ export default function StudentHistoryDetailPage() {
                         </div>
                         <div className="p-4 text-center">
                             <span className="block text-sm font-medium mb-1">Thời gian làm bài:</span>
-                            <span className="font-bold">---</span> {/* Mocked as requested */}
+                            <span className="font-bold">{formatDuration(history.timeSpent)}</span>
                         </div>
                         <div className="p-4 text-center">
                             <span className="block text-sm font-medium mb-1">Thời gian nộp bài:</span>
@@ -168,7 +176,7 @@ export default function StudentHistoryDetailPage() {
                     </div>
 
                     {/* Info Row 2 (Stats) */}
-                    <div className="grid grid-cols-4 divide-x divide-gray-300 bg-[#E5E7EB]">
+                    <div className="grid grid-cols-3 divide-x divide-gray-300 bg-[#E5E7EB]">
                         <div className="p-4 text-center">
                             <span className="block text-sm font-medium mb-1">Số câu đúng:</span>
                             <span className="font-bold text-lg">{history.correctCount}/{history.totalQuestions}</span>
@@ -180,10 +188,6 @@ export default function StudentHistoryDetailPage() {
                         <div className="p-4 text-center">
                             <span className="block text-sm font-medium mb-1">Lượt thi:</span>
                             <span className="font-bold text-lg">{history.attemptNumber || 1}</span>
-                        </div>
-                        <div className="p-4 text-center">
-                            <span className="block text-sm font-medium mb-1">Xếp hạng:</span>
-                            <span className="font-bold text-lg">---</span> {/* Mocked as requested */}
                         </div>
                     </div>
                 </div>
