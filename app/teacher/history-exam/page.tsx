@@ -23,9 +23,6 @@ interface Exam {
 export default function HistoryExamPage() {
   const router = useRouter();
 
-  // TAB STATE
-  const [tab, setTab] = useState<"offline" | "online">("offline");
-
   // OFFLINE STATE
   const [exams, setExams] = useState<Exam[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -77,24 +74,6 @@ export default function HistoryExamPage() {
     router.push(`/teacher/list-history-exam?examId=${examId}`);
   };
 
-  // ==================== ONLINE MOCK DATA ====================
-  const onlineExams = [
-    {
-      id: 1,
-      title: "Bài thi online mẫu",
-      date: "2025-12-12 14:30",
-      duration: "10 phút",
-      students: 25,
-    },
-    {
-      id: 2,
-      title: "Kiểm tra cuối kỳ (Online)",
-      date: "2025-12-10 09:00",
-      duration: "15 phút",
-      students: 40,
-    },
-  ].map((e) => ({ ...e, status: calculateStatus(e.date, e.date) }));
-
   // ==================== RENDER ====================
   return (
     <div className="flex flex-col bg-[#F5F5F5] flex-1 min-h-full">
@@ -111,23 +90,14 @@ export default function HistoryExamPage() {
             </button>
 
             <button
-              onClick={() => setTab("offline")}
-              className={`pb-3 ${
-                tab === "offline"
-                  ? "text-[#A53AEC] border-b-2 border-[#A53AEC]"
-                  : "text-gray-500 hover:text-[#A53AEC]"
-              }`}
+              className="pb-3 text-[#A53AEC] border-b-2 border-[#A53AEC]"
             >
               <span className="text-base">Lịch sử thi offline</span>
             </button>
 
             <button
-              onClick={() => setTab("online")}
-              className={`pb-3 ${
-                tab === "online"
-                  ? "text-[#A53AEC] border-b-2 border-[#A53AEC]"
-                  : "text-gray-500 hover:text-[#A53AEC]"
-              }`}
+              onClick={() => router.push("/teacher/history-exam-online")}
+              className="pb-3 text-gray-500 hover:text-[#A53AEC]"
             >
               <span className="text-base">Lịch sử thi online</span>
             </button>
@@ -164,92 +134,46 @@ export default function HistoryExamPage() {
           </div>
         </div>
 
-        {/* ==================== OFFLINE ==================== */}
-        {tab === "offline" && (
-          <>
-            {isLoading ? (
-              <div className="text-center py-10">Đang tải dữ liệu...</div>
-            ) : exams.length === 0 ? (
-              <div className="text-center py-10 text-gray-500">
-                Chưa có bài thi nào.
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {exams.map((exam) => (
-                  <div
-                    key={exam.examId}
-                    className="bg-white border rounded-lg p-4 shadow hover:shadow-md transition"
-                  >
-                    <p className="font-semibold text-lg mb-2 line-clamp-1">
-                      {exam.title}
-                    </p>
-
-                    <p><ClockIcon /> Bắt đầu: {exam.startTime}</p>
-                    <p><CalendarIcon /> Kết thúc: {exam.endTime}</p>
-                    <p>⏳ Thời gian: {exam.durationMinutes} phút</p>
-                    <p>📘 Câu hỏi: {exam.questionCount} câu</p>
-
-<div className="flex flex-col items-center mt-4">
-  <span
-    className={`font-semibold ${
-      exam.status === "Đã kết thúc"
-        ? "text-red-500"
-        : "text-green-600"
-    }`}
-  >
-    ● {exam.status}
-  </span>
-
-  <button
-    onClick={() => navigateToDetail(exam.examId)}
-    className="text-blue-600 text-sm hover:underline mt-1"
-  >
-    Xem lịch sử làm bài
-  </button>
-</div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </>
-        )}
-
-        {/* ==================== ONLINE ==================== */}
-        {tab === "online" && (
+        {/* ==================== OFFLINE LIST ==================== */}
+        {isLoading ? (
+          <div className="text-center py-10">Đang tải dữ liệu...</div>
+        ) : exams.length === 0 ? (
+          <div className="text-center py-10 text-gray-500">
+            Chưa có bài thi nào.
+          </div>
+        ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {onlineExams.map((exam) => (
+            {exams.map((exam) => (
               <div
-                key={exam.id}
+                key={exam.examId}
                 className="bg-white border rounded-lg p-4 shadow hover:shadow-md transition"
               >
-                <p className="font-semibold text-lg">{exam.title}</p>
+                <p className="font-semibold text-lg mb-2 line-clamp-1">
+                  {exam.title}
+                </p>
 
-                <div className="text-sm text-gray-600 mt-2 space-y-1">
-                  <p>📅 Ngày: {exam.date}</p>
-                  <p>⏳ Thời gian làm bài: {exam.duration}</p>
-                  <p>👥 Số học sinh: {exam.students}</p>
+                <p><ClockIcon /> Bắt đầu: {exam.startTime}</p>
+                <p><CalendarIcon /> Kết thúc: {exam.endTime}</p>
+                <p>⏳ Thời gian: {exam.durationMinutes} phút</p>
+                <p>📘 Câu hỏi: {exam.questionCount} câu</p>
+
+                <div className="flex flex-col items-center mt-4">
+                  <span
+                    className={`font-semibold ${exam.status === "Đã kết thúc"
+                        ? "text-red-500"
+                        : "text-green-600"
+                      }`}
+                  >
+                    ● {exam.status}
+                  </span>
+
+                  <button
+                    onClick={() => navigateToDetail(exam.examId)}
+                    className="text-blue-600 text-sm hover:underline mt-1"
+                  >
+                    Xem lịch sử làm bài
+                  </button>
                 </div>
-
-<div className="flex flex-col items-center mt-4">
-  <span
-    className={`font-semibold ${
-      exam.status === "Đã kết thúc"
-        ? "text-red-500"
-        : "text-green-600"
-    }`}
-  >
-    ● {exam.status}
-  </span>
-
-  <button
-    onClick={() =>
-      router.push("/teacher/history-exam/list-history-exam")
-    }
-    className="text-blue-600 text-sm hover:underline mt-1"
-  >
-    Xem lịch sử làm bài
-  </button>
-</div>
               </div>
             ))}
           </div>

@@ -107,9 +107,12 @@ const DoExamContent = () => {
         }
 
         try {
+            const timeSpent = Math.floor((exam.durationMinutes * 60 - secondsLeft));
+
             const payload = {
                 examId: exam.examId,
-                answers: studentAnswers
+                answers: studentAnswers,
+                timeSpent: timeSpent > 0 ? timeSpent : 0
             };
 
             const result = await fetchApi('/student/exams/submit', {

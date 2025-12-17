@@ -1,3 +1,4 @@
+// Cleaned & optimized version
 "use client";
 
 import React, { useEffect, useState } from "react";
@@ -82,8 +83,34 @@ export default function TeacherExamHistoryPage() {
     }
 
     return (
-        <div className="min-h-screen bg-gray-50 p-6">
-            <div className="max-w-7xl mx-auto">
+        <div className="min-h-screen bg-gray-50 p-6 flex flex-col">
+            <div className="max-w-7xl mx-auto w-full">
+
+                {/* ===================== TAB ===================== */}
+                <div className="flex items-center justify-between mb-8 bg-white px-6 py-2 rounded-xl shadow-sm">
+                    <div className="flex gap-8 text-sm font-bold border-b border-gray-100 w-full">
+                        <button
+                            onClick={() => router.push("/teacher/list-exam")}
+                            className="pb-3 pt-2 text-gray-500 hover:text-[#A53AEC]"
+                        >
+                            <span className="text-base">Bài thi</span>
+                        </button>
+
+                        <button
+                            onClick={() => router.push("/teacher/history-exam")}
+                            className="pb-3 pt-2 text-gray-500 hover:text-[#A53AEC]"
+                        >
+                            <span className="text-base">Lịch sử thi offline</span>
+                        </button>
+
+                        <button
+                            className="pb-3 pt-2 text-[#A53AEC] border-b-2 border-[#A53AEC]"
+                        >
+                            <span className="text-base">Lịch sử thi online</span>
+                        </button>
+                    </div>
+                </div>
+
                 {/* Header */}
                 <div className="bg-white rounded-xl shadow-md p-6 mb-6">
                     <div className="flex items-center gap-3">
@@ -166,3 +193,4 @@ export default function TeacherExamHistoryPage() {
         </div>
     );
 }
+

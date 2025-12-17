@@ -62,7 +62,7 @@ export const StudentAuthGuard: React.FC<{ children: React.ReactNode }> = ({ chil
     TOP BAR
 =========================================================== */
 export const StudentTopBar = () => (
-  <header className="w-full border-b border-zinc-200 bg-white shadow-sm">
+  <header className="sticky top-0 z-50 w-full border-b border-zinc-200 bg-white shadow-sm">
     <div className="mx-auto flex w-full items-center justify-between px-4 py-3 md:px-6">
       <a
         href="/student/studenthome"
