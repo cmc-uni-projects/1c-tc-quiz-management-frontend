@@ -68,9 +68,6 @@ export default function CreateExamPage() {
         setCategoryOptions(categoriesRes);
 
         const difficultyMap: Record<string, string> = {
-          'Easy': 'Dễ',
-          'Medium': 'Trung bình',
-          'Hard': 'Khó',
           'EASY': 'Dễ',
           'MEDIUM': 'Trung bình',
           'HARD': 'Khó'
