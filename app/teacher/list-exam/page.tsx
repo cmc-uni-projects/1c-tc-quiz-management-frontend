@@ -3,6 +3,7 @@ import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { fetchApi } from "@/lib/apiClient";
 import { toastError, toastSuccess } from "@/lib/toast";
+import toast from "react-hot-toast";
 import Swal from "sweetalert2";
 import { usePathname } from "next/navigation";
 
@@ -150,7 +151,9 @@ export default function TeacherExamListPage() {
     const fetchOnlineExams = async () => {
       try {
         const response = await fetchApi("/online-exams/my");
-        setOnlineExams(response || []);
+        // Sort by ID descending (newest first)
+        const sorted = (response || []).sort((a: any, b: any) => b.id - a.id);
+        setOnlineExams(sorted);
       } catch (error) {
         console.error("Failed to fetch online exams:", error);
       }
@@ -533,7 +536,8 @@ export default function TeacherExamListPage() {
                                           await fetchApi(`/online-exams/${exam.id}`, { method: 'DELETE' });
                                           toastSuccess('Đã xóa bài thi');
                                           const response = await fetchApi("/online-exams/my");
-                                          setOnlineExams(response || []);
+                                          const sorted = (response || []).sort((a: any, b: any) => b.id - a.id);
+                                          setOnlineExams(sorted);
                                         } catch (error: any) {
                                           toastError(error.message || 'Không thể xóa bài thi');
                                         }
@@ -549,15 +553,42 @@ export default function TeacherExamListPage() {
                           </div>
                           <button
                             onClick={async () => {
-                              if (confirm(`Bạn có chắc muốn mở phòng chờ cho bài thi "${exam.name}"?`)) {
-                                try {
-                                  await fetchApi(`/online-exams/${exam.id}/start`, { method: "POST" });
-                                  toastSuccess("Đã mở phòng chờ!");
-                                  router.push(`/teacher/waiting-room/${exam.accessCode}`);
-                                } catch (error: any) {
-                                  toastError(error.message || "Không thể mở phòng chờ");
-                                }
-                              }
+                              toast((t) => (
+                                <div className="flex flex-col gap-3 bg-white p-4 rounded-lg shadow-lg">
+                                  <p className="text-gray-800 font-medium">Bạn có chắc muốn mở phòng chờ cho bài thi "{exam.name}"?</p>
+                                  <div className="flex gap-2 justify-end">
+                                    <button
+                                      onClick={() => toast.dismiss(t.id)}
+                                      className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition"
+                                    >
+                                      Hủy
+                                    </button>
+                                    <button
+                                      onClick={async () => {
+                                        toast.dismiss(t.id);
+                                        try {
+                                          await fetchApi(`/online-exams/${exam.id}/start`, { method: "POST" });
+                                          toastSuccess("Đã mở phòng chờ!");
+                                          router.push(`/teacher/waiting-room/${exam.accessCode}`);
+                                        } catch (error: any) {
+                                          toastError(error.message || "Không thể mở phòng chờ");
+                                        }
+                                      }}
+                                      className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition"
+                                    >
+                                      Xác nhận
+                                    </button>
+                                  </div>
+                                </div>
+                              ), {
+                                duration: Infinity,
+                                position: "top-center",
+                                style: {
+                                  background: 'white',
+                                  color: '#1f2937',
+                                  padding: 0,
+                                },
+                              });
                             }}
                             className="px-3 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm font-medium"
                             title="Mở phòng chờ"

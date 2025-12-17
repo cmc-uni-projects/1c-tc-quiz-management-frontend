@@ -4,6 +4,7 @@ import React, { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { fetchApi } from "@/lib/apiClient";
 import { toastError, toastSuccess } from "@/lib/toast";
+import toast from "react-hot-toast";
 import { Trophy, Clock, Users, Loader2, LogOut, StopCircle } from "lucide-react";
 
 interface LiveProgress {
@@ -98,23 +99,51 @@ export default function TeacherMonitorPage() {
     const handleFinishExam = async () => {
         if (!exam) return;
 
-        const confirmed = confirm(
-            `Bạn có chắc chắn muốn kết thúc bài thi "${exam.name}"?\nTất cả học sinh sẽ tự động nộp bài.`
-        );
-        if (!confirmed) return;
-
-        setIsFinishing(true);
-        try {
-            await fetchApi(`/online-exams/${examId}/finish`, { method: "POST" });
-            toastSuccess("Đã kết thúc bài thi!");
-            setTimeout(() => {
-                router.push(`/admin/exam-online/${examId}/results`);
-            }, 1500);
-        } catch (error: any) {
-            console.error("Failed to finish exam:", error);
-            toastError(error.message || "Không thể kết thúc bài thi");
-            setIsFinishing(false);
-        }
+        toast((t) => (
+            <div className="flex flex-col gap-3 bg-white p-4 rounded-lg shadow-lg">
+                <p className="text-gray-800 font-medium">
+                    Bạn có chắc chắn muốn kết thúc bài thi "{exam.name}"?
+                    <br />
+                    Tất cả học sinh sẽ tự động nộp bài.
+                </p>
+                <div className="flex gap-2 justify-end">
+                    <button
+                        onClick={() => toast.dismiss(t.id)}
+                        className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition"
+                    >
+                        Hủy
+                    </button>
+                    <button
+                        onClick={async () => {
+                            toast.dismiss(t.id);
+                            setIsFinishing(true);
+                            try {
+                                await fetchApi(`/online-exams/${examId}/finish`, { method: "POST" });
+                                toastSuccess("Đã kết thúc bài thi!");
+                                setTimeout(() => {
+                                    router.push(`/admin/exam-online/${examId}/results`);
+                                }, 1500);
+                            } catch (error: any) {
+                                console.error("Failed to finish exam:", error);
+                                toastError(error.message || "Không thể kết thúc bài thi");
+                                setIsFinishing(false);
+                            }
+                        }}
+                        className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition"
+                    >
+                        Xác nhận
+                    </button>
+                </div>
+            </div>
+        ), {
+            duration: Infinity,
+            position: "top-center",
+            style: {
+                background: 'white',
+                color: '#1f2937',
+                padding: 0,
+            },
+        });
     };
 
     // Sort participants for leaderboard

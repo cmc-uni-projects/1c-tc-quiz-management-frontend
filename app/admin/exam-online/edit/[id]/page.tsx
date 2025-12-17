@@ -552,14 +552,11 @@ export default function AddQuestionsToExamPage() {
                                                 {values.manualQuestions.map((q, qIndex) => (
                                                     <div
                                                         key={qIndex}
-                                                        className="border-2 border-purple-500 rounded-xl p-6 bg-white"
+                                                        className="border-2 border-black rounded-xl p-6 bg-white"
                                                     >
                                                         <div className="flex justify-between items-center mb-4">
                                                             <h3 className="text-lg font-semibold">
-                                                                Câu hỏi {qIndex + 1}{" "}
-                                                                <span className="text-xs bg-purple-100 text-purple-700 px-2 py-1 rounded ml-2">
-                                                                    Thủ công
-                                                                </span>
+                                                                Câu hỏi {qIndex + 1}
                                                             </h3>
                                                         </div>
 

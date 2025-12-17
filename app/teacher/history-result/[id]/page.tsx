@@ -144,11 +144,15 @@ export default function TeacherHistoryResultPage() {
                     </div>
                     <div>
                         <span className="block text-gray-500 mb-1">Loại đề thi:</span>
-                        <span className="font-semibold">{exam.examLevel === 'medium' ? 'Trung bình' : exam.examLevel}</span>
+                        <span className="font-semibold">
+                            {exam.examLevel.toUpperCase() === 'EASY' ? 'Dễ' : 
+                             exam.examLevel.toUpperCase() === 'MEDIUM' ? 'Trung bình' : 
+                             exam.examLevel.toUpperCase() === 'HARD' ? 'Khó' : exam.examLevel}
+                        </span>
                     </div>
                     <div>
                         <span className="block text-gray-500 mb-1">Thời gian nộp bài:</span>
-                        <span className="font-semibold">{new Date(history.submittedAt).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}</span>
+                        <span className="font-semibold">{new Date(history.submittedAt).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit', hour12: true })}</span>
                     </div>
                     <div>
                         <span className="block text-gray-500 mb-1">Danh mục:</span>
@@ -165,8 +169,8 @@ export default function TeacherHistoryResultPage() {
                             </svg>
                         </div>
                         <div>
-                            <p className="font-semibold text-base">{history.studentName || history.displayName || 'Student'}</p>
-                            <p className="text-gray-500 text-xs">{history.studentEmail || 'No Email'}</p>
+                            <p className="font-semibold text-base">{history.studentName || history.displayName || 'Học sinh'}</p>
+                            <p className="text-gray-500 text-xs">{history.studentEmail || 'Không có email'}</p>
                         </div>
                     </div>
 

@@ -87,16 +87,6 @@ export default function ListHistoryExamPage() {
       <main className="flex-1 max-w-7xl mx-auto w-full px-6 py-8">
 
         {/* ===== BACK BUTTON ===== */}
-        <button
-          onClick={() => router.push("/teacher/history-exam")}
-          className="flex items-center gap-2 text-gray-500 hover:text-[#A53AEC] mb-6 transition-colors font-medium"
-        >
-          <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-          </svg>
-          <span>Quay lại danh sách</span>
-        </button>
-
         {/* ===== HEADER / TABS ===== */}
         <div className="flex items-center justify-between mb-8">
           <div className="flex gap-8 text-sm font-bold border-b border-gray-200 w-full">
@@ -188,13 +178,12 @@ export default function ListHistoryExamPage() {
 
                     return currentData.map((h, index) => (
                       <tr key={h.id} className="hover:bg-purple-50/30 transition-colors duration-150">
-                        <td className="py-4 px-6 font-medium text-gray-500">#{startIndex + index + 1}</td>
+                        <td className="py-4 px-6 font-medium text-gray-500">{startIndex + index + 1}</td>
                         <td className="py-4 px-6 font-semibold text-gray-800">
-                          <div className="flex items-center gap-3">
+                          <div className="flex items-center justify-center">
                             <div className="w-8 h-8 rounded-full bg-purple-100 flex items-center justify-center text-[#A53AEC] font-bold text-xs">
                               {h.displayName.charAt(0).toUpperCase()}
                             </div>
-                            {h.displayName}
                           </div>
                         </td>
                         <td className="py-4 px-6 text-gray-600">

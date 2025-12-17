@@ -1,168 +1,214 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import React, { useState, useEffect } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { fetchApi } from "@/lib/apiClient";
-import { toastError } from "@/lib/toast";
-import { FileText, Users, TrendingUp, Eye, Loader2, Calendar } from "lucide-react";
+import toast from "react-hot-toast";
 
-interface FinishedExam {
-    id: number;
-    name: string;
-    finishedAt: string;
-    totalSubmissions: number;
-    averageScore: number;
+interface ExamHistory {
+  id: number;
+  studentId: number;
+  studentName: string;
+  submittedAt: string;
+  attemptNumber: number;
+  correctCount: number;
+  totalQuestions: number;
+  score: number;
 }
 
-export default function AdminExamHistoryPage() {
-    const router = useRouter();
-    const [loading, setLoading] = useState(true);
-    const [exams, setExams] = useState<FinishedExam[]>([]);
+export default function AdminListHistoryExamOnlinePage() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const examId = searchParams.get("examId");
 
-    useEffect(() => {
-        const fetchFinishedExams = async () => {
-            try {
-                setLoading(true);
-                // Fetch all exams (Admin sees all)
-                const allExams = await fetchApi("/online-exams/all");
+  const [histories, setHistories] = useState<ExamHistory[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState("");
 
-                // Filter only FINISHED exams
-                const finishedExams = allExams.filter((exam: any) => exam.status === "FINISHED");
-
-                // For each exam, fetch submission count
-                const examsWithStats = await Promise.all(
-                    finishedExams.map(async (exam: any) => {
-                        try {
-                            const histories = await fetchApi(`/examHistory/online-exam/${exam.id}`);
-                            const totalSubmissions = histories.length;
-                            const averageScore = totalSubmissions > 0
-                                ? histories.reduce((sum: number, h: any) => sum + h.score, 0) / totalSubmissions
-                                : 0;
-
-                            return {
-                                id: exam.id,
-                                name: exam.name,
-                                finishedAt: exam.finishedAt,
-                                totalSubmissions,
-                                averageScore,
-                            };
-                        } catch {
-                            return {
-                                id: exam.id,
-                                name: exam.name,
-                                finishedAt: exam.finishedAt,
-                                totalSubmissions: 0,
-                                averageScore: 0,
-                            };
-                        }
-                    })
-                );
-
-                setExams(examsWithStats);
-            } catch (error: any) {
-                console.error("Failed to load finished exams:", error);
-                toastError(error.message || "Không thể tải lịch sử bài thi");
-            } finally {
-                setLoading(false);
-            }
-        };
-
-        fetchFinishedExams();
-    }, []);
-
-    if (loading) {
-        return (
-            <div className="min-h-screen flex items-center justify-center bg-gray-50">
-                <div className="flex items-center gap-2 text-purple-600">
-                    <Loader2 className="animate-spin" />
-                    <span>Đang tải lịch sử...</span>
-                </div>
-            </div>
-        );
+  useEffect(() => {
+    if (!examId) {
+      toast.error("Không tìm thấy mã bài thi.");
+      setLoading(false);
+      return;
     }
 
-    return (
-        <div className="min-h-screen bg-gray-50 p-6">
-            <div className="max-w-7xl mx-auto">
-                {/* Header */}
-                <div className="bg-white rounded-xl shadow-md p-6 mb-6">
-                    <div className="flex items-center gap-3">
-                        <div className="p-3 bg-purple-100 rounded-lg">
-                            <FileText className="text-purple-600" size={32} />
-                        </div>
-                        <div>
-                            <h1 className="text-2xl font-bold text-gray-800">Lịch sử bài thi Online</h1>
-                            <p className="text-gray-600 text-sm">
-                                Tổng số bài thi đã kết thúc: {exams.length}
-                            </p>
-                        </div>
-                    </div>
-                </div>
+    const loadHistories = async () => {
+      try {
+        setLoading(true);
+        const data = await fetchApi(`/examHistory/exam/${examId}`);
+        if (Array.isArray(data)) {
+          setHistories(data);
+        } else {
+          setHistories([]);
+          console.warn("API did not return an array for exam histories:", data);
+        }
+      } catch (error) {
+        console.error("Load exam histories error:", error);
+        toast.error("Không thể tải lịch sử làm bài của bài thi này.");
+        setHistories([]);
+      } finally {
+        setLoading(false);
+      }
+    };
 
-                {/* Exams Table */}
-                <div className="bg-white rounded-xl shadow-md overflow-hidden">
-                    <div className="overflow-x-auto">
-                        <table className="w-full">
-                            <thead className="bg-gradient-to-r from-purple-600 to-blue-600 text-white">
-                                <tr>
-                                    <th className="px-6 py-4 text-left text-sm font-semibold">Tên bài thi</th>
-                                    <th className="px-6 py-4 text-center text-sm font-semibold">Ngày kết thúc</th>
-                                    <th className="px-6 py-4 text-center text-sm font-semibold">Số bài nộp</th>
-                                    <th className="px-6 py-4 text-center text-sm font-semibold">Điểm TB</th>
-                                    <th className="px-6 py-4 text-center text-sm font-semibold">Hành động</th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-gray-200">
-                                {exams.length === 0 ? (
-                                    <tr>
-                                        <td colSpan={5} className="px-6 py-12 text-center text-gray-500">
-                                            <FileText size={48} className="mx-auto mb-2 opacity-50" />
-                                            <p>Chưa có bài thi online nào đã kết thúc</p>
-                                        </td>
-                                    </tr>
-                                ) : (
-                                    exams.map((exam) => (
-                                        <tr key={exam.id} className="hover:bg-gray-50 transition">
-                                            <td className="px-6 py-4">
-                                                <span className="font-medium text-gray-900">{exam.name}</span>
-                                            </td>
-                                            <td className="px-6 py-4 text-center text-gray-600">
-                                                <div className="flex items-center justify-center gap-1">
-                                                    <Calendar size={16} />
-                                                    {exam.finishedAt
-                                                        ? new Date(exam.finishedAt).toLocaleDateString("vi-VN")
-                                                        : "---"}
-                                                </div>
-                                            </td>
-                                            <td className="px-6 py-4 text-center">
-                                                <div className="flex items-center justify-center gap-1 text-blue-600">
-                                                    <Users size={16} />
-                                                    <span className="font-semibold">{exam.totalSubmissions}</span>
-                                                </div>
-                                            </td>
-                                            <td className="px-6 py-4 text-center">
-                                                <div className="flex items-center justify-center gap-1 text-purple-600">
-                                                    <TrendingUp size={16} />
-                                                    <span className="font-bold">{exam.averageScore.toFixed(1)}</span>
-                                                </div>
-                                            </td>
-                                            <td className="px-6 py-4 text-center">
-                                                <button
-                                                    onClick={() => router.push(`/admin/exam-online/${exam.id}/results`)}
-                                                    className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition flex items-center gap-2 mx-auto"
-                                                >
-                                                    <Eye size={16} />
-                                                    Xem kết quả
-                                                </button>
-                                            </td>
-                                        </tr>
-                                    ))
-                                )}
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
+    loadHistories();
+  }, [examId]);
+
+  const examStats = {
+    accuracy: "80%",
+    completion: "80%",
+    totalStudents: "80%",
+    questionCount: histories[0]?.totalQuestions || 5,
+  };
+
+  const filtered = histories.filter((h) =>
+    h.studentName.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+  
+  const formatDate = (isoString: string) => {
+    if (!isoString) return "";
+    const date = new Date(isoString);
+    return date.toLocaleDateString('vi-VN') + ' ' + date.toLocaleTimeString('en-US', { hour12: true });
+  };
+
+  return (
+    <div className="min-h-screen bg-[#F8F9FA] flex flex-col text-gray-800">
+
+      <main className="flex-1 max-w-7xl mx-auto w-full px-6 py-8">
+
+        {/* HEADER / TABS */}
+        <div className="flex items-center justify-between mb-8">
+          <div className="flex gap-8 text-sm font-bold border-b border-gray-200 w-full">
+            <button
+              onClick={() => router.push("/admin/history-exam")}
+              className="pb-3 text-gray-500 hover:text-[#A53AEC] transition-colors"
+            >
+              <span className="text-base">Bài thi</span>
+            </button>
+
+            <button className="pb-3 text-[#A53AEC] border-b-2 border-[#A53AEC]">
+              <span className="text-base">Lịch sử thi</span>
+            </button>
+          </div>
         </div>
-    );
+
+        {/* CARD */}
+        <div className="bg-white rounded-2xl p-8 shadow-sm border border-gray-100">
+
+          {/* THỐNG KÊ */}
+          <div className="grid grid-cols-4 text-center border rounded-xl p-4 mb-8 bg-gray-50">
+            <div className="flex flex-col">
+              <span className="text-gray-600 text-sm font-medium">Độ chính xác:</span>
+              <span className="font-semibold">{examStats.accuracy}</span>
+            </div>
+            <div className="flex flex-col">
+              <span className="text-gray-600 text-sm font-medium">Tỉ lệ hoàn thành:</span>
+              <span className="font-semibold">{examStats.completion}</span>
+            </div>
+            <div className="flex flex-col">
+              <span className="text-gray-600 text-sm font-medium">Tổng số học sinh:</span>
+              <span className="font-semibold">{examStats.totalStudents}</span>
+            </div>
+            <div className="flex flex-col">
+              <span className="text-gray-600 text-sm font-medium">Câu hỏi:</span>
+              <span className="font-semibold">{examStats.questionCount}</span>
+            </div>
+          </div>
+
+          {/* TOOLBAR */}
+          <div className="flex justify-between items-center mb-8">
+            <div className="relative w-full md:w-96 flex gap-2">
+              <div className="relative flex-1">
+                <span className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <svg className="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                  </svg>
+                </span>
+                <input
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  placeholder="Tìm kiếm sinh viên..."
+                  className="pl-10 pr-4 py-2 w-full border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#A53AEC] focus:border-transparent bg-gray-50 hover:bg-white transition-all text-sm h-10"
+                />
+              </div>
+            </div>
+
+            <div className="bg-purple-50 text-[#A53AEC] px-4 py-2 rounded-lg text-sm font-semibold">
+              Tổng số bài thi: {filtered.length}
+            </div>
+          </div>
+
+          {/* TABLE */}
+          <div className="overflow-hidden rounded-xl border border-gray-100">
+            <table className="w-full text-sm text-left">
+              <thead className="bg-[#F3EBFD] text-[#4D1597] uppercase text-xs font-bold tracking-wider">
+                <tr>
+                  <th className="py-4 px-6">STT</th>
+                  <th className="py-4 px-6">Sinh viên</th>
+                  <th className="py-4 px-6">Thời gian nộp</th>
+                  <th className="py-4 px-6">Lượt thi</th>
+                  <th className="py-4 px-6 text-center">Kết quả</th>
+                  <th className="py-4 px-6 text-center">Điểm số</th>
+                  <th className="py-4 px-6 text-center">Thao tác</th>
+                </tr>
+              </thead>
+
+              <tbody className="divide-y divide-gray-100">
+                {loading ? (
+                  <tr>
+                    <td colSpan={7} className="py-12 text-center text-gray-500">
+                        <div className="flex justify-center items-center gap-2">
+                            <div className="w-5 h-5 border-2 border-[#A53AEC] border-t-transparent rounded-full animate-spin"></div>
+                            <span>Đang tải dữ liệu...</span>
+                        </div>
+                    </td>
+                  </tr>
+                ) : filtered.length === 0 ? (
+                  <tr>
+                    <td colSpan={7} className="py-12 text-center text-gray-400">
+                      Không có dữ liệu
+                    </td>
+                  </tr>
+                ) : (
+                  filtered.map((h, index) => (
+                    <tr key={h.id} className="hover:bg-purple-50/30 transition-colors">
+                      <td className="py-4 px-6">{index + 1}</td>
+                      <td className="py-4 px-6 font-semibold">
+                        <div className="flex items-center justify-center">
+                          <div className="w-8 h-8 rounded-full bg-purple-100 flex items-center justify-center text-[#A53AEC] font-bold text-xs">
+                            {(h.studentName || "S").charAt(0).toUpperCase()}
+                          </div>
+                        </div>
+                      </td>
+                      <td className="py-4 px-6">{formatDate(h.submittedAt)}</td>
+                      <td className="py-4 px-6">Lần {h.attemptNumber}</td>
+                      <td className="py-4 px-6 text-center">
+                        <span className="text-green-600 bg-green-50 px-3 py-1 rounded-full text-xs font-bold">
+                          {h.correctCount}/{h.totalQuestions}
+                        </span>
+                      </td>
+                      <td className="py-4 px-6 text-center font-bold text-[#A53AEC]">{h.score}</td>
+                      <td className="py-4 px-6 text-center">
+                        <button
+                          onClick={() => router.push(`/admin/history-result/${h.id}`)}
+                          className="text-[#A53AEC] hover:text-white hover:bg-[#A53AEC] border border-[#A53AEC] px-3 py-1.5 rounded-lg text-xs uppercase font-bold transition-all"
+                        >
+                          Chi tiết
+                        </button>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </main>
+
+      {/* FOOTER */}
+      <footer className="bg-white border-t border-gray-100 text-center text-sm text-gray-400 py-6 mt-auto">
+        © 2025 QuizzZone. Education Platform.
+      </footer>
+    </div>
+  );
 }

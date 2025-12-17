@@ -193,22 +193,12 @@ export default function CreateExamPage() {
   return (
     <div className="bg-[#F5F5F5] text-gray-900 flex-1 flex flex-col">
       <main className="flex-1 overflow-y-auto px-10 py-8">
+
           <section className="bg-white rounded-2xl shadow p-8 mb-6">
-            <h2 className="text-2xl font-semibold text-center mb-8">
+            <h2 className="text-2xl font-semibold text-center mb-4">
               Tạo bài thi offline
             </h2>
-            <div className="flex justify-start gap-6 border-b border-gray-300 mb-8">
-              <a href="/teacher/exam-offline">
-                <button className="pb-2 font-medium border-b-2 border-black">
-                  Bài thi Offline
-                </button>
-              </a>
-              <a href="/teacher/exam-online">
-                <button className="pb-2 font-medium text-gray-500 hover:text-black hover:border-b-2 hover:border-gray-200">
-                  Bài thi Online
-                </button>
-              </a>
-            </div>
+            
 
             <div className="space-y-4 mb-6">
               <div>
@@ -313,7 +303,7 @@ export default function CreateExamPage() {
           <div className="mt-6 flex justify-end gap-4">
             <button
               onClick={() => router.back()}
-              className="px-6 py-2 border border-gray-300 rounded-md hover:bg-gray-50"
+              className="px-6 py-2 border border-purple-700 text-purple-700 rounded-md"
             >
               Hủy
             </button>

@@ -4,6 +4,7 @@ import { useRouter, usePathname } from 'next/navigation';
 import { useUser } from '@/lib/user';
 import toast from 'react-hot-toast';
 import ProfileDropdown from '@/components/ProfileDropdown';
+import TeacherExamTabs from '@/components/TeacherExamTabs';
 import {
     HomeIcon,
     FolderIcon,
@@ -245,12 +246,27 @@ export default function TeacherLayout({
 }: {
     children: React.ReactNode;
 }) {
+    const pathname = usePathname();
+    const showExamTabs = pathname?.startsWith('/teacher/exam-offline') || pathname?.startsWith('/teacher/exam-online');
+    const isTeacherOnlineRoute = pathname?.startsWith('/teacher/exam-online');
     return (
         <TeacherAuthGuard>
             <div className="flex min-h-screen bg-gray-50">
                 <TeacherSidebar />
-                <div className="ml-64 flex flex-col flex-1 transition-[margin-left] duration-300 w-[calc(100%-16rem)]">
+                <div className={`ml-64 flex flex-col flex-1 transition-[margin-left] duration-300 w-[calc(100%-16rem)] ${isTeacherOnlineRoute ? 'teacher-online-route' : ''}`}>
                     <TeacherTopBar />
+                    {isTeacherOnlineRoute && (
+                        <style jsx global>{`
+                          .teacher-online-route .max-w-3xl { max-width: 100% !important; width: 100% !important; }
+                          .teacher-online-route .mx-auto { margin-left: 0 !important; margin-right: 0 !important; }
+                          .teacher-online-route .max-w-3xl { margin-bottom: 1.5rem; }
+                        `}</style>
+                    )}
+                    {showExamTabs && (
+                        <div className="px-10 pt-6">
+                            <TeacherExamTabs />
+                        </div>
+                    )}
                     <main className="flex-1 pb-10 bg-gray-50 w-full">
                         {children}
                     </main>

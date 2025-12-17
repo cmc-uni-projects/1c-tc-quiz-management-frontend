@@ -293,25 +293,29 @@ export default function CreateExamPage() {
   };
 
   return (
-    <div className="min-h-screen flex bg-[#F5F5F5] text-gray-900">
-      <div className="flex-1 flex flex-col">
-        <main className="flex-1 overflow-y-auto px-10 py-8">
-          <section className="bg-white rounded-2xl shadow p-8 mb-6">
-            <h2 className="text-2xl font-semibold text-center mb-4">
-              Tạo bài thi offline - Admin
-            </h2>
-            <div className="flex justify-start gap-6 border-b border-gray-300 mb-8">
-              <a href="/admin/exam-offline">
-                <button className="pb-2 font-medium border-b-2 border-black">
-                  Bài thi Offline
-                </button>
-              </a>
-              <a href="/admin/exam-online">
-                <button className="pb-2 font-medium text-gray-500 hover:text-black hover:border-b-2 hover:border-gray-200">
-                  Bài thi Online
-                </button>
-              </a>
-            </div>
+    <div className="min-h-screen flex flex-col bg-[#F5F5F5] text-gray-900">
+      {/* TAB BAR FOR OFFLINE/ONLINE EXAMS */}
+      <div className="bg-[#F5F5F5] px-10 pt-4">
+        <div className="flex gap-8 border-b border-gray-300">
+          <a href="/admin/exam-offline">
+            <button className="pb-3 relative text-base font-semibold text-black">
+              Bài thi Offline
+              <span className="absolute left-0 right-0 -bottom-[1px] h-[3px] bg-black" />
+            </button>
+          </a>
+          <a href="/admin/exam-online">
+            <button className="pb-3 relative text-base font-medium text-gray-500 hover:text-black">
+              Bài thi Online
+            </button>
+          </a>
+        </div>
+      </div>
+
+      <main className="flex-1 overflow-y-auto px-10 py-8">
+        <section className="bg-white rounded-2xl shadow p-8 mb-6">
+          <h2 className="text-2xl font-semibold text-center mb-4">
+            Tạo bài thi offline
+          </h2>
 
             {/* Các input đầu */}
             <div className="space-y-4 mb-6">
@@ -417,7 +421,6 @@ export default function CreateExamPage() {
                 </div>
               </div>
             </div>
-          </section>
 
           {/* NÚT LƯU – ĐĂNG BÀI */}
           <div className="mt-6 flex justify-end gap-4">
@@ -434,8 +437,8 @@ export default function CreateExamPage() {
               Tạo bài thi
             </button>
           </div>
-        </main>
-      </div>
+        </section>
+      </main>
     </div>
   );
 }

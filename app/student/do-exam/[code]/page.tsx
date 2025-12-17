@@ -4,6 +4,7 @@ import React, { useEffect, useState, useCallback, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { fetchApi } from "@/lib/apiClient";
 import { toastError, toastSuccess } from "@/lib/toast";
+import toast from "react-hot-toast";
 import { Clock, CheckCircle, Circle, Loader2 } from "lucide-react";
 
 interface Answer {
@@ -110,8 +111,66 @@ export default function StudentDoExamPage() {
             if (!exam || isSubmitting) return;
 
             if (!isAutoSubmit) {
-                const confirmed = confirm("Bạn có chắc chắn muốn nộp bài?");
-                if (!confirmed) return;
+                toast((t) => (
+                    <div className="flex flex-col gap-3 bg-white p-4 rounded-lg shadow-lg">
+                        <p className="text-gray-800 font-medium">Bạn có chắc chắn muốn nộp bài?</p>
+                        <div className="flex gap-2 justify-end">
+                            <button
+                                onClick={() => toast.dismiss(t.id)}
+                                className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition"
+                            >
+                                Hủy
+                            </button>
+                            <button
+                                onClick={async () => {
+                                    toast.dismiss(t.id);
+                                    setIsSubmitting(true);
+
+                                    try {
+                                        const timeSpent = Math.floor((Date.now() - startTimeRef.current) / 1000);
+
+                                        const submissionData = {
+                                            accessCode,
+                                            timeSpent,
+                                            answers: Object.entries(answers).map(([questionId, answerIds]) => ({
+                                                questionId: Number(questionId),
+                                                answerOptionIds: answerIds,
+                                            })),
+                                        };
+
+                                        const result = await fetchApi("/online-exams/submit", {
+                                            method: "POST",
+                                            body: submissionData,
+                                        });
+
+                                        toastSuccess("Nộp bài thành công!");
+
+                                        // Redirect to results page with historyId
+                                        setTimeout(() => {
+                                            router.push(`/student/exam-result/${result.examHistoryId}`);
+                                        }, 1500);
+                                    } catch (error: any) {
+                                        console.error("Submit error:", error);
+                                        toastError(error.message || "Không thể nộp bài");
+                                        setIsSubmitting(false);
+                                    }
+                                }}
+                                className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition"
+                            >
+                                Xác nhận
+                            </button>
+                        </div>
+                    </div>
+                ), {
+                    duration: Infinity,
+                    position: "top-center",
+                    style: {
+                        background: 'white',
+                        color: '#1f2937',
+                        padding: 0,
+                    },
+                });
+                return;
             }
 
             setIsSubmitting(true);
