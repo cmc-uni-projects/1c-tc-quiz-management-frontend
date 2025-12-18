@@ -5,7 +5,8 @@ import { useParams, useRouter } from "next/navigation";
 import { fetchApi } from "@/lib/apiClient";
 import { toastError, toastSuccess } from "@/lib/toast";
 import { QRCodeSVG } from "qrcode.react";
-import { Play, Copy, Users, LogOut, Loader2 } from "lucide-react";
+import { Play, Copy, Users, LogOut, Loader2, StopCircle } from "lucide-react";
+import Swal from "sweetalert2";
 import SockJS from "sockjs-client";
 import { Client } from "@stomp/stompjs";
 
@@ -103,15 +104,18 @@ export default function TeacherWaitingRoomPage() {
         toastSuccess("Đã sao chép!");
     };
 
+    const getStatusText = (status: string) => {
+        const statusMap: Record<string, string> = {
+            'DRAFT': 'Nháp',
+            'WAITING': 'Chờ',
+            'IN_PROGRESS': 'Đang diễn ra',
+            'FINISHED': 'Đã kết thúc'
+        };
+        return statusMap[status] || status;
+    };
+
     const handleStartExam = async () => {
         if (!exam) return;
-
-        // Validate participants
-        if (participants.length === 0) {
-            if (!confirm("Chưa có học sinh nào tham gia. Bạn có chắc chắn muốn bắt đầu không?")) {
-                return;
-            }
-        }
 
         try {
             await fetchApi(`/online-exams/${exam.id}/begin`, { method: "POST" });
@@ -119,6 +123,31 @@ export default function TeacherWaitingRoomPage() {
             router.push(`/admin/exam-online/${exam.id}/monitor`);
         } catch (error: any) {
             toastError(error.message || "Không thể bắt đầu bài thi");
+        }
+    };
+
+    const handleFinishExam = async () => {
+        if (!exam) return;
+
+        const result = await Swal.fire({
+            title: 'Kết thúc phòng chờ?',
+            html: `Bạn có chắc muốn kết thúc phòng chờ cho bài thi <strong>"${exam.name}"</strong>?<br/>Bài thi sẽ chuyển về trạng thái Nháp.`,
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#dc2626',
+            cancelButtonColor: '#6b7280',
+            confirmButtonText: 'Kết thúc',
+            cancelButtonText: 'Hủy',
+        });
+
+        if (!result.isConfirmed) return;
+
+        try {
+            await fetchApi(`/online-exams/${exam.id}/finish`, { method: "POST" });
+            toastSuccess("Đã kết thúc phòng chờ!");
+            router.push("/admin/list-exam");
+        } catch (error: any) {
+            toastError(error.message || "Không thể kết thúc phòng chờ");
         }
     };
 
@@ -144,9 +173,15 @@ export default function TeacherWaitingRoomPage() {
                 <div className="flex justify-between items-center px-6 py-4 bg-[#2D3748] rounded-xl mb-6 shadow-lg">
                     <div>
                         <h1 className="text-xl font-bold text-gray-200">Phòng chờ: {exam.name}</h1>
-                        <p className="text-sm text-gray-400">Trạng thái: {exam.status}</p>
+                        <p className="text-sm text-gray-400">Trạng thái: {getStatusText(exam.status)}</p>
                     </div>
                     <div className="flex gap-3">
+                        <button
+                            onClick={handleFinishExam}
+                            className="px-4 py-2 bg-red-600 hover:bg-red-700 rounded-lg transition flex items-center gap-2"
+                        >
+                            <StopCircle size={18} /> Kết thúc phòng chờ
+                        </button>
                         <button
                             onClick={() => router.push("/admin/list-exam")}
                             className="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg transition flex items-center gap-2"
@@ -206,10 +241,15 @@ export default function TeacherWaitingRoomPage() {
                         <div className="flex justify-center pt-4">
                             <button
                                 onClick={handleStartExam}
-                                className="px-8 py-4 bg-purple-600 hover:bg-purple-700 rounded-xl font-bold text-xl shadow-lg shadow-purple-900/50 flex items-center gap-3 transition transform hover:scale-105"
+                                disabled={participants.length === 0}
+                                className={`px-8 py-4 rounded-xl font-bold text-xl shadow-lg flex items-center gap-3 transition transform ${participants.length === 0
+                                    ? 'bg-gray-600 cursor-not-allowed opacity-50'
+                                    : 'bg-purple-600 hover:bg-purple-700 shadow-purple-900/50 hover:scale-105'
+                                    }`}
                             >
                                 <Play size={24} fill="currentColor" />
                                 BẮT ĐẦU BÀI THI
+                                {participants.length === 0 && <span className="text-sm font-normal">(Chưa có học sinh)</span>}
                             </button>
                         </div>
 
