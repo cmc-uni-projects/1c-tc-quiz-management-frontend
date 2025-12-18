@@ -4,6 +4,7 @@ import React, { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { fetchApi } from "@/lib/apiClient";
 import { toastError, toastSuccess } from "@/lib/toast";
+import Swal from "sweetalert2";
 import { Trophy, Clock, Users, Loader2, LogOut, StopCircle } from "lucide-react";
 
 interface LiveProgress {
@@ -95,13 +96,30 @@ export default function TeacherMonitorPage() {
         return () => clearInterval(interval);
     }, [exam]);
 
+    const getStatusText = (status: string) => {
+        const statusMap: Record<string, string> = {
+            'DRAFT': 'Nháp',
+            'WAITING': 'Chờ',
+            'IN_PROGRESS': 'Đang diễn ra',
+            'FINISHED': 'Đã kết thúc'
+        };
+        return statusMap[status] || status;
+    };
+
     const handleFinishExam = async () => {
         if (!exam) return;
 
-        const confirmed = confirm(
-            `Bạn có chắc chắn muốn kết thúc bài thi "${exam.name}"?\nTất cả học sinh sẽ tự động nộp bài.`
-        );
-        if (!confirmed) return;
+        const result = await Swal.fire({
+            title: 'Kết thúc bài thi?',
+            html: `Bạn có chắc chắn muốn kết thúc bài thi <strong>"${exam.name}"</strong>?<br/>Tất cả học sinh sẽ tự động nộp bài.`,
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#dc2626',
+            cancelButtonColor: '#6b7280',
+            confirmButtonText: 'Kết thúc',
+            cancelButtonText: 'Hủy',
+        });
+        if (!result.isConfirmed) return;
 
         setIsFinishing(true);
         try {
@@ -180,7 +198,7 @@ export default function TeacherMonitorPage() {
                                         : "bg-gray-100 text-gray-700"
                                         }`}
                                 >
-                                    {exam.status}
+                                    {getStatusText(exam.status)}
                                 </span>
                             </div>
                         </div>

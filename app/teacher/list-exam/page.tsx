@@ -496,7 +496,17 @@ export default function TeacherExamListPage() {
                                   <button
                                     onClick={async () => {
                                       setOpenMenu(null);
-                                      if (confirm(`Bạn có chắc muốn xóa bài thi "${exam.name}"?`)) {
+                                      const result = await Swal.fire({
+                                        title: 'Xóa bài thi?',
+                                        html: `Bạn có chắc muốn xóa bài thi <strong>"${exam.name}"</strong>?`,
+                                        icon: 'warning',
+                                        showCancelButton: true,
+                                        confirmButtonColor: '#d33',
+                                        cancelButtonColor: '#6b7280',
+                                        confirmButtonText: 'Xóa',
+                                        cancelButtonText: 'Hủy',
+                                      });
+                                      if (result.isConfirmed) {
                                         try {
                                           await fetchApi(`/online-exams/${exam.id}`, { method: 'DELETE' });
                                           toastSuccess('Đã xóa bài thi');
@@ -517,7 +527,17 @@ export default function TeacherExamListPage() {
                           </div>
                           <button
                             onClick={async () => {
-                              if (confirm(`Bạn có chắc muốn mở phòng chờ cho bài thi "${exam.name}"?`)) {
+                              const result = await Swal.fire({
+                                title: 'Mở phòng chờ?',
+                                html: `Bạn có chắc muốn mở phòng chờ cho bài thi <strong>"${exam.name}"</strong>?`,
+                                icon: 'question',
+                                showCancelButton: true,
+                                confirmButtonColor: '#16a34a',
+                                cancelButtonColor: '#6b7280',
+                                confirmButtonText: 'Mở phòng chờ',
+                                cancelButtonText: 'Hủy',
+                              });
+                              if (result.isConfirmed) {
                                 try {
                                   await fetchApi(`/online-exams/${exam.id}/start`, { method: "POST" });
                                   toastSuccess("Đã mở phòng chờ!");

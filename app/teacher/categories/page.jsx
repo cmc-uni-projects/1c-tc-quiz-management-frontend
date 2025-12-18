@@ -39,7 +39,7 @@ const useToast = () => {
 const PAGE_BG = "#F4F2FF";
 const HERO_GRADIENT = "linear-gradient(135deg, #FFB6FF 0%, #8A46FF 100%)";
 const BUTTON_COLOR = "#9453C9";
-const SEARCH_BAR_BG = "#E33AEC";
+const SEARCH_BAR_BG = "#A53AEC";
 const TABLE_SHADOW = "0 25px 60px rgba(126, 62, 255, 0.18)";
 const PRIMARY_PURPLE_BG = "#9453C9";
 
