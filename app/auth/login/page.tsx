@@ -3,11 +3,15 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import toast from 'react-hot-toast';
-import { fetchApi } from '@/lib/apiClient';
+import { toastSuccess, toastError } from '@/lib/toast';
+import { fetchApi, ApiError } from '@/lib/apiClient';
+import { useUser } from '@/lib/user';
+import AccountLockedPopup from '@/components/AccountLockedPopup';
+import AccountPendingPopup from '@/components/AccountPendingPopup';
 
 export default function LoginPage() {
   const router = useRouter();
+  const { mutate } = useUser();
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -15,45 +19,109 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showLockedPopup, setShowLockedPopup] = useState(false);
+  const [showPendingPopup, setShowPendingPopup] = useState(false);
+  const [accountType, setAccountType] = useState<'teacher' | 'student'>('student');
+
+  // Clear error when user starts typing
+  const handleEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setEmail(e.target.value);
+    if (error) setError(null);
+  };
+
+  const handlePasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setPassword(e.target.value);
+    if (error) setError(null);
+  };
 
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
+    e.stopPropagation();
+    console.log('Login form submitted with:', { email, password });
+
     setError(null);
     setLoading(true);
 
     try {
-      // Step 1: Call the login API
+      console.log('Calling fetchApi...');
       const response = await fetchApi('/auth/login', {
         method: 'POST',
         body: { email, password },
       });
+      console.log('fetchApi response:', response);
 
       if (response.token) {
-        // Step 2: Save the JWT to localStorage
         localStorage.setItem('jwt', response.token);
-        toast.success('Đăng nhập thành công!');
 
-        // Step 3: Fetch user data to get the role for redirection
+        // Mutate to re-fetch user data across the app
+        await mutate();
+
+        toastSuccess('Đăng nhập thành công!');
+
+        // The mutate call above already fetched the user. We can use the updated cache.
+        // Or fetch again to be absolutely sure, but it's often not needed.
+        // For simplicity, we'll rely on the redirect and the other pages' useUser to handle it.
         const user = await fetchApi('/me');
-        
-        // Step 4: Redirect based on role
-        const role = user?.role;
-        if (role === 'STUDENT') {
+        console.log('LoginPage: User data fetched:', user);
+
+        const rawRole = user?.authorities?.[0]?.authority || '';
+
+        const cleanRole = rawRole.replace('ROLE_', '').toUpperCase();
+
+        console.log('LoginPage: Extracted & Cleaned Role:', cleanRole);
+
+        if (cleanRole === 'STUDENT') {
+          console.log('Redirecting -> Student Home');
           router.push('/student/studenthome');
-        } else if (role === 'TEACHER') {
-          router.push('/teacher/teacherhome');
-        } else if (role === 'ADMIN') {
-          router.push('/admin');
-        } else {
-          router.push('/'); // Fallback redirect
         }
+        else if (cleanRole === 'TEACHER') {
+          console.log('Redirecting -> Teacher Home');
+          router.push('/teacher/teacherhome');
+        }
+        else if (cleanRole === 'ADMIN') {
+          console.log('Redirecting -> Admin Dashboard');
+          router.push('/admin');
+        }
+        else {
+          console.warn('Unknown Role:', cleanRole, 'Redirecting to Home');
+          router.push('/');
+        }
+
       } else {
-        throw new Error('Phản hồi đăng nhập không hợp lệ.');
+        throw new Error('Phản hồi đăng nhập không chứa Token. Vui lòng kiểm tra API.');
       }
     } catch (err: any) {
-      const errorMessage = err.message || 'Sai tài khoản hoặc mật khẩu.';
+      console.error('Login Error:', err);
+
+      // Extract error message from backend response
+      let errorMessage = 'Sai tài khoản hoặc mật khẩu.';
+
+      if (err instanceof ApiError) {
+        errorMessage = err.message;
+      } else if (err.error) {
+        errorMessage = err.error;
+      } else if (err.message) {
+        errorMessage = err.message;
+      }
+
+      console.log('Setting error message:', errorMessage);
       setError(errorMessage);
-      toast.error(errorMessage);
+
+      // Kiểm tra loại lỗi và hiển thị popup tương ứng
+      if (errorMessage.includes('chờ phê duyệt') || errorMessage.includes('bị từ chối')) {
+        // Tài khoản đang chờ duyệt hoặc bị từ chối
+        setShowPendingPopup(true);
+      } else if (errorMessage.includes('khóa') || err.status === 403) {
+        // Tài khoản bị khóa
+        const accType = email.includes('teacher') || email.includes('gv') ? 'teacher' : 'student';
+        setAccountType(accType);
+        setShowLockedPopup(true);
+      } else {
+        toastError(errorMessage, 5000); // Hiển thị trong 5 giây
+      }
+
+      // Không xóa email và password khi login thất bại
+      // localStorage.removeItem('jwt'); // Chỉ xóa khi có token cũ
     } finally {
       setLoading(false);
     }
@@ -75,7 +143,7 @@ export default function LoginPage() {
             <input
               type="email"
               value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              onChange={handleEmailChange}
               placeholder="Nhập email của bạn"
               className="w-full rounded-md border border-zinc-300 bg-white px-4 py-3 text-zinc-900 placeholder:text-zinc-400 focus:border-[#E33AEC] focus:outline-none focus:ring-2 focus:ring-[#E33AEC]/30"
               required
@@ -90,7 +158,7 @@ export default function LoginPage() {
               <input
                 type={showPassword ? 'text' : 'password'}
                 value={password}
-                onChange={(e) => setPassword(e.target.value)}
+                onChange={handlePasswordChange}
                 className="w-full rounded-md border border-zinc-300 bg-white px-4 py-3 pr-12 text-zinc-900 placeholder:text-zinc-400 focus:border-[#E33AEC] focus:outline-none focus:ring-2 focus:ring-[#E33AEC]/30"
                 required
               />
@@ -142,6 +210,19 @@ export default function LoginPage() {
           </div>
         </form>
       </div>
+
+      {/* Account Locked Popup */}
+      <AccountLockedPopup
+        isOpen={showLockedPopup}
+        onClose={() => setShowLockedPopup(false)}
+        accountType={accountType}
+      />
+
+      {/* Account Pending Approval Popup */}
+      <AccountPendingPopup
+        isOpen={showPendingPopup}
+        onClose={() => setShowPendingPopup(false)}
+      />
     </div>
   );
 }

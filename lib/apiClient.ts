@@ -6,60 +6,87 @@ export class ApiError extends Error {
     this.status = status;
   }
 }
-
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8082/api';
 
-interface FetchApiOptions extends RequestInit {
-  body?: any;
+interface FetchApiOptions {
+  method?: string;
+  headers?: Record<string, string>;
+  body?: Record<string, unknown> | string | FormData;
 }
 
+const isClient = typeof window !== 'undefined';
+
 /**
- * A wrapper for the fetch API that automatically adds the JWT Authorization header.
- * @param endpoint The API endpoint to call (e.g., '/products', '/me').
- * @param options Fetch options.
+ * @param endpoint
+ * @param options
  */
 export async function fetchApi(endpoint: string, options: FetchApiOptions = {}) {
-  // Get the JWT from localStorage
-  const token = localStorage.getItem('jwt');
+  let token: string | null = null;
 
-  const headers: HeadersInit = {
-    'Content-Type': 'application/json',
-    ...options.headers,
+  if (isClient) {
+    token = localStorage.getItem('jwt');
+  }
+
+  // Khởi tạo headers từ options trước
+  const headers: Record<string, string> = {
+    ...(options.headers as Record<string, string> || {}),
   };
 
-  // If a token exists, add the Authorization header
+  // Chỉ set Content-Type mặc định cho các request KHÔNG dùng FormData
+  if (!(options.body instanceof FormData)) {
+    if (!headers['Content-Type']) {
+      headers['Content-Type'] = 'application/json';
+    }
+  }
+
   if (token) {
     headers['Authorization'] = `Bearer ${token}`;
   }
 
   let body = options.body;
-  // Stringify the body if it's a JavaScript object
+  // Nếu body là object thông thường (không phải FormData) thì stringify thành JSON
   if (body && typeof body === 'object' && !(body instanceof FormData)) {
-     if (headers['Content-Type'] === 'application/x-www-form-urlencoded') {
-       // Handle form data specifically if needed, otherwise JSON is default
-     } else {
-       body = JSON.stringify(body);
-     }
+    if (headers['Content-Type'] === 'application/x-www-form-urlencoded') {
+      // Trường hợp muốn tự encode form-url-encoded sẽ xử lý ở nơi khác nếu cần
+    } else {
+      body = JSON.stringify(body);
+    }
   }
 
-
-  const response = await fetch(`${API_BASE_URL}${endpoint}`, {
-    ...options,
+  const fullUrl = `${API_BASE_URL}${endpoint}`;
+  console.log(`[fetchApi] ${options.method || 'GET'} ${fullUrl}`, {
     headers,
-    body,
+    hasToken: !!token,
+    body: body ? (typeof body === 'string' ? JSON.parse(body) : body) : undefined,
+  });
+
+  const response = await fetch(fullUrl, {
+    method: options.method,
+    headers,
+    body: body as BodyInit | null | undefined,
   });
 
   if (!response.ok) {
-    // Handle 401 Unauthorized or 403 Forbidden errors
-    if (response.status === 401 || response.status === 403) {
-      localStorage.removeItem('jwt'); // Clear invalid token
-      window.location.href = '/auth/login'; // Redirect to login page
-      // Throw an error to stop further processing in the calling function
-      throw new ApiError('Phiên đăng nhập đã hết hạn hoặc không hợp lệ. Vui lòng đăng nhập lại.', response.status);
+    if (response.status === 401) {
+      // 401 Unauthorized: Token hết hạn hoặc không hợp lệ
+      if (isClient) {
+        localStorage.removeItem('jwt');
+        window.location.href = '/auth/login';
+      }
+
+      throw new ApiError('Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.', response.status);
+    }
+
+    if (response.status === 403) {
+      // 403 Forbidden: User được xác thực nhưng không có quyền truy cập
+      const errorData = await response.json().catch(() => ({ error: 'Bạn không có quyền truy cập tài nguyên này.' }));
+      throw new ApiError(errorData.error || 'Bạn không có quyền truy cập tài nguyên này.', response.status);
     }
 
     const errorData = await response.json().catch(() => ({ message: `Request failed with status ${response.status}` }));
-    throw new ApiError(errorData.message || `Request failed with status ${response.status}`, response.status);
+    // Backend returns { error: "..." } for most exceptions
+    const errorMessage = errorData.message || errorData.error || `Request failed with status ${response.status}`;
+    throw new ApiError(errorMessage, response.status);
   }
 
   const contentType = response.headers.get('content-type');
@@ -67,6 +94,5 @@ export async function fetchApi(endpoint: string, options: FetchApiOptions = {}) 
     return response.json();
   }
 
-  // For non-JSON responses (like file downloads or simple text), return the raw response
   return response;
 }

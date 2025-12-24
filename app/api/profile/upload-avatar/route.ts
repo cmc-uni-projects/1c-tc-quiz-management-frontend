@@ -3,16 +3,22 @@ import { NextResponse } from 'next/server';
 export async function POST(req: Request) {
   try {
     const formData = await req.formData();
-    const cookies = req.headers.get('cookie');
+    // Extract Authorization header (containing JWT)
+    const authorization = req.headers.get('Authorization');
+
+    const headers: Record<string, string> = {};
+
+    // If Authorization header exists, forward it
+    if (authorization) {
+      headers['Authorization'] = authorization;
+    }
 
     // Forward the file upload to the backend
     const response = await fetch('http://localhost:8082/api/profile/upload-avatar', {
       method: 'POST',
-      headers: {
-        'Cookie': cookies || '',
-      },
+      headers: headers, // Use the new headers object with Authorization
       body: formData,
-      credentials: 'include',
+      // credentials: 'include', // Not needed when forwarding Authorization header
     });
 
     if (!response.ok) {

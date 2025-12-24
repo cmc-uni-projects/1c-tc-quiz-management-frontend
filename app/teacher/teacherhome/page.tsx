@@ -1,47 +1,57 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
 import { useUser } from '@/lib/user';
+import { fetchApi } from '@/lib/apiClient';
 
-import Sidebar from '@/components/teacher/Sidebar';
+// Custom toast hook
+const useToast = () => {
+  const toastRef = useRef<string | null>(null);
+
+  const showError = (message: string) => {
+    if (toastRef.current) toast.dismiss(toastRef.current);
+    toastRef.current = toast.error(message);
+    return toastRef.current;
+  };
+
+  const showSuccess = (message: string) => {
+    if (toastRef.current) toast.dismiss(toastRef.current);
+    toastRef.current = toast.success(message);
+    return toastRef.current;
+  };
+
+  const dismiss = () => {
+    if (toastRef.current) {
+      toast.dismiss(toastRef.current);
+      toastRef.current = null;
+    }
+  };
+
+  return { showError, showSuccess, dismiss };
+};
 
 const TeacherHome = () => {
   const router = useRouter();
   const { user } = useUser();
   const [roomCode, setRoomCode] = useState('');
-  const [showDropdown, setShowDropdown] = useState(false);
-  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+  const [stats, setStats] = useState({ exams: 0, questions: 0, students: 0 });
+  const username = user?.username;
 
-  const username = user?.name;
-  const avatar = user?.avatarUrl;
+  const displayName = (() => {
+    if (!user) return '';
 
-  const handleProfileClick = () => {
-    setShowDropdown(false);
-    router.push('/teacher/profile');
-  };
+    const fullName = `${user.firstName || ''} ${user.lastName || ''}`.trim();
+    if (fullName) return fullName;
 
-  const handleChangePasswordClick = () => {
-    setShowDropdown(false);
-    router.push('/teacher/change-password');
-  };
+    const rawUser = user.username || (user as any).email || '';
+    if (typeof rawUser === 'string' && rawUser.includes('@')) {
+      return rawUser.split('@')[0];
+    }
 
-  const handleLogoutClick = () => {
-    setShowLogoutConfirm(true);
-    setShowDropdown(false);
-  };
-
-  const handleLogoutConfirm = async () => {
-    setShowLogoutConfirm(false);
-    localStorage.removeItem('jwt'); // Clear JWT from localStorage
-    router.push('/auth/login'); // Redirect to login page
-    toast.success('Đăng xuất thành công');
-  };
-
-  const handleLogoutCancel = () => {
-    setShowLogoutConfirm(false);
-  };
+    return rawUser;
+  })();
 
   const handleJoinRoom = () => {
     if (roomCode.trim()) {
@@ -53,195 +63,128 @@ const TeacherHome = () => {
     console.log('Create new quiz');
   };
 
-  const subjects = [
-    {
-      id: 1,
-      title: 'Toán học',
-      subtitle: 'Giải tích',
-      color: '#FBC02D',
-      image: '/roles/Math.jpg',
-    },
-    {
-      id: 2,
-      title: 'Tiếng anh',
-      subtitle: 'Tiếng anh cấp độ 1',
-      color: '#FBC02D',
-      image: '/roles/English.jpg',
-    },
-    {
-      id: 3,
-      title: 'Vật lý',
-      subtitle: 'Cơ học',
-      color: '#7B1FA2',
-      image: '/roles/Physics.jpg',
-    },
-  ];
+  // Load teacher statistics
+  useEffect(() => {
+    const fetchStats = async () => {
+      try {
+        const exams = await fetchApi('/exams/my');
+        const examsArray = Array.isArray(exams) ? exams : [];
+
+        const examsCount = examsArray.length;
+        const questionsCount = examsArray.reduce((sum: number, exam: any) => {
+          if (typeof exam.questionCount === 'number') return sum + exam.questionCount;
+          if (Array.isArray(exam.examQuestions)) return sum + exam.examQuestions.length;
+          return sum;
+        }, 0);
+
+        // Tính số học viên đã thi (đếm studentId duy nhất trong lịch sử bài thi)
+        const uniqueStudentIds = new Set<number>();
+        try {
+          const historyResponses = await Promise.all(
+            examsArray
+              .filter((exam: any) => exam.examId)
+              .map((exam: any) =>
+                fetchApi(`/examHistory/get/${exam.examId}`).catch(() => [])
+              )
+          );
+
+          for (const histories of historyResponses) {
+            if (Array.isArray(histories)) {
+              for (const h of histories as any[]) {
+                if (h && typeof h.studentId === 'number') {
+                  uniqueStudentIds.add(h.studentId);
+                }
+              }
+            }
+          }
+        } catch (err) {
+          console.error('Failed to load exam history stats', err);
+        }
+
+        setStats({ exams: examsCount, questions: questionsCount, students: uniqueStudentIds.size });
+      } catch (error: any) {
+        console.error('Failed to load teacher stats', error);
+        toast.error(error?.message || 'Không thể tải thống kê.');
+      }
+    };
+
+    fetchStats();
+  }, []);
 
   return (
-    <div className="min-h-screen bg-gray-50 flex">
-      <Sidebar />
+    <>
+      <div className="bg-gray-50 flex flex-col min-h-full">
 
-      {/* Main column */}
-      <div className="flex-1 flex flex-col">
-        {/* Top greeting bar */}
-        <header
-          className="flex justify-end items-center px-8 py-4 border-b border-zinc-200 bg-white"
-          onClick={() => setShowDropdown(false)}
-        >
-          <div className="relative flex items-center gap-3" onClick={(e) => e.stopPropagation()}>
-            <span className="text-sm text-zinc-700">
-              {`Xin chào, ${username || 'Giáo viên'}`}
-            </span>
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                setShowDropdown(!showDropdown);
-              }}
-              className="flex items-center gap-2 rounded-full bg-purple-50 px-2 py-1 shadow-sm hover:bg-purple-100 transition overflow-hidden"
-            >
-              <div className="h-8 w-8 rounded-full bg-purple-300 flex items-center justify-center text-purple-800 overflow-hidden">
-                {avatar ? (
-                  <img src={avatar} alt="avatar" className="h-8 w-8 rounded-full object-cover" />
-                ) : (
-                  <svg className="h-5 w-5" viewBox="0 0 24 24" fill="currentColor">
-                    <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" />
-                  </svg>
-                )}
-              </div>
-            </button>
+        {/* MAIN CONTENT */}
+        <main className="flex-1 pb-10 bg-gray-50 w-full">
 
-            {/* Dropdown Menu */}
-            {showDropdown && (
-              <div className="absolute right-0 top-full mt-2 w-52 bg-white rounded-lg shadow-lg border border-gray-200 z-10">
-                <button
-                  onClick={handleProfileClick}
-                  className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 border-b border-gray-100"
-                >
-                  Cập nhật thông tin
-                </button>
-                <button
-                  onClick={handleChangePasswordClick}
-                  className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 border-b border-gray-100"
-                >
-                  Đổi mật khẩu
-                </button>
-                <button
-                  onClick={handleLogoutClick}
-                  className="w-full text-left px-3 py-2 text-sm text-purple-600 hover:bg-purple-50 flex items-center gap-2"
-                >
-                  <span>←</span>
-                  Đăng xuất
-                </button>
-              </div>
-            )}
-          </div>
-        </header>
-
-        {/* Main content */}
-        <main className="flex-1 px-4 md:px-8 pb-10 bg-gray-50">
-          {/* Hero banner */}
+          {/* HERO BANNER — FULL WIDTH, VUÔNG, KHÔNG BO GÓC */}
           <section
-            className="mt-6 rounded-2xl shadow-lg overflow-hidden bg-gradient-to-r from-[#6D0446] to-[#A53AEC] text-white"
+            className="shadow-lg overflow-hidden text-white min-h-[220px] sm:min-h-[260px] lg:min-h-[300px]"
+            style={{
+              backgroundImage: "url('/roles/home.jpg')",
+              backgroundSize: "cover",
+              backgroundPosition: "center",
+            }}
           >
-            <div className="flex flex-col lg:flex-row">
-              <div className="flex-1 px-6 sm:px-8 py-6 sm:py-8 flex flex-col gap-4">
-                <div>
-                  <h1 className="text-2xl sm:text-3xl md:text-4xl font-extrabold mb-2">
-                    {username ? `Chào mừng, ${username}!` : 'Chào mừng bạn!'}
-                  </h1>
-                  <p className="text-sm sm:text-base text-purple-100 max-w-xl">
-                    Bắt đầu xây dựng ngân hàng đề thi chất lượng ngay hôm nay.
-                  </p>
-                </div>
+            <div className="flex flex-col lg:flex-row bg-black/10 px-6 sm:px-8 py-6 sm:py-8">
+              <div className="flex-1 flex flex-col gap-4">
+                <h1 className="text-2xl sm:text-3xl md:text-4xl font-extrabold mb-2">
+                  {displayName ? `Chào mừng, ${displayName}!` : 'Chào mừng bạn!'}
+                </h1>
 
-                {/* Stats card */}
-                <div className="mt-2 bg-white/95 rounded-xl px-4 sm:px-6 py-4 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-                  <div className="flex-1 text-center">
-                    <div className="text-xs sm:text-sm font-semibold text-zinc-700">Bài thi đã tạo:</div>
-                    <div className="text-2xl sm:text-3xl font-extrabold" style={{ color: '#E33AEC' }}>
-                      120
-                    </div>
-                  </div>
-                  <div className="flex-1 text-center">
-                    <div className="text-xs sm:text-sm font-semibold text-zinc-700">Tổng câu hỏi:</div>
-                    <div className="text-2xl sm:text-3xl font-extrabold" style={{ color: '#E33AEC' }}>
-                      1200
-                    </div>
-                  </div>
-                  <div className="flex-1 text-center">
-                    <div className="text-xs sm:text-sm font-semibold text-zinc-700">Học viên đã thi:</div>
-                    <div className="text-2xl sm:text-3xl font-extrabold" style={{ color: '#E33AEC' }}>
-                      1000
-                    </div>
-                  </div>
-                  <div className="flex-1 flex justify-center md:justify-end">
+                <p className="text-sm sm:text-base text-purple-100 max-w-xl">
+                  Bắt đầu xây dựng ngân hàng đề thi chất lượng ngay hôm nay.
+                </p>
+
+                {/* JOIN ROOM INSIDE BANNER */}
+                <div className="mt-4 max-w-xl">
+                  <div
+                    className="flex items-stretch rounded-xl px-3 py-2 shadow-md"
+                    style={{ backgroundColor: '#f1eff3ff' }}
+                  >
+                    <input
+                      type="text"
+                      placeholder="Nhập mã phòng....."
+                      value={roomCode}
+                      onChange={(e) => setRoomCode(e.target.value)}
+                      className="flex-1 bg-transparent border-none px-2 sm:px-4 py-1 sm:py-2 text-gray-700 placeholder:text-gray-400 focus:outline-none focus:ring-0"
+                    />
+
                     <button
-                      onClick={handleCreateQuiz}
-                      className="rounded-full px-5 sm:px-6 py-2 text-sm sm:text-base font-semibold text-white shadow-md hover:brightness-110"
-                      style={{ backgroundColor: '#E33AEC' }}
+                      onClick={handleJoinRoom}
+                      className="ml-2 rounded-full px-6 sm:px-8 py-2 text-sm sm:text-base font-semibold text-white shadow-md hover:brightness-110"
+                      style={{ backgroundImage: 'linear-gradient(90deg,#A53AEC)' }}
                     >
-                      Tạo bài thi mới
+                      Tham gia
                     </button>
                   </div>
                 </div>
+
+                {/* STATS CARD */}
+                <div className="mt-4 bg-white/95 rounded-xl px-4 sm:px-6 py-4 flex flex-col md:flex-row md:items-center md:justify-between gap-4 max-w-xl">
+                  <div className="flex-1 text-center">
+                    <div className="text-xs sm:text-sm font-semibold text-zinc-700">Bài thi đã tạo:</div>
+                    <div className="text-2xl sm:text-3xl font-extrabold" style={{ color: '#E33AEC' }}>{stats.exams}</div>
+                  </div>
+
+                  <div className="flex-1 text-center">
+                    <div className="text-xs sm:text-sm font-semibold text-zinc-700">Tổng câu hỏi:</div>
+                    <div className="text-2xl sm:text-3xl font-extrabold" style={{ color: '#E33AEC' }}>{stats.questions}</div>
+                  </div>
+
+                  <div className="flex-1 text-center">
+                    <div className="text-xs sm:text-sm font-semibold text-zinc-700">Học viên đã thi:</div>
+                    <div className="text-2xl sm:text-3xl font-extrabold" style={{ color: '#E33AEC' }}>{stats.students}</div>
+                  </div>
+                </div>
               </div>
-
-              {/* Right illustration placeholder */}
-              <div className="flex-1 hidden lg:block bg-cover bg-center" style={{ backgroundImage: "url('')" }} />
-            </div>
-          </section>
-
-          {/* Join room section */}
-          <section className="mt-8 max-w-xl">
-            <div className="flex flex-col sm:flex-row gap-3 items-stretch">
-              <input
-                type="text"
-                placeholder="Nhập mã phòng"
-                value={roomCode}
-                onChange={(e) => setRoomCode(e.target.value)}
-                className="flex-1 rounded-full border border-zinc-200 px-5 py-3 bg-white text-gray-900 placeholder:text-gray-400 focus:ring-2 focus:ring-purple-400 focus:border-purple-400 outline-none"
-              />
-              <button
-                onClick={handleJoinRoom}
-                className="rounded-full px-6 py-3 font-semibold text-white shadow-md hover:brightness-110"
-                style={{ backgroundColor: '#E33AEC' }}
-              >
-                Tham gia phòng
-              </button>
             </div>
           </section>
         </main>
 
-        {/* Footer */}
-        <footer className="mt-auto border-t border-zinc-100 bg-white py-4 text-center text-sm text-zinc-600">
-          &copy; 2025 QuizzZone. Mọi quyền được bảo lưu.
-        </footer>
       </div>
-
-      {/* Logout Confirmation Modal */}
-      {showLogoutConfirm && (
-        <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 max-w-sm w-full mx-4 shadow-xl">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Xác nhận đăng xuất</h3>
-            <p className="text-gray-600 mb-6">Bạn có chắc chắn muốn đăng xuất khỏi hệ thống?</p>
-            <div className="flex gap-3 justify-end">
-              <button
-                onClick={handleLogoutCancel}
-                className="px-4 py-2 text-gray-600 hover:text-gray-800 transition"
-              >
-                Hủy
-              </button>
-              <button
-                onClick={handleLogoutConfirm}
-                className="px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700 transition"
-              >
-                Đăng xuất
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-    </div>
+    </>
   );
 };
 

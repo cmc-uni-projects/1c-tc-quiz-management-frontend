@@ -19,3 +19,10 @@ export function getCookie(name: string): string | null {
   }
   return null;
 }
+
+export function logout() {
+  if (typeof window !== 'undefined') {
+    localStorage.removeItem('jwt');
+    window.location.href = '/auth/login'; // Redirect to login page
+  }
+}

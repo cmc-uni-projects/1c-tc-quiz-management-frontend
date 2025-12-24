@@ -1,9 +1,15 @@
 "use client";
 
-import React, { useState } from "react";
-
+import React, { useState, useEffect } from "react";
+import { fetchApi } from '@/lib/apiClient'; // Import fetchApi
+import { toastError, toastSuccess } from '@/lib/toast'; // Import toastError
 
 // TYPES
+
+interface Option {
+  id: number | string;
+  name: string;
+}
 
 type Answer = {
   id: number;
@@ -20,55 +26,84 @@ type Question = {
   answers: Answer[];
 };
 
+// API Endpoints
+const ENDPOINTS = {
+  types: '/questions/question-types',
+  difficulties: '/questions/difficulties',
+  categories: '/categories/all',
+};
+
+// Helper function to fetch data
+const fetchOptions = async (url: string, fallback: Option[] = []) => {
+  try {
+    const res = await fetchApi(url);
+    // Assuming the API returns an array of objects with 'id' and 'name'
+    const data = Array.isArray(res) ? res.map((item: any) => {
+      if (typeof item === 'string') {
+        return { id: item, name: item };
+      }
+      return { id: item.id || item.name, name: item.name };
+    }) : fallback;
+    return data;
+  } catch (error) {
+    console.error(`Error fetching options from ${url}:`, error);
+    toastError(`Failed to load options from ${url.split('/').pop()}.`);
+    return fallback;
+  }
+};
+
 
 // COMPONENT CHÍNH
 
 export default function CreateExamPage() {
   // ======= STATE BÀI THI =======
+  const [examCategory, setExamCategory] = useState("");
   const [examTitle, setExamTitle] = useState("");
-  const [questionCount, setQuestionCount] = useState<number | "">("");
-  const [examType, setExamType] = useState("");
+  // const [questionCount, setQuestionCount] = useState<number | "">(""); // Removed
+  const [examType, setExamType] = useState(""); // This will store difficulty ID/name for the exam
   const [duration, setDuration] = useState<number | "">(0);
   const [startTime, setStartTime] = useState("00:00");
   const [startDate, setStartDate] = useState("");
   const [endTime, setEndTime] = useState("00:00");
   const [endDate, setEndDate] = useState("");
 
+  // ======= STATE CHO CÁC TÙY CHỌN ĐỘNG =======
+  const [categoryOptions, setCategoryOptions] = useState<Option[]>([]);
+  const [difficultyOptions, setDifficultyOptions] = useState<Option[]>([]);
+  const [questionTypeOptions, setQuestionTypeOptions] = useState<Option[]>([]);
+  const [loadingOptions, setLoadingOptions] = useState(true);
+
+  // Fetch dynamic options on component mount
+  useEffect(() => {
+    const loadOptions = async () => {
+      setLoadingOptions(true);
+      const [categories, difficulties, types] = await Promise.all([
+        fetchOptions(ENDPOINTS.categories),
+        fetchOptions(ENDPOINTS.difficulties),
+        fetchOptions(ENDPOINTS.types),
+      ]);
+      setCategoryOptions(categories);
+
+      const difficultyMap: Record<string, string> = {
+        'EASY': 'Dễ',
+        'MEDIUM': 'Trung bình',
+        'HARD': 'Khó'
+      };
+      const mappedDifficulties = difficulties.map((d: Option) => ({
+        ...d,
+        name: difficultyMap[d.name] || d.name
+      }));
+      setDifficultyOptions(mappedDifficulties);
+
+      setQuestionTypeOptions(types);
+      setLoadingOptions(false);
+    };
+    loadOptions();
+  }, []);
+
+
   // ======= STATE CÂU HỎI =======
-  const [questions, setQuestions] = useState<Question[]>([
-    {
-      id: 1,
-      title: "",
-      questionType: "",
-      category: "",
-      difficulty: "",
-      answers: [
-        { id: 1, text: "", isCorrect: false },
-        { id: 2, text: "", isCorrect: true }, 
-      ],
-    },
-  ]);
-
-
-  // XỬ LÝ CÂU HỎI
-
-  const addQuestion = () => {
-    const newId = questions[questions.length - 1].id + 1;
-    setQuestions([
-      ...questions,
-      {
-        id: newId,
-        title: "",
-        questionType: "",
-        category: "",
-        difficulty: "",
-        answers: [
-          { id: 1, text: "", isCorrect: false },
-          { id: 2, text: "", isCorrect: false },
-        ],
-      },
-    ]);
-  };
+  const [questions, setQuestions] = useState<Question[]>([]);
 
   const removeQuestion = (questionId: number) => {
     if (questions.length === 1) {
@@ -87,9 +122,9 @@ export default function CreateExamPage() {
       questions.map((q) =>
         q.id === qid
           ? {
-              ...q,
-              [field]: value,
-            }
+            ...q,
+            [field]: value,
+          }
           : q
       )
     );
@@ -97,17 +132,19 @@ export default function CreateExamPage() {
 
   const addAnswer = (qid: number) => {
     setQuestions(
-      questions.map((q) =>
-        q.id === qid
-          ? {
-              ...q,
-              answers: [
-                ...q.answers,
-                { id: q.answers.length + 1, text: "", isCorrect: false },
-              ],
-            }
-          : q
-      )
+      questions.map((q) => {
+        if (q.id === qid) {
+          const newAnswerId = q.answers.length > 0 ? q.answers[q.answers.length - 1].id + 1 : 1;
+          return {
+            ...q,
+            answers: [
+              ...q.answers,
+              { id: newAnswerId, text: "", isCorrect: false },
+            ],
+          };
+        }
+        return q;
+      })
     );
   };
 
@@ -116,9 +153,9 @@ export default function CreateExamPage() {
       questions.map((q) =>
         q.id === qid
           ? {
-              ...q,
-              answers: q.answers.length > 1 ? q.answers.filter((a) => a.id !== aid) : q.answers,
-            }
+            ...q,
+            answers: q.answers.length > 2 ? q.answers.filter((a) => a.id !== aid) : q.answers, // Keep at least 2 answers
+          }
           : q
       )
     );
@@ -129,76 +166,152 @@ export default function CreateExamPage() {
       questions.map((q) =>
         q.id === qid
           ? {
-              ...q,
-              answers: q.answers.map((a) =>
-                a.id === aid ? { ...a, text: value } : a
-              ),
-            }
+            ...q,
+            answers: q.answers.map((a) =>
+              a.id === aid ? { ...a, text: value } : a
+            ),
+          }
           : q
       )
     );
   };
 
-  const setCorrectAnswer = (qid: number, aid: number) => {
-    setQuestions(
-      questions.map((q) =>
-        q.id === qid
-          ? {
-              ...q,
-              answers: q.answers.map((a) => ({
-                ...a,
-                isCorrect: a.id === aid,
-              })),
-            }
-          : q
-      )
-    );
+  // TYPES
+  type QuestionTypeOption = { id: string; name: string };
+  type DifficultyOption = { id: string; name: string };
+
+  type ExamStatus = 'DRAFT' | 'PUBLISHED';
+
+  interface Category {
+    id: number;
+    name: string;
+  }
+
+  interface Question {
+    id: number;
+    title: string;
+    type: string;
+    level: string;
+    correctAnswer: string;
+    answers: { id: number; text: string; isCorrect: boolean }[];
+    category: { id: number; name: string };
+    difficulty?: string;
+    createdBy?: string;
+  }
+
+  interface Exam {
+    title: string;
+    description: string;
+    durationMinutes: number;
+    categoryId: number;
+    examLevel: string;
+    status: ExamStatus;
+  }
+  //... (keeping imports and other parts same, targeting handleCreateExam)
+
+  const handleCreateExam = async (status: ExamStatus) => {
+    // 1. Validation
+    if (!examTitle.trim()) {
+      toastError("Vui lòng nhập tên bài thi");
+      return;
+    }
+    if (!examCategory) {
+      toastError("Vui lòng chọn danh mục");
+      return;
+    }
+
+    if (!examType) {
+      toastError("Vui lòng chọn độ khó");
+      return;
+    }
+    if (!duration || Number(duration) <= 0) {
+      toastError("Thời gian làm bài phải lớn hơn 0");
+      return;
+    }
+
+    if (!startDate || !startTime) {
+      toastError("Vui lòng chọn ngày và giờ bắt đầu");
+      return;
+    }
+    const now = new Date();
+    const startDateTime = new Date(`${startDate}T${startTime}:00`);
+    if (isNaN(startDateTime.getTime())) {
+      toastError("Thời gian bắt đầu không hợp lệ");
+      return;
+    }
+    if (startDateTime < now) {
+      toastError("Thời gian bắt đầu phải lớn hơn hoặc bằng thời gian hiện tại");
+      return;
+    }
+
+    if (!endDate || !endTime) {
+      toastError("Vui lòng chọn ngày và giờ kết thúc");
+      return;
+    }
+    const endDateTime = new Date(`${endDate}T${endTime}:00`);
+    if (isNaN(endDateTime.getTime())) {
+      toastError("Thời gian kết thúc không hợp lệ");
+      return;
+    }
+    if (endDateTime <= startDateTime) {
+      toastError("Thời gian kết thúc phải sau thời gian bắt đầu");
+      return;
+    }
+
+
+    try {
+      // 2. Prepare question IDs
+      const questionIds: number[] = []; // Empty initially
+
+      // 3. Create Exam
+      const examPayload = {
+        title: examTitle,
+        categoryId: examCategory,
+        durationMinutes: Number(duration),
+        startTime: `${startDate}T${startTime}:00`,
+        endTime: `${endDate}T${endTime}:00`,
+        questionIds: questionIds,
+        description: `Bài thi ${examType}`,
+        examLevel: examType.toUpperCase(),
+        status: status
+      };
+
+      await fetchApi('/exams/create', {
+        method: 'POST',
+        body: examPayload
+      });
+
+      toastSuccess(status === 'DRAFT' ? "Đã lưu nháp!" : "Đã đăng bài thành công!");
+      // Reset form or redirect? For now just notify.
+      // Redirect to list
+      window.location.href = '/admin/list-exam';
+
+    } catch (error: any) {
+      console.error("Error creating exam:", error);
+      toastError(error.message || "Có lỗi xảy ra khi tạo bài thi");
+    }
   };
 
   return (
     <div className="min-h-screen flex bg-[#F5F5F5] text-gray-900">
-
-      {/* ====================== SIDEBAR ====================== */}
-      <aside className="w-56 bg-[#F8F5FB] border-r border-gray-200 flex flex-col">
-        <nav className="flex-1 py-4 text-sm">
-          <ul className="space-y-1">
-            <li>
-              <a href="#" className="block px-6 py-2 hover:bg-white">
-                Trang chủ
-              </a>
-            </li>
-            <li>
-              <a href="#" className="block px-6 py-2 hover:bg-white">
-                Danh mục câu hỏi
-              </a>
-            </li>
-            <li>
-              <a href="#" className="block px-6 py-2 hover:bg-white">
-                Quản lý câu hỏi
-              </a>
-            </li>
-            <li>
-              <a href="#" className="block px-6 py-2 hover:bg-white">
-                Quản lý bài thi
-              </a>
-            </li>
-          </ul>
-        </nav>
-      </aside>
-
-      {/* ====================== MAIN ====================== */}
       <div className="flex-1 flex flex-col">
-
-        
-
-        {/* ====================== CONTENT ====================== */}
         <main className="flex-1 overflow-y-auto px-10 py-8">
-
-          {/* ================== FORM TẠO BÀI THI ================== */}
           <section className="bg-white rounded-2xl shadow p-8 mb-6">
-            <h2 className="text-2xl font-semibold text-center mb-8">
-              Tạo bài thi offline
+            <h2 className="text-2xl font-semibold text-center mb-4">
+              Tạo bài thi offline - Admin
             </h2>
+            <div className="flex justify-start gap-6 border-b border-gray-300 mb-8">
+              <a href="/admin/exam-offline">
+                <button className="pb-2 font-medium border-b-2 border-black">
+                  Bài thi Offline
+                </button>
+              </a>
+              <a href="/admin/exam-online">
+                <button className="pb-2 font-medium text-gray-500 hover:text-black hover:border-b-2 hover:border-gray-200">
+                  Bài thi Online
+                </button>
+              </a>
+            </div>
 
             {/* Các input đầu */}
             <div className="space-y-4 mb-6">
@@ -213,28 +326,32 @@ export default function CreateExamPage() {
               </div>
 
               <div>
-                <label className="block text-sm mb-1">Số lượng câu hỏi</label>
-                <input
-                  type="number"
-                  value={questionCount}
-                  onChange={(e) =>
-                    setQuestionCount(e.target.value === "" ? "" : Number(e.target.value))
-                  }
-                  className="w-full border px-3 py-2 rounded-md"
-                />
-              </div>
-
-              <div>
                 <label className="block text-sm mb-1">Loại đề thi</label>
                 <select
                   value={examType}
                   onChange={(e) => setExamType(e.target.value)}
                   className="w-full border px-3 py-2 rounded-md bg-white"
+                  disabled={loadingOptions}
                 >
-                  <option value="">Chọn loại</option>
-                   <option value="easy">Dễ</option>
-                   <option value="medium">Trung bình</option>
-                   <option value="hard">Khó</option>
+                  <option value="">{loadingOptions ? "Đang tải..." : "Chọn độ khó"}</option>
+                  {difficultyOptions.map(opt => (
+                    <option key={opt.id} value={opt.id}>{opt.name}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm mb-1">Danh mục bài thi</label>
+                <select
+                  value={examCategory}
+                  onChange={(e) => setExamCategory(e.target.value)}
+                  className="w-full border px-3 py-2 rounded-md bg-white"
+                  disabled={loadingOptions}
+                >
+                  <option value="">{loadingOptions ? "Đang tải..." : "Chọn danh mục"}</option>
+                  {categoryOptions.map(opt => (
+                    <option key={opt.id} value={opt.id}>{opt.name}</option>
+                  ))}
                 </select>
               </div>
             </div>
@@ -245,7 +362,6 @@ export default function CreateExamPage() {
                 <label className="block text-sm font-medium mb-1">
                   Thời gian nộp bài
                 </label>
-
                 <div className="flex items-center gap-2">
                   <span className="text-sm">Khoảng thời gian:</span>
                   <input
@@ -255,8 +371,9 @@ export default function CreateExamPage() {
                       setDuration(e.target.value === "" ? "" : Number(e.target.value))
                     }
                     className="w-20 border px-2 py-1 rounded-md"
+                    min="1"
                   />
-                  <span>Minute</span>
+                  <span>Phút</span>
                 </div>
               </div>
 
@@ -302,143 +419,22 @@ export default function CreateExamPage() {
             </div>
           </section>
 
-          {/* ================== THÊM CÂU HỎI ================== */}
-          <section className="bg-white rounded-2xl shadow p-8">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold">Thêm câu hỏi</h3>
-              <button
-                onClick={addQuestion}
-                className="px-5 py-2 bg-[#A53AEC] text-white rounded-full"
-              >
-                Thêm câu hỏi
-              </button>
-            </div>
-
-            <div className="space-y-6">
-              {questions.map((q, index) => (
-                <div key={q.id} className="p-4">
-
-                  {/* Header */}
-                  {/* Input câu hỏi */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
-                    <input
-                      type="text"
-                      placeholder="Nhập tiêu đề..."
-                      value={q.title}
-                      onChange={(e) =>
-                        updateQuestionField(q.id, "title", e.target.value)
-                      }
-                      className="border px-3 py-2 rounded-md"
-                    />
-
-                    <select
-                      value={q.questionType}
-                      onChange={(e) =>
-                        updateQuestionField(q.id, "questionType", e.target.value)
-                      }
-                      className="border px-3 py-2 rounded-md bg-white"
-                    >
-                      <option value="">Loại câu hỏi</option>
-                      <option value="single">Chọn 1 đáp án</option>
-                      <option value="multi">Chọn nhiều đáp án</option>
-                    </select>
-                  </div>
-
-                  {/* Danh mục + độ khó */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-4">
-                    <select
-                      value={q.category}
-                      onChange={(e) =>
-                        updateQuestionField(q.id, "category", e.target.value)
-                      }
-                      className="border px-3 py-2 rounded-md bg-white"
-                    >
-                      <option value="">Danh mục câu hỏi</option>
-                      <option value="math">Giải Tích</option>
-                      <option value="english">Triết</option>
-                      <option value="it">Java</option>
-                    </select>
-
-                    <select
-                      value={q.difficulty}
-                      onChange={(e) =>
-                        updateQuestionField(q.id, "difficulty", e.target.value)
-                      }
-                      className="border px-3 py-2 rounded-md bg-white"
-                    >
-                      <option value="">Độ khó</option>
-                      <option value="easy">Dễ</option>
-                      <option value="medium">Trung bình</option>
-                      <option value="hard">Khó</option>
-                    </select>
-                  </div>
-
-                  {/* Danh sách đáp án */}
-                  <div className="space-y-2 mb-4">
-                    {q.answers.map((a) => (
-                      <div key={a.id} className="flex items-center gap-2">
-                        <input
-                          type="radio"
-                          checked={a.isCorrect}
-                          onChange={() => setCorrectAnswer(q.id, a.id)}
-                        />
-
-                        <input
-                          type="text"
-                          value={a.text}
-                          placeholder={`Đáp án ${a.id}`}
-                          onChange={(e) =>
-                            updateAnswerText(q.id, a.id, e.target.value)
-                          }
-                          className="flex-1 border px-3 py-2 rounded-md"
-                        />
-
-                        <button
-                          onClick={() => removeAnswer(q.id, a.id)}
-                          className="p-2 hover:bg-gray-200 rounded-md"
-                        >
-                          🗑
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-
-                  {/* Buttons */}
-                  <div className="flex gap-3">
-                    <button
-                      onClick={() => addAnswer(q.id)}
-                      className="px-4 py-1.5 border border-purple-500 text-purple-600 rounded-md"
-                    >
-                      Thêm đáp án
-                    </button>
-                    <button
-                      onClick={() => removeQuestion(q.id)}
-                      className="px-4 py-1.5 border border-red-500 text-red-600 rounded-md"
-                    >
-                      Xóa câu hỏi
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </section>
-
           {/* NÚT LƯU – ĐĂNG BÀI */}
           <div className="mt-6 flex justify-end gap-4">
-            <button className="px-6 py-2 border border-purple-700 text-purple-700 rounded-md">
-              Lưu
+            <button
+              onClick={() => window.location.href = '/admin/list-exam'}
+              className="px-6 py-2 border border-purple-700 text-purple-700 rounded-md">
+              Hủy
             </button>
 
-            <button className="px-6 py-2 bg-purple-700 text-white rounded-md">
-              Đăng bài
+            <button
+              onClick={() => handleCreateExam('DRAFT')}
+              className="px-6 py-2 bg-purple-700 text-white rounded-md"
+            >
+              Tạo bài thi
             </button>
           </div>
         </main>
-
-        {/* ====================== FOOTER ====================== */}
-        <footer className="h-12 bg-white border-t border-gray-200 flex items-center justify-center text-sm text-gray-500">
-          © 2025 QuizzZone. Mọi quyền được bảo lưu.
-        </footer>
       </div>
     </div>
   );

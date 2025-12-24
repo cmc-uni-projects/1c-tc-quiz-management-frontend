@@ -1,14 +1,17 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import toast from "react-hot-toast";
-import { useSession, signOut } from "next-auth/react";
+import { useUser } from "@/lib/user"; // Import useUser hook
+import { logout } from "@/lib/utils"; // Import custom logout function
 
 export default function ProfileDropdown() {
   const router = useRouter();
-  const { data: session } = useSession();
-  const user = session?.user;
+  const { user, isAuthenticated } = useUser(); // Use custom useUser hook
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
+
+  // Debug: Log user data to see what's available
+  console.log('ProfileDropdown - User data:', user);
 
   useEffect(() => {
     function onClick(e: MouseEvent) {
@@ -34,8 +37,7 @@ export default function ProfileDropdown() {
       case 'STUDENT':
         return '/student/profile';
       default:
-        // Fallback URL if role is not defined, though this shouldn't happen for an authenticated user.
-        return '/'; 
+        return '/';
     }
   };
 
@@ -62,16 +64,30 @@ export default function ProfileDropdown() {
     router.push(getChangePasswordUrl());
   };
 
-  const handleLogout = async () => {
+  const handleLogout = () => {
     setOpen(false);
-    await signOut({ callbackUrl: '/auth/login' });
+    logout(); // Call the custom logout function
     toast.success('Đăng xuất thành công');
   };
 
   // Don't render the dropdown if the user is not authenticated
-  if (!user) {
+  if (!isAuthenticated) { // Use isAuthenticated from custom hook
     return null;
   }
+
+  const displayName = (() => {
+    if (!user) return 'User';
+
+    const fullName = `${user.firstName || ''} ${user.lastName || ''}`.trim();
+    if (fullName) return fullName;
+
+    const rawUser = user.username || user.email || '';
+    if (typeof rawUser === 'string' && rawUser.includes('@')) {
+      return rawUser.split('@')[0];
+    }
+
+    return rawUser || 'User';
+  })();
 
   return (
     <div className="relative" ref={ref}>
@@ -79,10 +95,18 @@ export default function ProfileDropdown() {
         onClick={() => setOpen((v) => !v)}
         className="flex items-center gap-2 rounded-full bg-gray-200/50 px-2 py-1.5 text-sm text-zinc-700 hover:bg-gray-200/80"
       >
-        <span className="grid h-8 w-8 place-items-center rounded-full bg-gray-300 text-gray-700">
-          👤
+        <span className="relative grid h-8 w-8 place-items-center rounded-full bg-gray-300 text-gray-700 overflow-hidden">
+          {user?.avatarUrl ? (
+            <img 
+              src={user.avatarUrl} 
+              alt="Avatar" 
+              className="absolute inset-0 w-full h-full object-cover"
+            />
+          ) : (
+            '👤'
+          )}
         </span>
-        <span className="hidden sm:inline">{user.name || 'Menu'}</span>
+        <span className="hidden sm:inline">Xin chào, {displayName}</span>
       </button>
 
       {open && (
